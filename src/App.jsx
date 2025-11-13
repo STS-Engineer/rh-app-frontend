@@ -3,9 +3,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Team from './pages/Team';
-import './styles/App.css';
-import Archives from './pages/Archives'; // Import ajouté
+import Archives from './pages/Archives';
 import Statistics from './pages/Statistics';
+import DemandesRH from './pages/DemandesRH'; // Import ajouté
+import './styles/App.css';
+
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   return token ? children : <Navigate to="/" />;
@@ -26,6 +28,14 @@ function App() {
             } 
           />
           <Route 
+            path="/demandes-rh" 
+            element={
+              <PrivateRoute>
+                <DemandesRH />
+              </PrivateRoute>
+            } 
+          />
+          <Route 
             path="/archives" 
             element={
               <PrivateRoute>
@@ -41,7 +51,7 @@ function App() {
               </PrivateRoute>
             } 
           />
-           <Route 
+          <Route 
             path="/statistics" 
             element={
               <PrivateRoute>
@@ -49,7 +59,6 @@ function App() {
               </PrivateRoute>
             } 
           />
-          
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </div>
