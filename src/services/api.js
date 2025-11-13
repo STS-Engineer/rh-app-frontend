@@ -8,7 +8,7 @@ import axios from 'axios';
 // En production (Azure) : définir REACT_APP_API_URL
 //    ex : https://ton-backend.azurewebsites.net/api
 //
-const API_BASE_URL ='https://backend-rh.azurewebsites.net/api';
+const API_BASE_URL ='https://backend-rh.azurewebsites.net';
 
 // Création d'une instance axios
 const api = axios.create({
