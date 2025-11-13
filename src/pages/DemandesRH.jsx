@@ -12,20 +12,8 @@ const DemandesRH = () => {
     dateFin: ''
   });
 
-  // Types de demandes
-  const typesDemande = [
-    'congé',
-    'autorisation_absence',
-    'frais_deplacement',
-    'autre'
-  ];
-
-  const statuts = [
-    'en_attente',
-    'approuve',
-    'refuse',
-    'en_cours_traitement'
-  ];
+  const typesDemande = ['congé', 'autorisation_absence', 'frais_deplacement', 'autre'];
+  const statuts = ['en_attente', 'approuve', 'refuse', 'en_cours_traitement'];
 
   useEffect(() => {
     fetchDemandes();
@@ -42,7 +30,6 @@ const DemandesRH = () => {
         return;
       }
 
-      // Construction des paramètres de filtre
       const params = new URLSearchParams();
       if (filters.type) params.append('type', filters.type);
       if (filters.statut) params.append('statut', filters.statut);
@@ -61,8 +48,7 @@ const DemandesRH = () => {
       console.log('📡 Response status:', response.status);
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Erreur ${response.status}: ${errorText}`);
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -77,34 +63,67 @@ const DemandesRH = () => {
     }
   };
 
-  // Testez la route de debug
-  const testDebugRoute = async () => {
+  // Test simple sans authentification
+  const testSimpleRoute = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/debug/demandes-rh', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        }
-      });
+      const response = await fetch('/api/test-demandes');
       
       if (!response.ok) {
-        throw new Error(`Debug route error: ${response.status}`);
+        throw new Error(`Erreur ${response.status}`);
       }
       
       const data = await response.json();
-      console.log('🐛 Debug data:', data);
+      console.log('🧪 Test simple:', data);
       
-      if (data.total_demandes > 0) {
-        alert(`✅ Debug réussi: ${data.total_demandes} demandes trouvées dans la base. Voir console pour détails.`);
-        // Recharger les demandes après debug
-        fetchDemandes();
+      if (data.success) {
+        alert(`✅ Test réussi: ${data.count} demandes trouvées`);
+        if (data.count > 0) {
+          setDemandes(data.demandes);
+        }
       } else {
-        alert('❌ Aucune demande trouvée dans la table demande_rh');
+        alert('❌ Test échoué: ' + (data.error || 'Erreur inconnue'));
+      }
+    } catch (error) {
+      console.error('Erreur test simple:', error);
+      alert('❌ Erreur test: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Debug complet
+  const testDebugRoute = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/debug-demandes');
+      
+      if (!response.ok) {
+        throw new Error(`Erreur ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('🐛 Debug complet:', data);
+      
+      if (data.success) {
+        let message = `Total demandes: ${data.total_demandes}\n`;
+        message += `Structure: ${data.structure_table.length} colonnes\n`;
+        
+        if (data.total_demandes > 0) {
+          message += `✅ Données disponibles!`;
+          alert(message);
+          // Recharger les données
+          fetchDemandes();
+        } else {
+          message += `❌ Aucune donnée dans la table`;
+          alert(message);
+        }
+      } else {
+        alert('❌ Debug échoué: ' + (data.error || 'Erreur inconnue'));
       }
     } catch (error) {
       console.error('Erreur debug:', error);
-      alert('❌ Erreur route debug: ' + error.message);
+      alert('❌ Erreur debug: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -169,9 +188,14 @@ const DemandesRH = () => {
       <div className="demandes-rh-container">
         <div className="loading">
           <div>Chargement des demandes...</div>
-          <button onClick={testDebugRoute} className="debug-btn">
-            🐛 Tester la connexion BD
-          </button>
+          <div className="debug-actions">
+            <button onClick={testSimpleRoute} className="debug-btn">
+              🧪 Test Simple
+            </button>
+            <button onClick={testDebugRoute} className="debug-btn">
+              🐛 Debug Complet
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -184,8 +208,11 @@ const DemandesRH = () => {
           <h3>❌ Erreur</h3>
           <p>{error}</p>
           <div className="error-actions">
+            <button onClick={testSimpleRoute} className="debug-btn">
+              🧪 Test Simple
+            </button>
             <button onClick={testDebugRoute} className="debug-btn">
-              🐛 Tester la connexion BD
+              🐛 Debug Complet
             </button>
             <button onClick={fetchDemandes} className="retry-btn">
               🔄 Réessayer
@@ -199,11 +226,18 @@ const DemandesRH = () => {
   return (
     <div className="demandes-rh-container">
       <div className="demandes-header">
-        <h1>📋 Demandes RH</h1>
-        <p>Gestion des demandes de congés, absences et frais</p>
-        <button onClick={testDebugRoute} className="debug-btn-header">
-          🐛 Debug BD
-        </button>
+        <div>
+          <h1>📋 Demandes RH</h1>
+          <p>Gestion des demandes de congés, absences et frais</p>
+        </div>
+        <div className="header-actions">
+          <button onClick={testSimpleRoute} className="debug-btn">
+            🧪 Test
+          </button>
+          <button onClick={testDebugRoute} className="debug-btn">
+            🐛 Debug
+          </button>
+        </div>
       </div>
 
       {/* Filtres */}
@@ -211,7 +245,7 @@ const DemandesRH = () => {
         <div className="filters-header">
           <h3>Filtres</h3>
           <button onClick={clearFilters} className="clear-filters-btn">
-            🔄 Effacer les filtres
+            🔄 Effacer
           </button>
         </div>
         
@@ -291,9 +325,14 @@ const DemandesRH = () => {
           <div className="no-data">
             <p>📭 Aucune demande trouvée</p>
             <p>Ajustez vos filtres ou vérifiez qu'il y a des demandes dans le système.</p>
-            <button onClick={testDebugRoute} className="debug-btn">
-              🐛 Vérifier la base de données
-            </button>
+            <div className="debug-actions">
+              <button onClick={testSimpleRoute} className="debug-btn">
+                🧪 Test Simple
+              </button>
+              <button onClick={testDebugRoute} className="debug-btn">
+                🐛 Debug Complet
+              </button>
+            </div>
           </div>
         ) : (
           <div className="demandes-grid">
@@ -334,27 +373,6 @@ const DemandesRH = () => {
                         <span className="info-value">{demande.frais_deplacement} €</span>
                       </div>
                     )}
-                    
-                    {demande.type_conge && (
-                      <div className="info-item">
-                        <span className="info-label">🎯 Type congé:</span>
-                        <span className="info-value">{demande.type_conge}</span>
-                      </div>
-                    )}
-
-                    {demande.heure_depart && (
-                      <div className="info-item">
-                        <span className="info-label">🕐 Heure départ:</span>
-                        <span className="info-value">{demande.heure_depart}</span>
-                      </div>
-                    )}
-
-                    {demande.heure_retour && (
-                      <div className="info-item">
-                        <span className="info-label">🕐 Heure retour:</span>
-                        <span className="info-value">{demande.heure_retour}</span>
-                      </div>
-                    )}
                   </div>
 
                   {demande.commentaire_refus && (
@@ -368,9 +386,6 @@ const DemandesRH = () => {
                 <div className="demande-footer">
                   <div className="demande-dates">
                     <small>Créé le: {formatDate(demande.created_at)}</small>
-                    {demande.updated_at && demande.updated_at !== demande.created_at && (
-                      <small>Modifié le: {formatDate(demande.updated_at)}</small>
-                    )}
                   </div>
                   <div className="demande-actions">
                     <button className="btn-view">👁️ Voir</button>
