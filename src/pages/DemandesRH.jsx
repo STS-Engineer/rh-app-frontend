@@ -4,6 +4,7 @@ import './DemandesRH.css';
 const DemandesRH = () => {
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     type: '',
     statut: '',
@@ -33,14 +34,22 @@ const DemandesRH = () => {
   const fetchDemandes = async () => {
     try {
       setLoading(true);
+      setError(null);
       const token = localStorage.getItem('token');
       
+      if (!token) {
+        setError('Token d\'authentification manquant');
+        return;
+      }
+
       // Construction des paramètres de filtre
       const params = new URLSearchParams();
       if (filters.type) params.append('type', filters.type);
       if (filters.statut) params.append('statut', filters.statut);
       if (filters.dateDebut) params.append('dateDebut', filters.dateDebut);
       if (filters.dateFin) params.append('dateFin', filters.dateFin);
+
+      console.log('🔍 Fetching demandes avec params:', params.toString());
 
       const response = await fetch(`/api/demandes-rh?${params.toString()}`, {
         headers: {
@@ -49,14 +58,53 @@ const DemandesRH = () => {
         }
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setDemandes(data);
+      console.log('📡 Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Erreur ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('📦 Données reçues:', data);
+      setDemandes(data);
+
+    } catch (error) {
+      console.error('💥 Erreur fetch:', error);
+      setError(`Erreur de chargement: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Testez la route de debug
+  const testDebugRoute = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/debug/demandes-rh', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Debug route error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('🐛 Debug data:', data);
+      
+      if (data.total_demandes > 0) {
+        alert(`✅ Debug réussi: ${data.total_demandes} demandes trouvées dans la base. Voir console pour détails.`);
+        // Recharger les demandes après debug
+        fetchDemandes();
       } else {
-        console.error('Erreur lors du chargement des demandes');
+        alert('❌ Aucune demande trouvée dans la table demande_rh');
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Erreur debug:', error);
+      alert('❌ Erreur route debug: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -101,13 +149,49 @@ const DemandesRH = () => {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('fr-FR');
+    if (!dateString) return 'Non définie';
+    try {
+      return new Date(dateString).toLocaleDateString('fr-FR');
+    } catch (error) {
+      return 'Date invalide';
+    }
+  };
+
+  const getEmployeDisplayName = (demande) => {
+    if (demande.employe_nom && demande.employe_prenom) {
+      return `${demande.employe_prenom} ${demande.employe_nom}`;
+    }
+    return `ID: ${demande.employe_id}`;
   };
 
   if (loading) {
     return (
       <div className="demandes-rh-container">
-        <div className="loading">Chargement des demandes...</div>
+        <div className="loading">
+          <div>Chargement des demandes...</div>
+          <button onClick={testDebugRoute} className="debug-btn">
+            🐛 Tester la connexion BD
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="demandes-rh-container">
+        <div className="error-message">
+          <h3>❌ Erreur</h3>
+          <p>{error}</p>
+          <div className="error-actions">
+            <button onClick={testDebugRoute} className="debug-btn">
+              🐛 Tester la connexion BD
+            </button>
+            <button onClick={fetchDemandes} className="retry-btn">
+              🔄 Réessayer
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -117,6 +201,9 @@ const DemandesRH = () => {
       <div className="demandes-header">
         <h1>📋 Demandes RH</h1>
         <p>Gestion des demandes de congés, absences et frais</p>
+        <button onClick={testDebugRoute} className="debug-btn-header">
+          🐛 Debug BD
+        </button>
       </div>
 
       {/* Filtres */}
@@ -153,7 +240,7 @@ const DemandesRH = () => {
               <option value="">Tous les statuts</option>
               {statuts.map(statut => (
                 <option key={statut} value={statut}>
-                  {getStatutBadge(statut).props.children}
+                  {statut}
                 </option>
               ))}
             </select>
@@ -204,6 +291,9 @@ const DemandesRH = () => {
           <div className="no-data">
             <p>📭 Aucune demande trouvée</p>
             <p>Ajustez vos filtres ou vérifiez qu'il y a des demandes dans le système.</p>
+            <button onClick={testDebugRoute} className="debug-btn">
+              🐛 Vérifier la base de données
+            </button>
           </div>
         ) : (
           <div className="demandes-grid">
@@ -220,8 +310,8 @@ const DemandesRH = () => {
                 <div className="demande-body">
                   <div className="demande-info">
                     <div className="info-item">
-                      <span className="info-label">🆔 Employé:</span>
-                      <span className="info-value">{demande.employe_nom || `ID: ${demande.employe_id}`}</span>
+                      <span className="info-label">👤 Employé:</span>
+                      <span className="info-value">{getEmployeDisplayName(demande)}</span>
                     </div>
                     
                     {demande.date_depart && (
@@ -251,6 +341,20 @@ const DemandesRH = () => {
                         <span className="info-value">{demande.type_conge}</span>
                       </div>
                     )}
+
+                    {demande.heure_depart && (
+                      <div className="info-item">
+                        <span className="info-label">🕐 Heure départ:</span>
+                        <span className="info-value">{demande.heure_depart}</span>
+                      </div>
+                    )}
+
+                    {demande.heure_retour && (
+                      <div className="info-item">
+                        <span className="info-label">🕐 Heure retour:</span>
+                        <span className="info-value">{demande.heure_retour}</span>
+                      </div>
+                    )}
                   </div>
 
                   {demande.commentaire_refus && (
@@ -264,7 +368,7 @@ const DemandesRH = () => {
                 <div className="demande-footer">
                   <div className="demande-dates">
                     <small>Créé le: {formatDate(demande.created_at)}</small>
-                    {demande.updated_at && (
+                    {demande.updated_at && demande.updated_at !== demande.created_at && (
                       <small>Modifié le: {formatDate(demande.updated_at)}</small>
                     )}
                   </div>
