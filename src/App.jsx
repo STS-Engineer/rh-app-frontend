@@ -5,7 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Team from './pages/Team';
 import Archives from './pages/Archives';
 import Statistics from './pages/Statistics';
-import DemandesRH from './pages/DemandesRH'; // Import ajouté
+import DemandesRH from './pages/DemandesRH';
 import './styles/App.css';
 
 const PrivateRoute = ({ children }) => {
