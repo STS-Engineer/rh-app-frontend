@@ -6,6 +6,9 @@
 
 .demandes-header {
   margin-bottom: 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .demandes-header h1 {
@@ -17,6 +20,21 @@
 .demandes-header p {
   color: #7f8c8d;
   font-size: 1.1rem;
+  margin: 0;
+}
+
+.debug-btn-header {
+  background: #95a5a6;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.debug-btn-header:hover {
+  background: #7f8c8d;
 }
 
 /* Section Filtres */
@@ -145,6 +163,10 @@
   border-bottom: 1px solid #e9ecef;
 }
 
+.demande-title {
+  flex: 1;
+}
+
 .demande-title h3 {
   margin: 0 0 0.5rem 0;
   color: #2c3e50;
@@ -158,6 +180,7 @@
   border-radius: 20px;
   font-size: 0.8rem;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 /* Badges de statut */
@@ -167,6 +190,7 @@
   font-size: 0.8rem;
   font-weight: 600;
   text-transform: capitalize;
+  display: inline-block;
 }
 
 .statut-en-attente {
@@ -175,7 +199,7 @@
 }
 
 .statut-approuve {
-  background: #d1edff;
+  background: #d4edda;
   color: #155724;
 }
 
@@ -185,8 +209,8 @@
 }
 
 .statut-en-cours {
-  background: #d4edda;
-  color: #155724;
+  background: #d1edff;
+  color: #004085;
 }
 
 .statut-default {
@@ -221,6 +245,7 @@
 .info-value {
   color: #2c3e50;
   font-weight: 500;
+  text-align: right;
 }
 
 .commentaire-refus {
@@ -296,7 +321,7 @@
   background: #e67e22;
 }
 
-/* États vides */
+/* États vides et erreurs */
 .no-data {
   text-align: center;
   padding: 3rem;
@@ -310,17 +335,79 @@
   margin: 0.5rem 0;
 }
 
+.error-message {
+  text-align: center;
+  padding: 3rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  border-left: 4px solid #e74c3c;
+}
+
+.error-message h3 {
+  color: #e74c3c;
+  margin-bottom: 1rem;
+}
+
+.error-message p {
+  color: #2c3e50;
+  margin-bottom: 2rem;
+}
+
+.error-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
 .loading {
   text-align: center;
   padding: 3rem;
   font-size: 1.2rem;
   color: #7f8c8d;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.debug-btn,
+.retry-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  margin: 0.5rem;
+  transition: background-color 0.3s;
+}
+
+.debug-btn {
+  background: #95a5a6;
+  color: white;
+}
+
+.debug-btn:hover {
+  background: #7f8c8d;
+}
+
+.retry-btn {
+  background: #3498db;
+  color: white;
+}
+
+.retry-btn:hover {
+  background: #2980b9;
 }
 
 /* Responsive */
 @media (max-width: 768px) {
   .demandes-rh-container {
     padding: 1rem;
+  }
+  
+  .demandes-header {
+    flex-direction: column;
+    gap: 1rem;
   }
   
   .filters-grid {
@@ -340,5 +427,9 @@
   .demande-actions {
     width: 100%;
     justify-content: flex-end;
+  }
+  
+  .error-actions {
+    flex-direction: column;
   }
 }
