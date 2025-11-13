@@ -1,0 +1,260 @@
+.archive-employee-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.archive-employee-modal-content {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.archive-employee-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #e1e5e9;
+  background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+  color: white;
+  border-radius: 12px 12px 0 0;
+}
+
+.archive-employee-modal-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: white;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.archive-employee-modal-body {
+  padding: 20px;
+}
+
+.employee-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border-left: 4px solid #95a5a6;
+}
+
+.employee-photo {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin-right: 20px;
+  object-fit: cover;
+}
+
+.employee-basic-info h3 {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+  font-size: 1.4rem;
+}
+
+.employee-matricule {
+  margin: 0 0 5px 0;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.employee-poste {
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.employee-departement {
+  margin: 0;
+  color: #3498db;
+  font-weight: 500;
+}
+
+.employee-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.detail-section {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 3px solid #95a5a6;
+}
+
+.detail-section h4 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+  border-bottom: 1px solid #e1e5e9;
+  padding-bottom: 8px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed #e1e5e9;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.detail-row strong {
+  color: #2c3e50;
+  min-width: 140px;
+}
+
+.detail-row span {
+  color: #5a6c7d;
+  text-align: right;
+  flex: 1;
+}
+
+.view-entretien-modal-btn {
+  background: #3498db;
+  color: white;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.3s;
+}
+
+.view-entretien-modal-btn:hover {
+  background: #2980b9;
+}
+
+.entretien-preview {
+  background: #e8f4fd;
+  border: 1px solid #b3d9f7;
+  border-radius: 8px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.entretien-preview h4 {
+  margin: 0 0 15px 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+}
+
+.entretien-content {
+  background: white;
+  padding: 15px;
+  border-radius: 6px;
+  border: 1px solid #d1ecf1;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #2c3e50;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.archive-employee-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px;
+  border-top: 1px solid #e1e5e9;
+  background: #f8f9fa;
+  border-radius: 0 0 12px 12px;
+}
+
+.close-modal-btn {
+  background: #95a5a6;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+.close-modal-btn:hover {
+  background: #7f8c8d;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .archive-employee-modal-content {
+    width: 95%;
+    margin: 20px;
+  }
+  
+  .employee-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .employee-photo {
+    margin-right: 0;
+    margin-bottom: 15px;
+  }
+  
+  .employee-details-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .detail-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .detail-row span {
+    text-align: left;
+    margin-top: 5px;
+  }
+}
+/* Bouton sous la date (section départ) */
+.depart-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.entretien-btn-container {
+  margin-top: 10px;          /* espace entre la date et le bouton */
+  align-self: flex-start;    /* reste aligné à gauche */
+}
+
+.entretien-unavailable {
+  margin-top: 6px;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
