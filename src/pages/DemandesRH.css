@@ -522,3 +522,101 @@
 .btn-retry:hover {
   background: #c0392b;
 }
+/* Styles pour les informations d'approbation */
+.approval-status {
+  background: #e8f4fd;
+  padding: 0.8rem;
+  border-radius: 5px;
+  margin-bottom: 1rem;
+  border-left: 4px solid #3498db;
+  font-weight: 500;
+}
+
+.approval-details {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 5px;
+}
+
+.approval-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.approval-label {
+  font-weight: 600;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.approval-status.approved {
+  color: #27ae60;
+  font-weight: 600;
+}
+
+.approval-status.pending {
+  color: #f39c12;
+  font-weight: 600;
+}
+
+.commentaire-section {
+  background: #fff3cd;
+  padding: 0.8rem;
+  border-radius: 5px;
+  border-left: 4px solid #ffc107;
+}
+
+.commentaire-section .label {
+  color: #856404;
+  font-weight: 600;
+}
+
+.commentaire-section .commentaire {
+  color: #856404;
+  font-style: italic;
+}
+
+.filters-info {
+  text-align: center;
+  margin-top: 0.5rem;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+/* Amélioration de l'affichage des détails */
+.demande-details {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 5px;
+}
+
+.detail-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #ecf0f1;
+}
+
+.detail-item:last-child {
+  margin-bottom: 0;
+  border-bottom: none;
+}
+
+.detail-item .label {
+  font-weight: 600;
+  color: #7f8c8d;
+  min-width: 150px;
+}
+
+.detail-item .value {
+  color: #2c3e50;
+  text-align: right;
+  flex: 1;
+  margin-left: 1rem;
+}
