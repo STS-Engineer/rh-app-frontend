@@ -30,7 +30,7 @@ const DemandesRH = () => {
 
   useEffect(() => {
     fetchDemandes();
-  }, [filters]); // Se déclenche quand les filtres changent
+  }, [filters]);
 
   const fetchDemandes = async () => {
     try {
@@ -43,10 +43,8 @@ const DemandesRH = () => {
         return;
       }
 
-      // Construction des paramètres de requête
       const queryParams = new URLSearchParams();
       
-      // Ajouter seulement les filtres non vides
       Object.entries(filters).forEach(([key, value]) => {
         if (value && value !== '') {
           queryParams.append(key, value);
@@ -67,7 +65,7 @@ const DemandesRH = () => {
       }
 
       const data = await response.json();
-      console.log('✅ Données reçues:', data.demandes?.length || 0, 'demandes');
+      console.log('✅ Données reçues avec emails responsables:', data.demandes);
       setDemandes(data.demandes || []);
       
     } catch (error) {
@@ -84,7 +82,6 @@ const DemandesRH = () => {
       ...prev,
       [key]: value
     }));
-    // Les filtres se déclenchent automatiquement via le useEffect
   };
 
   const getStatutBadge = (statut) => {
@@ -122,14 +119,29 @@ const DemandesRH = () => {
     });
   };
 
+  const getResponsableNameFromEmail = (email) => {
+    if (!email) return 'Non assigné';
+    
+    // Extraire le nom à partir de l'email (ex: "john.doe@entreprise.com" -> "John Doe")
+    const username = email.split('@')[0];
+    const nameParts = username.split('.');
+    const formattedName = nameParts.map(part => 
+      part.charAt(0).toUpperCase() + part.slice(1)
+    ).join(' ');
+    
+    return formattedName;
+  };
+
   const getApprovalStatus = (demande) => {
     if (demande.statut === 'approuve') {
       if (demande.approuve_responsable1 && demande.approuve_responsable2) {
         return '✅ Approuvée par les deux responsables';
       } else if (demande.approuve_responsable1) {
-        return '✅ Approuvée par le responsable 1 (en attente du responsable 2)';
+        const responsable1 = getResponsableNameFromEmail(demande.email_responsable1);
+        return `✅ Approuvée par ${responsable1} (en attente du 2ème responsable)`;
       } else if (demande.approuve_responsable2) {
-        return '✅ Approuvée par le responsable 2 (en attente du responsable 1)';
+        const responsable2 = getResponsableNameFromEmail(demande.email_responsable2);
+        return `✅ Approuvée par ${responsable2} (en attente du 1er responsable)`;
       }
     } else if (demande.statut === 'refuse') {
       return `❌ Refusée: ${demande.commentaire_refus || 'Raison non spécifiée'}`;
@@ -451,19 +463,25 @@ const DemandesRH = () => {
                   )}
                 </div>
 
-                {/* Section d'approbation détaillée */}
+                {/* Section d'approbation détaillée avec noms des responsables */}
                 <div className="approval-details">
                   <div className="approval-item">
-                    <span className="approval-label">Responsable 1:</span>
+                    <span className="approval-label">
+                      {getResponsableNameFromEmail(demande.email_responsable1)}:
+                    </span>
                     <span className={`approval-status ${demande.approuve_responsable1 ? 'approved' : 'pending'}`}>
                       {demande.approuve_responsable1 ? '✅ Approuvé' : '⏳ En attente'}
                     </span>
+                    <small className="approval-email">{demande.email_responsable1 || 'Non assigné'}</small>
                   </div>
                   <div className="approval-item">
-                    <span className="approval-label">Responsable 2:</span>
+                    <span className="approval-label">
+                      {getResponsableNameFromEmail(demande.email_responsable2)}:
+                    </span>
                     <span className={`approval-status ${demande.approuve_responsable2 ? 'approved' : 'pending'}`}>
                       {demande.approuve_responsable2 ? '✅ Approuvé' : '⏳ En attente'}
                     </span>
+                    <small className="approval-email">{demande.email_responsable2 || 'Non assigné'}</small>
                   </div>
                 </div>
               </div>
