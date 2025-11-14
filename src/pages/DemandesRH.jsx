@@ -484,7 +484,7 @@ const DemandesRH = () => {
                     <span className={`approval-status ${demande.approuve_responsable1 ? 'approved' : 'pending'}`}>
                       {demande.approuve_responsable1 ? '✅ Approuvé' : '⏳ En attente'}
                     </span>
-                    <small className="approval-email">{demande.email_responsable1 || 'Non assigné'}</small>
+                    <small className="approval-email">{demande.mail_responsable1 || 'Non assigné'}</small>
                   </div>
                   <div className="approval-item">
                     <span className="approval-label">
@@ -493,7 +493,7 @@ const DemandesRH = () => {
                     <span className={`approval-status ${demande.approuve_responsable2 ? 'approved' : 'pending'}`}>
                       {demande.approuve_responsable2 ? '✅ Approuvé' : '⏳ En attente'}
                     </span>
-                    <small className="approval-email">{demande.email_responsable2 || 'Non assigné'}</small>
+                    <small className="approval-email">{demande.mail_responsable2 || 'Non assigné'}</small>
                   </div>
                 </div>
               </div>
