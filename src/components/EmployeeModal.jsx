@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { employeesAPI } from '../services/api';
 import ArchiveModal from './ArchiveModal';
 import './EmployeeModal.css';
@@ -8,12 +8,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const [formData, setFormData] = useState({});
   const [saving, setSaving] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
-  const [uploadingDocument, setUploadingDocument] = useState(false);
-  const fileInputRef = useRef(null);
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const [showCamera, setShowCamera] = useState(false);
-  const [stream, setStream] = useState(null);
 
   useEffect(() => {
     if (employee) {
@@ -78,150 +72,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     }
   };
 
-  // Fonction pour gérer l'upload de document
-  const handleDocumentUpload = async (file) => {
-    if (!file) return;
-    
-    setUploadingDocument(true);
-    try {
-      console.log('📤 Upload du document:', file.name);
-      
-      const formData = new FormData();
-      formData.append('document', file);
-      formData.append('employeeId', employee.id);
-      formData.append('type', 'dossier_rh');
-
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/upload-document', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `Erreur upload: ${response.statusText}`);
-      }
-
-      const result = await response.json();
-      console.log('✅ Document uploadé:', result);
-
-      // Mettre à jour l'URL du document dans les données de l'employé
-      const updatedEmployee = await employeesAPI.update(employee.id, {
-        ...formData,
-        dossier_rh: result.filePath
-      });
-
-      setFormData(prev => ({
-        ...prev,
-        dossier_rh: result.filePath
-      }));
-
-      onUpdate(updatedEmployee.data);
-      alert('✅ Document RH ajouté avec succès!');
-
-    } catch (error) {
-      console.error('❌ Erreur upload document:', error);
-      alert('❌ Erreur lors de l\'upload du document: ' + error.message);
-    } finally {
-      setUploadingDocument(false);
-    }
-  };
-
-  // Gérer la sélection de fichier
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      // Vérifier le type de fichier
-      if (!file.type.includes('pdf') && !file.type.includes('image')) {
-        alert('❌ Veuillez sélectionner un fichier PDF ou une image');
-        return;
-      }
-      
-      if (file.size > 10 * 1024 * 1024) { // 10MB max
-        alert('❌ Le fichier est trop volumineux (max 10MB)');
-        return;
-      }
-      
-      handleDocumentUpload(file);
-    }
-    // Reset l'input file
-    e.target.value = '';
-  };
-
-  // Démarrer la caméra
-  const startCamera = async () => {
-    try {
-      // Vérifier si la caméra est disponible
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        alert('❌ L\'accès à la caméra n\'est pas disponible sur cet appareil');
-        return;
-      }
-
-      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        } 
-      });
-      setStream(mediaStream);
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream;
-      }
-      setShowCamera(true);
-    } catch (error) {
-      console.error('❌ Erreur caméra:', error);
-      if (error.name === 'NotAllowedError') {
-        alert('❌ Permission caméra refusée. Veuillez autoriser l\'accès à la caméra.');
-      } else if (error.name === 'NotFoundError') {
-        alert('❌ Aucune caméra disponible sur cet appareil.');
-      } else {
-        alert('❌ Impossible d\'accéder à la caméra: ' + error.message);
-      }
-    }
-  };
-
-  // Arrêter la caméra
-  const stopCamera = () => {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      setStream(null);
-    }
-    setShowCamera(false);
-  };
-
-  // Prendre une photo
-  const takePhoto = () => {
-    if (videoRef.current && canvasRef.current) {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      const context = canvas.getContext('2d');
-      
-      // Ajuster la taille du canvas à la vidéo
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      
-      // Dessiner l'image de la vidéo sur le canvas
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      
-      // Convertir en blob
-      canvas.toBlob((blob) => {
-        if (blob) {
-          // Créer un fichier à partir du blob
-          const file = new File([blob], `photo_rh_${employee.matricule}_${Date.now()}.jpg`, {
-            type: 'image/jpeg'
-          });
-          handleDocumentUpload(file);
-        }
-      }, 'image/jpeg', 0.8);
-      
-      stopCamera();
-    }
-  };
-
   const formatDateForInput = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -260,16 +110,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       return dossierRh;
     }
     
-    // Si c'est un chemin local (commence par /rh-), construire l'URL complète
-    if (dossierRh.startsWith('/rh-')) {
-      return `${window.location.origin}${dossierRh}`;
-    }
-    
-    // Pour les anciens chemins qui pourraient être relatifs
-    if (dossierRh.startsWith('/') || dossierRh.startsWith('./')) {
-      return `${window.location.origin}${dossierRh.startsWith('/') ? '' : '/'}${dossierRh}`;
-    }
-    
     return null;
   };
 
@@ -288,17 +128,13 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       const pathname = urlObj.pathname;
       const filename = pathname.split('/').pop();
       
-      if (filename) {
+      if (filename && filename.includes('.pdf')) {
         return decodeURIComponent(filename);
       }
       
       return `Document - ${urlObj.hostname}`;
     } catch {
-      // Si ce n'est pas une URL valide, retourner le nom original
-      if (url.startsWith('/rh-')) {
-        return url.split('/').pop() || 'Document RH';
-      }
-      return 'Document RH';
+      return 'Document PDF';
     }
   };
 
@@ -310,14 +146,19 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       return;
     }
 
-    // Ouvrir le document dans un nouvel onglet
+    if (!isPdfUrl(url)) {
+      if (confirm('⚠️ Ce lien ne semble pas être un PDF. Voulez-vous quand même l\'ouvrir?')) {
+        window.open(url, '_blank');
+      }
+      return;
+    }
+
     window.open(url, '_blank');
   };
 
   const handleClose = () => {
     setIsEditing(false);
     setFormData(employee);
-    stopCamera();
     onClose();
   };
 
@@ -401,33 +242,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     )}
                   </span>
                 </div>
-                
-                {/* Boutons d'action pour les documents */}
-                <div className="document-actions">
-                  <button 
-                    className="upload-document-btn"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingDocument}
-                  >
-                    {uploadingDocument ? '⏳ Upload...' : '📁 Ajouter Dossier RH'}
-                  </button>
-                  
-                  <button 
-                    className="camera-btn"
-                    onClick={startCamera}
-                    disabled={uploadingDocument}
-                  >
-                    📸 Prendre une photo
-                  </button>
-                  
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    accept=".pdf,image/*"
-                    style={{ display: 'none' }}
-                  />
-                </div>
               </div>
             </div>
           ) : (
@@ -469,33 +283,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     placeholder="https://exemple.com/document.pdf" 
                   />
                 </div>
-                
-                {/* Boutons d'action pour les documents en mode édition aussi */}
-                <div className="document-actions">
-                  <button 
-                    className="upload-document-btn"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingDocument}
-                  >
-                    {uploadingDocument ? '⏳ Upload...' : '📁 Ajouter Dossier RH'}
-                  </button>
-                  
-                  <button 
-                    className="camera-btn"
-                    onClick={startCamera}
-                    disabled={uploadingDocument}
-                  >
-                    📸 Prendre une photo
-                  </button>
-                  
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    accept=".pdf,image/*"
-                    style={{ display: 'none' }}
-                  />
-                </div>
               </div>
 
               {/* Bouton d'archivage conditionnel */}
@@ -516,33 +303,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
             </div>
           )}
         </div>
-
-        {/* Interface caméra */}
-        {showCamera && (
-          <div className="camera-overlay">
-            <div className="camera-container">
-              <div className="camera-header">
-                <h3>📸 Prendre une photo</h3>
-                <button className="close-camera-btn" onClick={stopCamera}>×</button>
-              </div>
-              <video 
-                ref={videoRef} 
-                autoPlay 
-                playsInline
-                className="camera-video"
-              />
-              <canvas ref={canvasRef} style={{ display: 'none' }} />
-              <div className="camera-controls">
-                <button className="take-photo-btn" onClick={takePhoto}>
-                  📷 Prendre la photo
-                </button>
-                <button className="cancel-camera-btn" onClick={stopCamera}>
-                  ❌ Annuler
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="employee-modal-footer">
           {!isEditing ? (
