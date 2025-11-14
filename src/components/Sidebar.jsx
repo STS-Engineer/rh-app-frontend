@@ -9,7 +9,7 @@ const Sidebar = () => {
   const menuItems = [
     { path: '/dashboard', label: 'Tableau de Bord', icon: '📊' },
     { path: '/team', label: 'Équipe', icon: '👥' },
-    { path: '/demandes-rh', label: 'Demandes RH', icon: '📋' }, // Nouvel item
+    { path: '/demandes', label: 'Demandes RH', icon: '📝' },
     { path: '/archives', label: 'Archives', icon: '📁' },
     { path: '/statistics', label: 'Statistiques', icon: '📈' }, 
     { path: '/settings', label: 'Paramètres', icon: '⚙️' },
