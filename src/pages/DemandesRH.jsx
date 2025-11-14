@@ -149,10 +149,10 @@ const DemandesRH = () => {
       if (demande.approuve_responsable1 && demande.approuve_responsable2) {
         return '✅ Approuvée par les deux responsables';
       } else if (demande.approuve_responsable1) {
-        const responsable1 = getResponsableNameFromEmail(demande.email_responsable1);
+        const responsable1 = getResponsableNameFromEmail(demande.mail_responsable1);
         return `✅ Approuvée par ${responsable1} (en attente du 2ème responsable)`;
       } else if (demande.approuve_responsable2) {
-        const responsable2 = getResponsableNameFromEmail(demande.email_responsable2);
+        const responsable2 = getResponsableNameFromEmail(demande.mail_responsable2);
         return `✅ Approuvée par ${responsable2} (en attente du 1er responsable)`;
       }
     } else if (demande.statut === 'refuse') {
@@ -479,7 +479,7 @@ const DemandesRH = () => {
                 <div className="approval-details">
                   <div className="approval-item">
                     <span className="approval-label">
-                      {getResponsableNameFromEmail(demande.email_responsable1)}:
+                      {getResponsableNameFromEmail(demande.mail_responsable1)}:
                     </span>
                     <span className={`approval-status ${demande.approuve_responsable1 ? 'approved' : 'pending'}`}>
                       {demande.approuve_responsable1 ? '✅ Approuvé' : '⏳ En attente'}
@@ -488,7 +488,7 @@ const DemandesRH = () => {
                   </div>
                   <div className="approval-item">
                     <span className="approval-label">
-                      {getResponsableNameFromEmail(demande.email_responsable2)}:
+                      {getResponsableNameFromEmail(demande.mail_responsable2)}:
                     </span>
                     <span className={`approval-status ${demande.approuve_responsable2 ? 'approved' : 'pending'}`}>
                       {demande.approuve_responsable2 ? '✅ Approuvé' : '⏳ En attente'}
