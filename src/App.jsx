@@ -18,7 +18,10 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
+          {/* Route publique */}
           <Route path="/" element={<Login />} />
+          
+          {/* Routes protégées */}
           <Route 
             path="/dashboard" 
             element={
@@ -27,22 +30,7 @@ function App() {
               </PrivateRoute>
             } 
           />
-          <Route 
-            path="/demandes-rh" 
-            element={
-              <PrivateRoute>
-                <DemandesRH />
-              </PrivateRoute>
-            } 
-          />
-          <Route 
-            path="/archives" 
-            element={
-              <PrivateRoute>
-                <Archives />
-              </PrivateRoute>
-            } 
-          />
+          
           <Route 
             path="/team" 
             element={
@@ -51,6 +39,25 @@ function App() {
               </PrivateRoute>
             } 
           />
+          
+          <Route 
+            path="/demandes" 
+            element={
+              <PrivateRoute>
+                <DemandesRH />
+              </PrivateRoute>
+            } 
+          />
+          
+          <Route 
+            path="/archives" 
+            element={
+              <PrivateRoute>
+                <Archives />
+              </PrivateRoute>
+            } 
+          />
+          
           <Route 
             path="/statistics" 
             element={
@@ -59,6 +66,8 @@ function App() {
               </PrivateRoute>
             } 
           />
+          
+          {/* Route par défaut - redirige vers dashboard si connecté */}
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </div>
