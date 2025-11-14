@@ -89,7 +89,61 @@ const DemandesRH = () => {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('fr-FR');
+  };
+
+  const handleApprouver = async (demandeId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/demandes/${demandeId}/statut`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ statut: 'approuve' })
+      });
+
+      if (response.ok) {
+        fetchDemandes(); // Recharger la liste
+      } else {
+        console.error('Erreur lors de l\'approbation');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+
+  const handleRefuser = async (demandeId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/demandes/${demandeId}/statut`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ statut: 'refuse' })
+      });
+
+      if (response.ok) {
+        fetchDemandes(); // Recharger la liste
+      } else {
+        console.error('Erreur lors du refus');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    }
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      type_demande: '',
+      statut: '',
+      date_debut: '',
+      date_fin: ''
+    });
   };
 
   return (
@@ -101,6 +155,13 @@ const DemandesRH = () => {
 
       {/* Filtres */}
       <div className="filters-section">
+        <div className="filters-header">
+          <h3>🔍 Filtres de recherche</h3>
+          <button className="btn-clear" onClick={clearFilters}>
+            Effacer les filtres
+          </button>
+        </div>
+        
         <div className="filters-grid">
           <div className="filter-group">
             <label>Type de demande</label>
@@ -126,7 +187,7 @@ const DemandesRH = () => {
               <option value="">Tous les statuts</option>
               {statuts.map(statut => (
                 <option key={statut} value={statut}>
-                  {getStatutBadge(statut).props.children}
+                  {statut}
                 </option>
               ))}
             </select>
@@ -151,17 +212,64 @@ const DemandesRH = () => {
           </div>
         </div>
 
-        <button className="btn-primary" onClick={fetchDemandes}>
-          🔄 Actualiser
-        </button>
+        <div className="filters-actions">
+          <button className="btn-primary" onClick={fetchDemandes}>
+            🔄 Appliquer les filtres
+          </button>
+        </div>
+      </div>
+
+      {/* Statistiques rapides */}
+      <div className="stats-section">
+        <div className="stat-card">
+          <div className="stat-icon">📥</div>
+          <div className="stat-info">
+            <div className="stat-number">{demandes.length}</div>
+            <div className="stat-label">Total demandes</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon">⏳</div>
+          <div className="stat-info">
+            <div className="stat-number">
+              {demandes.filter(d => d.statut === 'en_attente').length}
+            </div>
+            <div className="stat-label">En attente</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon">✅</div>
+          <div className="stat-info">
+            <div className="stat-number">
+              {demandes.filter(d => d.statut === 'approuve').length}
+            </div>
+            <div className="stat-label">Approuvées</div>
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon">❌</div>
+          <div className="stat-info">
+            <div className="stat-number">
+              {demandes.filter(d => d.statut === 'refuse').length}
+            </div>
+            <div className="stat-label">Refusées</div>
+          </div>
+        </div>
       </div>
 
       {/* Liste des demandes */}
       <div className="demandes-list">
         {loading ? (
-          <div className="loading">Chargement des demandes...</div>
+          <div className="loading">
+            <div className="spinner"></div>
+            Chargement des demandes...
+          </div>
         ) : demandes.length === 0 ? (
-          <div className="no-data">Aucune demande trouvée</div>
+          <div className="no-data">
+            <div className="no-data-icon">📭</div>
+            <h3>Aucune demande trouvée</h3>
+            <p>Ajustez vos filtres ou vérifiez si des demandes existent</p>
+          </div>
         ) : (
           <div className="demandes-grid">
             {demandes.map(demande => (
@@ -169,15 +277,32 @@ const DemandesRH = () => {
                 <div className="demande-header">
                   <div className="demande-info">
                     <h3>{demande.titre}</h3>
-                    <p className="employe-name">
-                      {demande.employe_prenom} {demande.employe_nom}
-                    </p>
-                    <p className="employe-poste">{demande.employe_poste}</p>
+                    <div className="employe-info">
+                      <div className="employe-avatar">
+                        {demande.employe_photo ? (
+                          <img src={demande.employe_photo} alt={`${demande.employe_prenom} ${demande.employe_nom}`} />
+                        ) : (
+                          <div className="avatar-placeholder">
+                            {demande.employe_prenom?.charAt(0)}{demande.employe_nom?.charAt(0)}
+                          </div>
+                        )}
+                      </div>
+                      <div className="employe-details">
+                        <p className="employe-name">
+                          {demande.employe_prenom} {demande.employe_nom}
+                        </p>
+                        <p className="employe-poste">{demande.employe_poste}</p>
+                        <p className="employe-matricule">Matricule: {demande.employe_matricule}</p>
+                      </div>
+                    </div>
                   </div>
                   <div className="demande-meta">
                     {getStatutBadge(demande.statut)}
                     <span className="demande-type">
                       {getTypeDemandeLabel(demande.type_demande)}
+                    </span>
+                    <span className="demande-date">
+                      Créée le: {formatDate(demande.created_at)}
                     </span>
                   </div>
                 </div>
@@ -210,14 +335,33 @@ const DemandesRH = () => {
                       <span className="value">{demande.frais_deplacement} €</span>
                     </div>
                   )}
+
+                  {demande.commentaire_refus && (
+                    <div className="detail-item">
+                      <span className="label">Commentaire:</span>
+                      <span className="value commentaire">{demande.commentaire_refus}</span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="demande-actions">
-                  <button className="btn-secondary">Voir détails</button>
+                  <button className="btn-secondary">
+                    👁️ Voir détails
+                  </button>
                   {demande.statut === 'en_attente' && (
                     <>
-                      <button className="btn-success">Approuver</button>
-                      <button className="btn-danger">Refuser</button>
+                      <button 
+                        className="btn-success"
+                        onClick={() => handleApprouver(demande.id)}
+                      >
+                        ✅ Approuver
+                      </button>
+                      <button 
+                        className="btn-danger"
+                        onClick={() => handleRefuser(demande.id)}
+                      >
+                        ❌ Refuser
+                      </button>
                     </>
                   )}
                 </div>
