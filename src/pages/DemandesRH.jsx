@@ -65,7 +65,7 @@ const DemandesRH = () => {
       }
 
       const data = await response.json();
-      console.log('✅ Données reçues avec emails responsables:', data.demandes);
+      console.log('✅ Données reçues avec responsables:', data.demandes);
       setDemandes(data.demandes || []);
       
     } catch (error) {
@@ -119,17 +119,21 @@ const DemandesRH = () => {
     });
   };
 
-  const getResponsableNameFromEmail = (email) => {
-    if (!email) return 'Non assigné';
-    
-    // Extraire le nom à partir de l'email (ex: "john.doe@entreprise.com" -> "John Doe")
-    const username = email.split('@')[0];
-    const nameParts = username.split('.');
-    const formattedName = nameParts.map(part => 
-      part.charAt(0).toUpperCase() + part.slice(1)
-    ).join(' ');
-    
-    return formattedName;
+  // Fonction pour obtenir le nom complet du responsable
+  const getResponsableName = (responsablePrenom, responsableNom, email) => {
+    if (responsablePrenom && responsableNom) {
+      return `${responsablePrenom} ${responsableNom}`;
+    }
+    if (email) {
+      // Fallback: extraire le nom de l'email
+      const username = email.split('@')[0];
+      const nameParts = username.split('.');
+      const formattedName = nameParts.map(part => 
+        part.charAt(0).toUpperCase() + part.slice(1)
+      ).join(' ');
+      return formattedName;
+    }
+    return 'Non assigné';
   };
 
   const getApprovalStatus = (demande) => {
@@ -137,10 +141,10 @@ const DemandesRH = () => {
       if (demande.approuve_responsable1 && demande.approuve_responsable2) {
         return '✅ Approuvée par les deux responsables';
       } else if (demande.approuve_responsable1) {
-        const responsable1 = getResponsableNameFromEmail(demande.email_responsable1);
+        const responsable1 = getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1);
         return `✅ Approuvée par ${responsable1} (en attente du 2ème responsable)`;
       } else if (demande.approuve_responsable2) {
-        const responsable2 = getResponsableNameFromEmail(demande.email_responsable2);
+        const responsable2 = getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2);
         return `✅ Approuvée par ${responsable2} (en attente du 1er responsable)`;
       }
     } else if (demande.statut === 'refuse') {
@@ -467,21 +471,21 @@ const DemandesRH = () => {
                 <div className="approval-details">
                   <div className="approval-item">
                     <span className="approval-label">
-                      {getResponsableNameFromEmail(demande.email_responsable1)}:
+                      Responsable 1: {getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1)}
                     </span>
                     <span className={`approval-status ${demande.approuve_responsable1 ? 'approved' : 'pending'}`}>
                       {demande.approuve_responsable1 ? '✅ Approuvé' : '⏳ En attente'}
                     </span>
-                    <small className="approval-email">{demande.email_responsable1 || 'Non assigné'}</small>
+                    <small className="approval-email">{demande.mail_responsable1 || 'Non assigné'}</small>
                   </div>
                   <div className="approval-item">
                     <span className="approval-label">
-                      {getResponsableNameFromEmail(demande.email_responsable2)}:
+                      Responsable 2: {getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2)}
                     </span>
                     <span className={`approval-status ${demande.approuve_responsable2 ? 'approved' : 'pending'}`}>
                       {demande.approuve_responsable2 ? '✅ Approuvé' : '⏳ En attente'}
                     </span>
-                    <small className="approval-email">{demande.email_responsable2 || 'Non assigné'}</small>
+                    <small className="approval-email">{demande.mail_responsable2 || 'Non assigné'}</small>
                   </div>
                 </div>
               </div>
