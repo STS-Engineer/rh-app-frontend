@@ -5,7 +5,7 @@ import Dashboard from './pages/Dashboard';
 import Team from './pages/Team';
 import Archives from './pages/Archives';
 import Statistics from './pages/Statistics';
-import DemandesRH from './pages/DemandesRH';
+import DemandesRh from './pages/DemandesRh';
 import './styles/App.css';
 
 const PrivateRoute = ({ children }) => {
@@ -18,56 +18,56 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          {/* Route publique */}
+          {/* Public */}
           <Route path="/" element={<Login />} />
-          
-          {/* Routes protégées */}
-          <Route 
-            path="/dashboard" 
+
+          {/* Privées */}
+          <Route
+            path="/dashboard"
             element={
               <PrivateRoute>
                 <Dashboard />
               </PrivateRoute>
-            } 
+            }
           />
-          
-          <Route 
-            path="/team" 
-            element={
-              <PrivateRoute>
-                <Team />
-              </PrivateRoute>
-            } 
-          />
-          
-          <Route 
-            path="/demandes" 
-            element={
-              <PrivateRoute>
-                <DemandesRH />
-              </PrivateRoute>
-            } 
-          />
-          
-          <Route 
-            path="/archives" 
+
+          <Route
+            path="/archives"
             element={
               <PrivateRoute>
                 <Archives />
               </PrivateRoute>
-            } 
+            }
           />
-          
-          <Route 
-            path="/statistics" 
+
+          <Route
+            path="/team"
+            element={
+              <PrivateRoute>
+                <Team />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/statistics"
             element={
               <PrivateRoute>
                 <Statistics />
               </PrivateRoute>
-            } 
+            }
           />
-          
-          {/* Route par défaut - redirige vers dashboard si connecté */}
+
+          <Route
+            path="/demandes"
+            element={
+              <PrivateRoute>
+                <DemandesRh />
+              </PrivateRoute>
+            }
+          />
+
+          {/* Fallback */}
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </div>
