@@ -1,337 +1,233 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import Sidebar from '../components/Sidebar';
-import './DemandesRh.css';
+import React, { useState, useEffect } from 'react';
+import './DemandesRH.css';
 
-// Adapte cette constante à la façon dont tu appelles déjà ton backend
-const API_BASE_URL =
-  import.meta?.env?.VITE_API_URL ||
-  process.env.REACT_APP_API_URL ||
-  'http://localhost:5000';
-
-const DemandesRh = () => {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+const DemandesRH = () => {
   const [demandes, setDemandes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    type_demande: '',
+    statut: '',
+    date_debut: '',
+    date_fin: ''
+  });
 
-  // Filtres
-  const [statutFilter, setStatutFilter] = useState('all');
-  const [typeDemandeFilter, setTypeDemandeFilter] = useState('all');
-  const [search, setSearch] = useState('');
+  const typesDemande = [
+    'congé',
+    'autorisation_absence',
+    'frais_deplacement',
+    'autre'
+  ];
+
+  const statuts = [
+    'en_attente',
+    'approuve',
+    'refuse',
+    'en_cours'
+  ];
 
   useEffect(() => {
-    const fetchDemandes = async () => {
-      try {
-        setLoading(true);
-        setError('');
-
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setError('Token manquant, veuillez vous reconnecter.');
-          setLoading(false);
-          return;
-        }
-
-        const res = await fetch(`${API_BASE_URL}/api/demandes-rh`, {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!res.ok) {
-          throw new Error(`Erreur API (${res.status})`);
-        }
-
-        const data = await res.json();
-        setDemandes(data);
-      } catch (err) {
-        console.error('Erreur fetch demandes:', err);
-        setError("Impossible de charger les demandes RH.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchDemandes();
-  }, []);
+  }, [filters]);
 
-  // Liste des valeurs pour les selects, basée sur les données
-  const typeDemandeOptions = useMemo(() => {
-    const set = new Set();
-    demandes.forEach((d) => {
-      if (d.type_demande) set.add(d.type_demande);
-    });
-    return Array.from(set);
-  }, [demandes]);
-
-  const statutOptions = ['en_attente', 'approuvee', 'refusee', 'annulee'];
-
-  // Filtres appliqués côté client
-  const filteredDemandes = useMemo(() => {
-    return demandes.filter((d) => {
-      // Filtre statut
-      if (statutFilter !== 'all' && (d.statut || '').toLowerCase() !== statutFilter) {
-        return false;
-      }
-
-      // Filtre type demande
-      if (
-        typeDemandeFilter !== 'all' &&
-        (d.type_demande || '').toLowerCase() !== typeDemandeFilter.toLowerCase()
-      ) {
-        return false;
-      }
-
-      // Recherche texte sur titre + nom/prenom
-      if (search.trim()) {
-        const s = search.toLowerCase();
-        const titre = (d.titre || '').toLowerCase();
-        const nomComplet = `${d.prenom || ''} ${d.nom || ''}`.toLowerCase();
-        if (!titre.includes(s) && !nomComplet.includes(s)) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [demandes, statutFilter, typeDemandeFilter, search]);
-
-  // Stats
-  const stats = useMemo(() => {
-    const total = demandes.length;
-    const enAttente = demandes.filter(
-      (d) => (d.statut || '').toLowerCase() === 'en_attente'
-    ).length;
-    const approuvees = demandes.filter(
-      (d) => (d.statut || '').toLowerCase() === 'approuvee'
-    ).length;
-    const refusees = demandes.filter(
-      (d) => (d.statut || '').toLowerCase() === 'refusee'
-    ).length;
-
-    return { total, enAttente, approuvees, refusees };
-  }, [demandes]);
-
-  const formatDate = (value) => {
-    if (!value) return '-';
+  const fetchDemandes = async () => {
     try {
-      return new Date(value).toLocaleDateString('fr-FR');
-    } catch {
-      return value;
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      
+      const queryParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) queryParams.append(key, value);
+      });
+
+      const response = await fetch(`/api/demandes?${queryParams}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDemandes(data.demandes || []);
+      } else {
+        console.error('Erreur lors de la récupération des demandes');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const formatHeure = (value) => {
-    if (!value) return '-';
-    return value.toString().slice(0, 5); // "HH:MM"
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
   };
 
-  const renderStatutBadge = (statut) => {
-    const s = (statut || '').toLowerCase();
-    let className = 'badge badge-default';
-    let label = statut || 'N/A';
-
-    if (s === 'en_attente') {
-      className = 'badge badge-warning';
-      label = 'En attente';
-    } else if (s === 'approuvee') {
-      className = 'badge badge-success';
-      label = 'Approuvée';
-    } else if (s === 'refusee') {
-      className = 'badge badge-danger';
-      label = 'Refusée';
-    } else if (s === 'annulee') {
-      className = 'badge badge-muted';
-      label = 'Annulée';
-    }
-
-    return <span className={className}>{label}</span>;
+  const getStatutBadge = (statut) => {
+    const statutConfig = {
+      'en_attente': { label: 'En attente', class: 'statut-en-attente' },
+      'approuve': { label: 'Approuvé', class: 'statut-approuve' },
+      'refuse': { label: 'Refusé', class: 'statut-refuse' },
+      'en_cours': { label: 'En cours', class: 'statut-en-cours' }
+    };
+    
+    const config = statutConfig[statut] || { label: statut, class: 'statut-default' };
+    return <span className={`statut-badge ${config.class}`}>{config.label}</span>;
   };
 
-  const renderApprovalChip = (value) => {
-    if (value === true) return <span className="chip chip-ok">✔</span>;
-    if (value === false) return <span className="chip chip-ko">✖</span>;
-    return <span className="chip chip-pending">•</span>;
+  const getTypeDemandeLabel = (type) => {
+    const labels = {
+      'congé': 'Congé',
+      'autorisation_absence': 'Autorisation d\'absence',
+      'frais_deplacement': 'Frais de déplacement',
+      'autre': 'Autre'
+    };
+    return labels[type] || type;
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('fr-FR');
   };
 
   return (
-    <div className="page-layout">
-      <Sidebar />
+    <div className="demandes-rh">
+      <div className="demandes-header">
+        <h1>📋 Demandes RH</h1>
+        <p>Gestion des demandes de congés, absences et frais</p>
+      </div>
 
-      <div className="page-content demandes-page">
-        <header className="page-header">
-          <div>
-            <h1>Demandes RH</h1>
-            <p className="page-subtitle">
-              Vue globale des demandes de congé, déplacement et autres demandes RH.
-            </p>
-          </div>
-          <div className="header-badge">
-            {stats.total} demande{stats.total > 1 ? 's' : ''}
-          </div>
-        </header>
-
-        {/* Cartes de stats */}
-        <section className="stats-grid">
-          <div className="stat-card">
-            <p className="stat-label">Total</p>
-            <p className="stat-value">{stats.total}</p>
-          </div>
-          <div className="stat-card stat-card-warning">
-            <p className="stat-label">En attente</p>
-            <p className="stat-value">{stats.enAttente}</p>
-          </div>
-          <div className="stat-card stat-card-success">
-            <p className="stat-label">Approuvées</p>
-            <p className="stat-value">{stats.approuvees}</p>
-          </div>
-          <div className="stat-card stat-card-danger">
-            <p className="stat-label">Refusées</p>
-            <p className="stat-value">{stats.refusees}</p>
-          </div>
-        </section>
-
-        {/* Filtres */}
-        <section className="filters-bar">
+      {/* Filtres */}
+      <div className="filters-section">
+        <div className="filters-grid">
           <div className="filter-group">
-            <label>Recherche</label>
-            <input
-              type="text"
-              placeholder="Titre, nom d'employé..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
+            <label>Type de demande</label>
+            <select 
+              value={filters.type_demande} 
+              onChange={(e) => handleFilterChange('type_demande', e.target.value)}
+            >
+              <option value="">Tous les types</option>
+              {typesDemande.map(type => (
+                <option key={type} value={type}>
+                  {getTypeDemandeLabel(type)}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="filter-group">
             <label>Statut</label>
-            <select
-              value={statutFilter}
-              onChange={(e) => setStatutFilter(e.target.value)}
+            <select 
+              value={filters.statut} 
+              onChange={(e) => handleFilterChange('statut', e.target.value)}
             >
-              <option value="all">Tous</option>
-              {statutOptions.map((s) => (
-                <option key={s} value={s}>
-                  {s === 'en_attente'
-                    ? 'En attente'
-                    : s === 'approuvee'
-                    ? 'Approuvée'
-                    : s === 'refusee'
-                    ? 'Refusée'
-                    : 'Annulée'}
+              <option value="">Tous les statuts</option>
+              {statuts.map(statut => (
+                <option key={statut} value={statut}>
+                  {getStatutBadge(statut).props.children}
                 </option>
               ))}
             </select>
           </div>
 
           <div className="filter-group">
-            <label>Type de demande</label>
-            <select
-              value={typeDemandeFilter}
-              onChange={(e) => setTypeDemandeFilter(e.target.value)}
-            >
-              <option value="all">Tous</option>
-              {typeDemandeOptions.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+            <label>Date de début</label>
+            <input 
+              type="date" 
+              value={filters.date_debut}
+              onChange={(e) => handleFilterChange('date_debut', e.target.value)}
+            />
           </div>
-        </section>
 
-        {/* Contenu principal */}
-        <section className="table-section">
-          {loading && <div className="info-message">Chargement des demandes...</div>}
-          {error && <div className="error-message">{error}</div>}
+          <div className="filter-group">
+            <label>Date de fin</label>
+            <input 
+              type="date" 
+              value={filters.date_fin}
+              onChange={(e) => handleFilterChange('date_fin', e.target.value)}
+            />
+          </div>
+        </div>
 
-          {!loading && !error && filteredDemandes.length === 0 && (
-            <div className="info-message">
-              Aucune demande ne correspond aux filtres actuels.
-            </div>
-          )}
+        <button className="btn-primary" onClick={fetchDemandes}>
+          🔄 Actualiser
+        </button>
+      </div>
 
-          {!loading && !error && filteredDemandes.length > 0 && (
-            <div className="table-wrapper">
-              <table className="demandes-table">
-                <thead>
-                  <tr>
-                    <th>Date demande</th>
-                    <th>Titre</th>
-                    <th>Employé</th>
-                    <th>Type</th>
-                    <th>Période</th>
-                    <th>Statut</th>
-                    <th>Resp. 1</th>
-                    <th>Resp. 2</th>
-                    <th>Frais</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredDemandes.map((d) => (
-                    <tr key={d.id}>
-                      <td>{formatDate(d.created_at)}</td>
-                      <td className="cell-titre">{d.titre || '-'}</td>
-                      <td>
-                        <div className="cell-employe">
-                          <div className="avatar-circle">
-                            {((d.prenom || '?')[0] + (d.nom || '?')[0]).toUpperCase()}
-                          </div>
-                          <div>
-                            <div className="employe-name">
-                              {d.prenom} {d.nom}
-                            </div>
-                            <div className="employe-job">
-                              {d.poste || '-'} {d.site_dep ? `• ${d.site_dep}` : ''}
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="cell-type">
-                          <span className="type-main">{d.type_demande || '-'}</span>
-                          {d.type_conge && (
-                            <span className="type-sub">{d.type_conge}</span>
-                          )}
-                          {d.type_conge_autre && (
-                            <span className="type-sub">
-                              Autre : {d.type_conge_autre}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="cell-periode">
-                          <span>
-                            Du {formatDate(d.date_depart)} au {formatDate(d.date_retour)}
-                          </span>
-                          <span className="periode-heure">
-                            {d.demi_journee
-                              ? 'Demi-journée'
-                              : `${formatHeure(d.heure_depart)} → ${formatHeure(
-                                  d.heure_retour
-                                )}`}
-                          </span>
-                        </div>
-                      </td>
-                      <td>{renderStatutBadge(d.statut)}</td>
-                      <td>{renderApprovalChip(d.approuve_responsable1)}</td>
-                      <td>{renderApprovalChip(d.approuve_responsable2)}</td>
-                      <td>
-                        {d.frais_deplacement
-                          ? `${Number(d.frais_deplacement).toFixed(2)} DT`
-                          : '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
+      {/* Liste des demandes */}
+      <div className="demandes-list">
+        {loading ? (
+          <div className="loading">Chargement des demandes...</div>
+        ) : demandes.length === 0 ? (
+          <div className="no-data">Aucune demande trouvée</div>
+        ) : (
+          <div className="demandes-grid">
+            {demandes.map(demande => (
+              <div key={demande.id} className="demande-card">
+                <div className="demande-header">
+                  <div className="demande-info">
+                    <h3>{demande.titre}</h3>
+                    <p className="employe-name">
+                      {demande.employe_prenom} {demande.employe_nom}
+                    </p>
+                    <p className="employe-poste">{demande.employe_poste}</p>
+                  </div>
+                  <div className="demande-meta">
+                    {getStatutBadge(demande.statut)}
+                    <span className="demande-type">
+                      {getTypeDemandeLabel(demande.type_demande)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="demande-details">
+                  {demande.date_depart && (
+                    <div className="detail-item">
+                      <span className="label">Date de départ:</span>
+                      <span className="value">{formatDate(demande.date_depart)}</span>
+                    </div>
+                  )}
+                  
+                  {demande.date_retour && (
+                    <div className="detail-item">
+                      <span className="label">Date de retour:</span>
+                      <span className="value">{formatDate(demande.date_retour)}</span>
+                    </div>
+                  )}
+
+                  {demande.type_conge && (
+                    <div className="detail-item">
+                      <span className="label">Type de congé:</span>
+                      <span className="value">{demande.type_conge}</span>
+                    </div>
+                  )}
+
+                  {demande.frais_deplacement && (
+                    <div className="detail-item">
+                      <span className="label">Frais de déplacement:</span>
+                      <span className="value">{demande.frais_deplacement} €</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="demande-actions">
+                  <button className="btn-secondary">Voir détails</button>
+                  {demande.statut === 'en_attente' && (
+                    <>
+                      <button className="btn-success">Approuver</button>
+                      <button className="btn-danger">Refuser</button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 };
 
-export default DemandesRh;
+export default DemandesRH;
