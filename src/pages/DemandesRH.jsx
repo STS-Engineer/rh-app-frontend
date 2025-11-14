@@ -65,7 +65,28 @@ const DemandesRH = () => {
       }
 
       const data = await response.json();
-      console.log('✅ Données reçues avec emails responsables:', data.demandes);
+      console.log('✅ Données reçues du backend:', data);
+      
+      // DEBUG AVANCÉ - Vérifier ce qui arrive au frontend
+      console.log('🐛 DEBUG FRONTEND - Structure des données:');
+      if (data.demandes && data.demandes.length > 0) {
+        data.demandes.forEach((demande, index) => {
+          console.log(`\n📋 Demande ${index + 1} au frontend:`);
+          console.log('   ID:', demande.id);
+          console.log('   Employé:', `${demande.employe_prenom} ${demande.employe_nom}`);
+          console.log('   mail_responsable1:', demande.mail_responsable1);
+          console.log('   mail_responsable2:', demande.mail_responsable2);
+          console.log('   approuve_responsable1:', demande.approuve_responsable1);
+          console.log('   approuve_responsable2:', demande.approuve_responsable2);
+          
+          // Test de la fonction de formatage
+          const nom1 = getResponsableNameFromEmail(demande.mail_responsable1);
+          const nom2 = getResponsableNameFromEmail(demande.mail_responsable2);
+          console.log('   🧪 Formatage mail_responsable1:', `"${demande.mail_responsable1}" -> "${nom1}"`);
+          console.log('   🧪 Formatage mail_responsable2:', `"${demande.mail_responsable2}" -> "${nom2}"`);
+        });
+      }
+      
       setDemandes(data.demandes || []);
       
     } catch (error) {
@@ -78,6 +99,7 @@ const DemandesRH = () => {
   };
 
   const handleFilterChange = (key, value) => {
+    console.log(`🎯 Changement filtre ${key}:`, value);
     setFilters(prev => ({
       ...prev,
       [key]: value
@@ -120,50 +142,71 @@ const DemandesRH = () => {
   };
 
   const getResponsableNameFromEmail = (email) => {
-  if (!email || email === '' || email === null || email === undefined) {
-    return 'Non assigné';
-  }
-  
-  // Vérifier si c'est déjà un nom formaté
-  if (email.includes(' ')) {
-    return email; // C'est déjà un nom
-  }
-  
-  // Extraire le nom à partir de l'email (ex: "john.doe@entreprise.com" -> "John Doe")
-  try {
-    const username = email.split('@')[0];
-    const nameParts = username.split('.');
-    const formattedName = nameParts.map(part => 
-      part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
-    ).join(' ');
+    console.log('🔧 Formatage email reçu:', email, '(type:', typeof email, ')');
     
-    return formattedName;
-  } catch (error) {
-    console.warn('Erreur formatage email:', email, error);
-    return email; // Retourner l'email original si erreur
-  }
-};
+    if (!email || email === '' || email === null || email === undefined || email === 'null') {
+      console.log('🔧 Email vide ou null, retourne "Non assigné"');
+      return 'Non assigné';
+    }
+    
+    // Nettoyer l'email (au cas où il y aurait des espaces)
+    const cleanEmail = email.toString().trim();
+    
+    // Vérifier si c'est déjà un nom formaté (contient un espace)
+    if (cleanEmail.includes(' ')) {
+      console.log('🔧 C\'est déjà un nom formaté:', cleanEmail);
+      return cleanEmail;
+    }
+    
+    // Vérifier que c'est un email valide
+    if (!cleanEmail.includes('@')) {
+      console.log('🔧 Ce n\'est pas un email valide:', cleanEmail);
+      return cleanEmail; // Retourner la valeur telle quelle
+    }
+    
+    // Extraire le nom à partir de l'email
+    try {
+      const username = cleanEmail.split('@')[0];
+      const nameParts = username.split(/[._-]/);
+      const formattedName = nameParts.map(part => 
+        part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+      ).join(' ');
+      
+      console.log('🔧 Email formaté:', cleanEmail, '->', formattedName);
+      return formattedName;
+    } catch (error) {
+      console.warn('❌ Erreur formatage email:', cleanEmail, error);
+      return cleanEmail;
+    }
+  };
 
   const getApprovalStatus = (demande) => {
     if (demande.statut === 'approuve') {
       if (demande.approuve_responsable1 && demande.approuve_responsable2) {
-        return '✅ Approuvée par les deux responsables';
+        const responsable1 = getResponsableNameFromEmail(demande.mail_responsable1);
+        const responsable2 = getResponsableNameFromEmail(demande.mail_responsable2);
+        return `✅ Approuvée par ${responsable1} et ${responsable2}`;
       } else if (demande.approuve_responsable1) {
         const responsable1 = getResponsableNameFromEmail(demande.mail_responsable1);
         return `✅ Approuvée par ${responsable1} (en attente du 2ème responsable)`;
       } else if (demande.approuve_responsable2) {
         const responsable2 = getResponsableNameFromEmail(demande.mail_responsable2);
         return `✅ Approuvée par ${responsable2} (en attente du 1er responsable)`;
+      } else {
+        return '✅ Approuvée (détails non disponibles)';
       }
     } else if (demande.statut === 'refuse') {
       return `❌ Refusée: ${demande.commentaire_refus || 'Raison non spécifiée'}`;
     } else if (demande.statut === 'en_attente') {
       return '⏳ En attente d\'approbation';
+    } else if (demande.statut === 'en_cours') {
+      return '🔄 En cours de traitement';
     }
     return demande.statut;
   };
 
   const clearFilters = () => {
+    console.log('🗑️ Effacement des filtres');
     setFilters({
       type_demande: '',
       statut: '',
@@ -177,11 +220,30 @@ const DemandesRH = () => {
     fetchDemandes();
   };
 
+  // Fonction de debug pour voir les données
+  const debugData = () => {
+    console.log('🐛 Données de debug:', {
+      filters,
+      demandesCount: demandes.length,
+      typesPresents: [...new Set(demandes.map(d => d.type_demande))],
+      premierEmploye: demandes[0] ? {
+        nom: `${demandes[0].employe_prenom} ${demandes[0].employe_nom}`,
+        mail_responsable1: demandes[0].mail_responsable1,
+        mail_responsable2: demandes[0].mail_responsable2,
+        approuve_responsable1: demandes[0].approuve_responsable1,
+        approuve_responsable2: demandes[0].approuve_responsable2
+      } : 'Aucune donnée'
+    });
+  };
+
   return (
     <div className="demandes-rh">
       <div className="demandes-header">
         <h1>📋 Demandes RH</h1>
         <p>Consultation des demandes de congés, absences et frais</p>
+        <button onClick={debugData} style={{fontSize: '12px', padding: '5px', marginTop: '10px', background: '#f39c12', color: 'white', border: 'none', borderRadius: '3px'}}>
+          🐛 Debug Data
+        </button>
       </div>
 
       {/* Affichage des erreurs */}
@@ -260,7 +322,12 @@ const DemandesRH = () => {
         </div>
 
         <div className="filters-info">
-          <small>Les filtres s'appliquent automatiquement</small>
+          <small>Filtres actifs: 
+            {filters.type_demande && ` Type: ${getTypeDemandeLabel(filters.type_demande)}`}
+            {filters.statut && ` Statut: ${filters.statut}`}
+            {filters.date_debut && filters.date_fin && ` Dates: ${filters.date_debut} à ${filters.date_fin}`}
+            {!filters.type_demande && !filters.statut && !filters.date_debut && ' Aucun filtre actif'}
+          </small>
         </div>
       </div>
 
@@ -484,7 +551,11 @@ const DemandesRH = () => {
                     <span className={`approval-status ${demande.approuve_responsable1 ? 'approved' : 'pending'}`}>
                       {demande.approuve_responsable1 ? '✅ Approuvé' : '⏳ En attente'}
                     </span>
-                    <small className="approval-email">{demande.mail_responsable1 || 'Non assigné'}</small>
+                    <small className="approval-email">
+                      {demande.mail_responsable1 && demande.mail_responsable1 !== '' && demande.mail_responsable1 !== 'null' 
+                        ? demande.mail_responsable1 
+                        : 'Email non configuré'}
+                    </small>
                   </div>
                   <div className="approval-item">
                     <span className="approval-label">
@@ -493,7 +564,11 @@ const DemandesRH = () => {
                     <span className={`approval-status ${demande.approuve_responsable2 ? 'approved' : 'pending'}`}>
                       {demande.approuve_responsable2 ? '✅ Approuvé' : '⏳ En attente'}
                     </span>
-                    <small className="approval-email">{demande.mail_responsable2 || 'Non assigné'}</small>
+                    <small className="approval-email">
+                      {demande.mail_responsable2 && demande.mail_responsable2 !== '' && demande.mail_responsable2 !== 'null'
+                        ? demande.mail_responsable2 
+                        : 'Email non configuré'}
+                    </small>
                   </div>
                 </div>
               </div>
