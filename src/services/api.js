@@ -91,6 +91,23 @@ export const authAPI = {
 };
 
 // =========================
+// API Upload de documents
+// =========================
+
+export const uploadAPI = {
+  // Uploader un document
+  uploadDocument: (formData) => {
+    return fetch(`${API_BASE_URL}/upload-document`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      },
+      body: formData
+    });
+  }
+};
+
+// =========================
 // Archives & Recherche avancée
 // =========================
 
