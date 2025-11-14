@@ -30,7 +30,7 @@ const DemandesRH = () => {
 
   useEffect(() => {
     fetchDemandes();
-  }, [filters]);
+  }, [filters]); // Se déclenche quand les filtres changent
 
   const fetchDemandes = async () => {
     try {
@@ -43,12 +43,17 @@ const DemandesRH = () => {
         return;
       }
 
+      // Construction des paramètres de requête
       const queryParams = new URLSearchParams();
+      
+      // Ajouter seulement les filtres non vides
       Object.entries(filters).forEach(([key, value]) => {
-        if (value) queryParams.append(key, value);
+        if (value && value !== '') {
+          queryParams.append(key, value);
+        }
       });
 
-      console.log('🔍 Fetching demandes from:', `${API_BASE_URL}/api/demandes?${queryParams}`);
+      console.log('🔍 Fetching demandes avec filtres:', Object.fromEntries(queryParams));
 
       const response = await fetch(`${API_BASE_URL}/api/demandes?${queryParams}`, {
         headers: {
@@ -57,33 +62,12 @@ const DemandesRH = () => {
         }
       });
 
-      // Vérification du type de contenu
-      const contentType = response.headers.get('content-type');
-      
       if (!response.ok) {
-        // Si erreur HTTP, essayer de lire le message d'erreur
-        let errorMessage = `Erreur ${response.status}`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (e) {
-          // Si pas de JSON, lire le texte
-          const text = await response.text();
-          if (text) {
-            errorMessage = `${errorMessage}: ${text.substring(0, 100)}`;
-          }
-        }
-        throw new Error(errorMessage);
-      }
-
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        console.error('⚠️ Réponse non-JSON reçue:', text.substring(0, 500));
-        throw new Error('Le serveur a retourné une réponse non-JSON. Vérifiez l\'URL de l\'API.');
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('✅ Données reçues:', data);
+      console.log('✅ Données reçues:', data.demandes?.length || 0, 'demandes');
       setDemandes(data.demandes || []);
       
     } catch (error) {
@@ -100,6 +84,7 @@ const DemandesRH = () => {
       ...prev,
       [key]: value
     }));
+    // Les filtres se déclenchent automatiquement via le useEffect
   };
 
   const getStatutBadge = (statut) => {
@@ -129,48 +114,29 @@ const DemandesRH = () => {
     return new Date(dateString).toLocaleDateString('fr-FR');
   };
 
-  const handleApprouver = async (demandeId) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/demandes/${demandeId}/statut`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ statut: 'approuve' })
-      });
-
-      if (response.ok) {
-        fetchDemandes(); // Recharger la liste
-      } else {
-        console.error('Erreur lors de l\'approbation');
-      }
-    } catch (error) {
-      console.error('Erreur:', error);
-    }
+  const formatTime = (timeString) => {
+    if (!timeString) return 'N/A';
+    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  const handleRefuser = async (demandeId) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/demandes/${demandeId}/statut`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ statut: 'refuse' })
-      });
-
-      if (response.ok) {
-        fetchDemandes(); // Recharger la liste
-      } else {
-        console.error('Erreur lors du refus');
+  const getApprovalStatus = (demande) => {
+    if (demande.statut === 'approuve') {
+      if (demande.approuve_responsable1 && demande.approuve_responsable2) {
+        return '✅ Approuvée par les deux responsables';
+      } else if (demande.approuve_responsable1) {
+        return '✅ Approuvée par le responsable 1 (en attente du responsable 2)';
+      } else if (demande.approuve_responsable2) {
+        return '✅ Approuvée par le responsable 2 (en attente du responsable 1)';
       }
-    } catch (error) {
-      console.error('Erreur:', error);
+    } else if (demande.statut === 'refuse') {
+      return `❌ Refusée: ${demande.commentaire_refus || 'Raison non spécifiée'}`;
+    } else if (demande.statut === 'en_attente') {
+      return '⏳ En attente d\'approbation';
     }
+    return demande.statut;
   };
 
   const clearFilters = () => {
@@ -191,7 +157,7 @@ const DemandesRH = () => {
     <div className="demandes-rh">
       <div className="demandes-header">
         <h1>📋 Demandes RH</h1>
-        <p>Gestion des demandes de congés, absences et frais</p>
+        <p>Consultation des demandes de congés, absences et frais</p>
       </div>
 
       {/* Affichage des erreurs */}
@@ -244,7 +210,7 @@ const DemandesRH = () => {
               <option value="">Tous les statuts</option>
               {statuts.map(statut => (
                 <option key={statut} value={statut}>
-                  {statut}
+                  {getStatutBadge(statut).props.children}
                 </option>
               ))}
             </select>
@@ -269,10 +235,8 @@ const DemandesRH = () => {
           </div>
         </div>
 
-        <div className="filters-actions">
-          <button className="btn-primary" onClick={fetchDemandes}>
-            🔄 Appliquer les filtres
-          </button>
+        <div className="filters-info">
+          <small>Les filtres s'appliquent automatiquement</small>
         </div>
       </div>
 
@@ -376,63 +340,131 @@ const DemandesRH = () => {
                   </div>
                 </div>
 
+                {/* Détails complets de la demande */}
                 <div className="demande-details">
-                  {demande.date_depart && (
-                    <div className="detail-item">
-                      <span className="label">Date de départ:</span>
-                      <span className="value">{formatDate(demande.date_depart)}</span>
-                    </div>
+                  {/* Informations d'approbation */}
+                  <div className="approval-status">
+                    <strong>Statut d'approbation:</strong> {getApprovalStatus(demande)}
+                  </div>
+
+                  {/* Détails spécifiques au type de demande */}
+                  {demande.type_demande === 'congé' && (
+                    <>
+                      {demande.date_depart && (
+                        <div className="detail-item">
+                          <span className="label">Date de départ:</span>
+                          <span className="value">{formatDate(demande.date_depart)}</span>
+                        </div>
+                      )}
+                      
+                      {demande.date_retour && (
+                        <div className="detail-item">
+                          <span className="label">Date de retour:</span>
+                          <span className="value">{formatDate(demande.date_retour)}</span>
+                        </div>
+                      )}
+
+                      {demande.type_conge && (
+                        <div className="detail-item">
+                          <span className="label">Type de congé:</span>
+                          <span className="value">{demande.type_conge}</span>
+                        </div>
+                      )}
+
+                      {demande.type_conge_autre && (
+                        <div className="detail-item">
+                          <span className="label">Autre type:</span>
+                          <span className="value">{demande.type_conge_autre}</span>
+                        </div>
+                      )}
+                    </>
                   )}
-                  
-                  {demande.date_retour && (
+
+                  {demande.type_demande === 'autorisation_absence' && (
+                    <>
+                      {demande.date_depart && (
+                        <div className="detail-item">
+                          <span className="label">Date:</span>
+                          <span className="value">{formatDate(demande.date_depart)}</span>
+                        </div>
+                      )}
+
+                      {demande.heure_depart && (
+                        <div className="detail-item">
+                          <span className="label">Heure de départ:</span>
+                          <span className="value">{formatTime(demande.heure_depart)}</span>
+                        </div>
+                      )}
+
+                      {demande.heure_retour && (
+                        <div className="detail-item">
+                          <span className="label">Heure de retour:</span>
+                          <span className="value">{formatTime(demande.heure_retour)}</span>
+                        </div>
+                      )}
+
+                      {demande.demi_journee && (
+                        <div className="detail-item">
+                          <span className="label">Demi-journée:</span>
+                          <span className="value">✅ Oui</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {demande.type_demande === 'frais_deplacement' && (
+                    <>
+                      {demande.date_depart && (
+                        <div className="detail-item">
+                          <span className="label">Date du déplacement:</span>
+                          <span className="value">{formatDate(demande.date_depart)}</span>
+                        </div>
+                      )}
+
+                      {demande.frais_deplacement && (
+                        <div className="detail-item">
+                          <span className="label">Montant des frais:</span>
+                          <span className="value">{parseFloat(demande.frais_deplacement).toFixed(2)} €</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {demande.type_demande === 'autre' && demande.type_conge_autre && (
                     <div className="detail-item">
-                      <span className="label">Date de retour:</span>
-                      <span className="value">{formatDate(demande.date_retour)}</span>
+                      <span className="label">Description:</span>
+                      <span className="value">{demande.type_conge_autre}</span>
                     </div>
                   )}
 
-                  {demande.type_conge && (
-                    <div className="detail-item">
-                      <span className="label">Type de congé:</span>
-                      <span className="value">{demande.type_conge}</span>
-                    </div>
-                  )}
-
-                  {demande.frais_deplacement && (
-                    <div className="detail-item">
-                      <span className="label">Frais de déplacement:</span>
-                      <span className="value">{demande.frais_deplacement} €</span>
-                    </div>
-                  )}
+                  {/* Informations générales */}
+                  <div className="detail-item">
+                    <span className="label">Dernière mise à jour:</span>
+                    <span className="value">{formatDate(demande.updated_at)}</span>
+                  </div>
 
                   {demande.commentaire_refus && (
-                    <div className="detail-item">
-                      <span className="label">Commentaire:</span>
+                    <div className="detail-item commentaire-section">
+                      <span className="label">Commentaire de refus:</span>
                       <span className="value commentaire">{demande.commentaire_refus}</span>
                     </div>
                   )}
                 </div>
 
-                <div className="demande-actions">
-                  <button className="btn-secondary">
-                    👁️ Voir détails
-                  </button>
-                  {demande.statut === 'en_attente' && (
-                    <>
-                      <button 
-                        className="btn-success"
-                        onClick={() => handleApprouver(demande.id)}
-                      >
-                        ✅ Approuver
-                      </button>
-                      <button 
-                        className="btn-danger"
-                        onClick={() => handleRefuser(demande.id)}
-                      >
-                        ❌ Refuser
-                      </button>
-                    </>
-                  )}
+                {/* Section d'approbation détaillée */}
+                <div className="approval-details">
+                  <div className="approval-item">
+                    <span className="approval-label">Responsable 1:</span>
+                    <span className={`approval-status ${demande.approuve_responsable1 ? 'approved' : 'pending'}`}>
+                      {demande.approuve_responsable1 ? '✅ Approuvé' : '⏳ En attente'}
+                    </span>
+                  </div>
+                  <div className="approval-item">
+                    <span className="approval-label">Responsable 2:</span>
+                    <span className={`approval-status ${demande.approuve_responsable2 ? 'approved' : 'pending'}`}>
+                      {demande.approuve_responsable2 ? '✅ Approuvé' : '⏳ En attente'}
+                    </span>
+                  </div>
                 </div>
               </div>
             ))}
