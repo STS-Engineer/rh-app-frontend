@@ -1,399 +1,390 @@
 import React, { useState, useEffect } from 'react';
+import Sidebar from '../components/Sidebar';
 import './DemandesRH.css';
 
 const DemandesRH = () => {
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({
-    type: '',
+  const [filtres, setFiltres] = useState({
+    type_demande: '',
     statut: '',
-    dateDebut: '',
-    dateFin: ''
+    recherche: ''
   });
-
-  const typesDemande = ['congé', 'autorisation_absence', 'frais_deplacement', 'autre'];
-  const statuts = ['en_attente', 'approuve', 'refuse', 'en_cours_traitement'];
+  const [selectedDemande, setSelectedDemande] = useState(null);
 
   useEffect(() => {
     fetchDemandes();
-  }, [filters]);
+  }, []);
 
   const fetchDemandes = async () => {
     try {
-      setLoading(true);
-      setError(null);
       const token = localStorage.getItem('token');
-      
-      if (!token) {
-        setError('Token d\'authentification manquant');
-        return;
-      }
-
-      const params = new URLSearchParams();
-      if (filters.type) params.append('type', filters.type);
-      if (filters.statut) params.append('statut', filters.statut);
-      if (filters.dateDebut) params.append('dateDebut', filters.dateDebut);
-      if (filters.dateFin) params.append('dateFin', filters.dateFin);
-
-      console.log('🔍 Fetching demandes avec params:', params.toString());
-
-      const response = await fetch(`/api/demandes-rh?${params.toString()}`, {
+      const response = await fetch('http://localhost:5000/api/demandes', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${token}`
         }
       });
 
-      console.log('📡 Response status:', response.status);
-
-      if (!response.ok) {
-        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
-      }
-
+      if (!response.ok) throw new Error('Erreur lors du chargement');
+      
       const data = await response.json();
-      console.log('📦 Données reçues:', data);
       setDemandes(data);
-
-    } catch (error) {
-      console.error('💥 Erreur fetch:', error);
-      setError(`Erreur de chargement: ${error.message}`);
-    } finally {
+      setLoading(false);
+    } catch (err) {
+      setError(err.message);
       setLoading(false);
     }
   };
 
-  // Test simple sans authentification
-  const testSimpleRoute = async () => {
+  const handleApprouver = async (id, niveau) => {
     try {
-      setLoading(true);
-      const response = await fetch('/api/test-demandes');
-      
-      if (!response.ok) {
-        throw new Error(`Erreur ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('🧪 Test simple:', data);
-      
-      if (data.success) {
-        alert(`✅ Test réussi: ${data.count} demandes trouvées`);
-        if (data.count > 0) {
-          setDemandes(data.demandes);
-        }
-      } else {
-        alert('❌ Test échoué: ' + (data.error || 'Erreur inconnue'));
-      }
-    } catch (error) {
-      console.error('Erreur test simple:', error);
-      alert('❌ Erreur test: ' + error.message);
-    } finally {
-      setLoading(false);
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:5000/api/demandes/${id}/approuver`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ niveau })
+      });
+      fetchDemandes();
+      setSelectedDemande(null);
+    } catch (err) {
+      alert('Erreur lors de l\'approbation');
     }
   };
 
-  // Debug complet
-  const testDebugRoute = async () => {
+  const handleRejeter = async (id, commentaire) => {
     try {
-      setLoading(true);
-      const response = await fetch('/api/debug-demandes');
-      
-      if (!response.ok) {
-        throw new Error(`Erreur ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('🐛 Debug complet:', data);
-      
-      if (data.success) {
-        let message = `Total demandes: ${data.total_demandes}\n`;
-        message += `Structure: ${data.structure_table.length} colonnes\n`;
-        
-        if (data.total_demandes > 0) {
-          message += `✅ Données disponibles!`;
-          alert(message);
-          // Recharger les données
-          fetchDemandes();
-        } else {
-          message += `❌ Aucune donnée dans la table`;
-          alert(message);
-        }
-      } else {
-        alert('❌ Debug échoué: ' + (data.error || 'Erreur inconnue'));
-      }
-    } catch (error) {
-      console.error('Erreur debug:', error);
-      alert('❌ Erreur debug: ' + error.message);
-    } finally {
-      setLoading(false);
+      const token = localStorage.getItem('token');
+      await fetch(`http://localhost:5000/api/demandes/${id}/rejeter`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ commentaire_refus: commentaire })
+      });
+      fetchDemandes();
+      setSelectedDemande(null);
+    } catch (err) {
+      alert('Erreur lors du rejet');
     }
   };
 
-  const handleFilterChange = (key, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      type: '',
-      statut: '',
-      dateDebut: '',
-      dateFin: ''
-    });
-  };
+  const demandesFiltrees = demandes.filter(d => {
+    const matchType = !filtres.type_demande || d.type_demande === filtres.type_demande;
+    const matchStatut = !filtres.statut || d.statut === filtres.statut;
+    const matchRecherche = !filtres.recherche || 
+      d.titre?.toLowerCase().includes(filtres.recherche.toLowerCase()) ||
+      d.employe_nom?.toLowerCase().includes(filtres.recherche.toLowerCase());
+    
+    return matchType && matchStatut && matchRecherche;
+  });
 
   const getStatutBadge = (statut) => {
-    const statutConfig = {
-      'en_attente': { class: 'statut-en-attente', label: 'En attente' },
-      'approuve': { class: 'statut-approuve', label: 'Approuvé' },
-      'refuse': { class: 'statut-refuse', label: 'Refusé' },
-      'en_cours_traitement': { class: 'statut-en-cours', label: 'En cours' }
+    const badges = {
+      'en_attente': { label: 'En attente', className: 'badge-warning' },
+      'approuve': { label: 'Approuvée', className: 'badge-success' },
+      'rejete': { label: 'Rejetée', className: 'badge-danger' },
+      'en_cours': { label: 'En cours', className: 'badge-info' }
     };
-    
-    const config = statutConfig[statut] || { class: 'statut-default', label: statut };
-    return <span className={`statut-badge ${config.class}`}>{config.label}</span>;
+    const badge = badges[statut] || { label: statut, className: 'badge-default' };
+    return <span className={`badge ${badge.className}`}>{badge.label}</span>;
   };
 
-  const getTypeDemande = (type) => {
-    const types = {
-      'congé': 'Congé',
-      'autorisation_absence': 'Autorisation d\'absence',
-      'frais_deplacement': 'Frais de déplacement',
-      'autre': 'Autre demande'
+  const getTypeIcon = (type) => {
+    const icons = {
+      'conge': '🏖️',
+      'autorisation': '⏰',
+      'deplacement': '✈️',
+      'teletravail': '💻',
+      'autre': '📄'
     };
-    return types[type] || type;
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return 'Non définie';
-    try {
-      return new Date(dateString).toLocaleDateString('fr-FR');
-    } catch (error) {
-      return 'Date invalide';
-    }
-  };
-
-  const getEmployeDisplayName = (demande) => {
-    if (demande.employe_nom && demande.employe_prenom) {
-      return `${demande.employe_prenom} ${demande.employe_nom}`;
-    }
-    return `ID: ${demande.employe_id}`;
+    return icons[type] || '📄';
   };
 
   if (loading) {
     return (
-      <div className="demandes-rh-container">
-        <div className="loading">
-          <div>Chargement des demandes...</div>
-          <div className="debug-actions">
-            <button onClick={testSimpleRoute} className="debug-btn">
-              🧪 Test Simple
-            </button>
-            <button onClick={testDebugRoute} className="debug-btn">
-              🐛 Debug Complet
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="demandes-rh-container">
-        <div className="error-message">
-          <h3>❌ Erreur</h3>
-          <p>{error}</p>
-          <div className="error-actions">
-            <button onClick={testSimpleRoute} className="debug-btn">
-              🧪 Test Simple
-            </button>
-            <button onClick={testDebugRoute} className="debug-btn">
-              🐛 Debug Complet
-            </button>
-            <button onClick={fetchDemandes} className="retry-btn">
-              🔄 Réessayer
-            </button>
-          </div>
+      <div className="page-container">
+        <Sidebar />
+        <div className="main-content">
+          <div className="loading">Chargement des demandes...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="demandes-rh-container">
-      <div className="demandes-header">
-        <div>
-          <h1>📋 Demandes RH</h1>
-          <p>Gestion des demandes de congés, absences et frais</p>
-        </div>
-        <div className="header-actions">
-          <button onClick={testSimpleRoute} className="debug-btn">
-            🧪 Test
-          </button>
-          <button onClick={testDebugRoute} className="debug-btn">
-            🐛 Debug
-          </button>
-        </div>
-      </div>
-
-      {/* Filtres */}
-      <div className="filters-section">
-        <div className="filters-header">
-          <h3>Filtres</h3>
-          <button onClick={clearFilters} className="clear-filters-btn">
-            🔄 Effacer
-          </button>
-        </div>
-        
-        <div className="filters-grid">
-          <div className="filter-group">
-            <label>Type de demande</label>
-            <select 
-              value={filters.type} 
-              onChange={(e) => handleFilterChange('type', e.target.value)}
-            >
-              <option value="">Tous les types</option>
-              {typesDemande.map(type => (
-                <option key={type} value={type}>
-                  {getTypeDemande(type)}
-                </option>
-              ))}
-            </select>
+    <div className="page-container">
+      <Sidebar />
+      <div className="main-content">
+        <div className="demandes-header">
+          <div className="header-top">
+            <h1>📝 Demandes RH</h1>
+            <button className="btn-primary">+ Nouvelle demande</button>
           </div>
-
-          <div className="filter-group">
-            <label>Statut</label>
-            <select 
-              value={filters.statut} 
-              onChange={(e) => handleFilterChange('statut', e.target.value)}
-            >
-              <option value="">Tous les statuts</option>
-              {statuts.map(statut => (
-                <option key={statut} value={statut}>
-                  {statut}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label>Date de début</label>
-            <input 
-              type="date" 
-              value={filters.dateDebut}
-              onChange={(e) => handleFilterChange('dateDebut', e.target.value)}
-            />
-          </div>
-
-          <div className="filter-group">
-            <label>Date de fin</label>
-            <input 
-              type="date" 
-              value={filters.dateFin}
-              onChange={(e) => handleFilterChange('dateFin', e.target.value)}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Liste des demandes */}
-      <div className="demandes-list">
-        <div className="demandes-stats">
-          <div className="stat-card">
-            <span className="stat-number">{demandes.length}</span>
-            <span className="stat-label">Total demandes</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-number">
-              {demandes.filter(d => d.statut === 'en_attente').length}
-            </span>
-            <span className="stat-label">En attente</span>
-          </div>
-          <div className="stat-card">
-            <span className="stat-number">
-              {demandes.filter(d => d.statut === 'approuve').length}
-            </span>
-            <span className="stat-label">Approuvées</span>
-          </div>
-        </div>
-
-        {demandes.length === 0 ? (
-          <div className="no-data">
-            <p>📭 Aucune demande trouvée</p>
-            <p>Ajustez vos filtres ou vérifiez qu'il y a des demandes dans le système.</p>
-            <div className="debug-actions">
-              <button onClick={testSimpleRoute} className="debug-btn">
-                🧪 Test Simple
-              </button>
-              <button onClick={testDebugRoute} className="debug-btn">
-                🐛 Debug Complet
-              </button>
+          
+          <div className="stats-row">
+            <div className="stat-card">
+              <div className="stat-icon">⏳</div>
+              <div className="stat-info">
+                <p className="stat-value">{demandes.filter(d => d.statut === 'en_attente').length}</p>
+                <p className="stat-label">En attente</p>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon success">✓</div>
+              <div className="stat-info">
+                <p className="stat-value">{demandes.filter(d => d.statut === 'approuve').length}</p>
+                <p className="stat-label">Approuvées</p>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon danger">✕</div>
+              <div className="stat-info">
+                <p className="stat-value">{demandes.filter(d => d.statut === 'rejete').length}</p>
+                <p className="stat-label">Rejetées</p>
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-icon info">📊</div>
+              <div className="stat-info">
+                <p className="stat-value">{demandes.length}</p>
+                <p className="stat-label">Total</p>
+              </div>
             </div>
           </div>
-        ) : (
-          <div className="demandes-grid">
-            {demandes.map((demande) => (
-              <div key={demande.id} className="demande-card">
+
+          <div className="filtres-container">
+            <div className="filtre-group">
+              <label>🔍 Recherche</label>
+              <input
+                type="text"
+                placeholder="Titre, employé..."
+                value={filtres.recherche}
+                onChange={(e) => setFiltres({...filtres, recherche: e.target.value})}
+                className="input-filtre"
+              />
+            </div>
+            
+            <div className="filtre-group">
+              <label>📋 Type</label>
+              <select
+                value={filtres.type_demande}
+                onChange={(e) => setFiltres({...filtres, type_demande: e.target.value})}
+                className="select-filtre"
+              >
+                <option value="">Tous les types</option>
+                <option value="conge">Congé</option>
+                <option value="autorisation">Autorisation</option>
+                <option value="deplacement">Déplacement</option>
+                <option value="teletravail">Télétravail</option>
+                <option value="autre">Autre</option>
+              </select>
+            </div>
+
+            <div className="filtre-group">
+              <label>🎯 Statut</label>
+              <select
+                value={filtres.statut}
+                onChange={(e) => setFiltres({...filtres, statut: e.target.value})}
+                className="select-filtre"
+              >
+                <option value="">Tous les statuts</option>
+                <option value="en_attente">En attente</option>
+                <option value="en_cours">En cours</option>
+                <option value="approuve">Approuvée</option>
+                <option value="rejete">Rejetée</option>
+              </select>
+            </div>
+
+            <button 
+              className="btn-reset"
+              onClick={() => setFiltres({ type_demande: '', statut: '', recherche: '' })}
+            >
+              🔄 Réinitialiser
+            </button>
+          </div>
+        </div>
+
+        <div className="demandes-list">
+          {demandesFiltrees.length === 0 ? (
+            <div className="empty-state">
+              <span className="empty-icon">📭</span>
+              <h3>Aucune demande trouvée</h3>
+              <p>Aucune demande ne correspond aux filtres sélectionnés</p>
+            </div>
+          ) : (
+            demandesFiltrees.map(demande => (
+              <div 
+                key={demande.id} 
+                className="demande-card"
+                onClick={() => setSelectedDemande(demande)}
+              >
                 <div className="demande-header">
-                  <div className="demande-title">
-                    <h3>{demande.titre || 'Sans titre'}</h3>
-                    {getStatutBadge(demande.statut)}
+                  <div className="demande-type">
+                    <span className="type-icon">{getTypeIcon(demande.type_demande)}</span>
+                    <span className="type-label">{demande.type_demande}</span>
                   </div>
-                  <span className="demande-type">{getTypeDemande(demande.type_demande)}</span>
+                  {getStatutBadge(demande.statut)}
                 </div>
 
-                <div className="demande-body">
-                  <div className="demande-info">
-                    <div className="info-item">
-                      <span className="info-label">👤 Employé:</span>
-                      <span className="info-value">{getEmployeDisplayName(demande)}</span>
-                    </div>
-                    
-                    {demande.date_depart && (
-                      <div className="info-item">
-                        <span className="info-label">📅 Date départ:</span>
-                        <span className="info-value">{formatDate(demande.date_depart)}</span>
-                      </div>
-                    )}
-                    
-                    {demande.date_retour && (
-                      <div className="info-item">
-                        <span className="info-label">📅 Date retour:</span>
-                        <span className="info-value">{formatDate(demande.date_retour)}</span>
-                      </div>
-                    )}
-                    
-                    {demande.frais_deplacement && (
-                      <div className="info-item">
-                        <span className="info-label">💰 Frais:</span>
-                        <span className="info-value">{demande.frais_deplacement} €</span>
-                      </div>
-                    )}
-                  </div>
+                <h3 className="demande-titre">{demande.titre || 'Sans titre'}</h3>
 
-                  {demande.commentaire_refus && (
-                    <div className="commentaire-refus">
-                      <strong>Commentaire de refus:</strong>
-                      <p>{demande.commentaire_refus}</p>
+                <div className="demande-info">
+                  <div className="info-item">
+                    <span className="info-icon">👤</span>
+                    <span>{demande.employe_nom || 'Employé inconnu'}</span>
+                  </div>
+                  
+                  {demande.date_depart && (
+                    <div className="info-item">
+                      <span className="info-icon">📅</span>
+                      <span>
+                        {new Date(demande.date_depart).toLocaleDateString('fr-FR')}
+                        {demande.date_retour && ` → ${new Date(demande.date_retour).toLocaleDateString('fr-FR')}`}
+                      </span>
+                    </div>
+                  )}
+
+                  {demande.demi_journee && (
+                    <div className="info-item">
+                      <span className="info-icon">⏰</span>
+                      <span>Demi-journée</span>
+                    </div>
+                  )}
+
+                  {demande.frais_deplacement && (
+                    <div className="info-item">
+                      <span className="info-icon">💰</span>
+                      <span>{parseFloat(demande.frais_deplacement).toFixed(2)} TND</span>
                     </div>
                   )}
                 </div>
 
                 <div className="demande-footer">
-                  <div className="demande-dates">
-                    <small>Créé le: {formatDate(demande.created_at)}</small>
-                  </div>
-                  <div className="demande-actions">
-                    <button className="btn-view">👁️ Voir</button>
-                    <button className="btn-edit">✏️ Modifier</button>
-                  </div>
+                  <span className="date-creation">
+                    Créée le {new Date(demande.created_at).toLocaleDateString('fr-FR')}
+                  </span>
+                  <button className="btn-details">Voir détails →</button>
                 </div>
               </div>
-            ))}
+            ))
+          )}
+        </div>
+
+        {selectedDemande && (
+          <div className="modal-overlay" onClick={() => setSelectedDemande(null)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>{getTypeIcon(selectedDemande.type_demande)} {selectedDemande.titre}</h2>
+                <button className="close-btn" onClick={() => setSelectedDemande(null)}>✕</button>
+              </div>
+
+              <div className="modal-body">
+                <div className="detail-section">
+                  <h3>📋 Informations générales</h3>
+                  <div className="detail-grid">
+                    <div className="detail-item">
+                      <label>Type de demande</label>
+                      <p>{selectedDemande.type_demande}</p>
+                    </div>
+                    <div className="detail-item">
+                      <label>Statut</label>
+                      {getStatutBadge(selectedDemande.statut)}
+                    </div>
+                    <div className="detail-item">
+                      <label>Employé</label>
+                      <p>{selectedDemande.employe_nom}</p>
+                    </div>
+                    <div className="detail-item">
+                      <label>Date de création</label>
+                      <p>{new Date(selectedDemande.created_at).toLocaleString('fr-FR')}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedDemande.type_demande === 'conge' && (
+                  <div className="detail-section">
+                    <h3>🏖️ Détails du congé</h3>
+                    <div className="detail-grid">
+                      <div className="detail-item">
+                        <label>Type de congé</label>
+                        <p>{selectedDemande.type_conge || selectedDemande.type_conge_autre}</p>
+                      </div>
+                      <div className="detail-item">
+                        <label>Période</label>
+                        <p>
+                          Du {new Date(selectedDemande.date_depart).toLocaleDateString('fr-FR')}
+                          {selectedDemande.date_retour && 
+                            ` au ${new Date(selectedDemande.date_retour).toLocaleDateString('fr-FR')}`}
+                        </p>
+                      </div>
+                      {selectedDemande.demi_journee && (
+                        <div className="detail-item">
+                          <label>Demi-journée</label>
+                          <p>Oui</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {selectedDemande.frais_deplacement && (
+                  <div className="detail-section">
+                    <h3>💰 Frais de déplacement</h3>
+                    <p className="montant-frais">{parseFloat(selectedDemande.frais_deplacement).toFixed(2)} TND</p>
+                  </div>
+                )}
+
+                <div className="detail-section">
+                  <h3>✓ Approbations</h3>
+                  <div className="approbations">
+                    <div className={`approbation-item ${selectedDemande.approuve_responsable1 ? 'approved' : 'pending'}`}>
+                      <span className="approbation-icon">
+                        {selectedDemande.approuve_responsable1 ? '✓' : '⏳'}
+                      </span>
+                      <span>Responsable 1</span>
+                    </div>
+                    <div className={`approbation-item ${selectedDemande.approuve_responsable2 ? 'approved' : 'pending'}`}>
+                      <span className="approbation-icon">
+                        {selectedDemande.approuve_responsable2 ? '✓' : '⏳'}
+                      </span>
+                      <span>Responsable 2</span>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedDemande.commentaire_refus && (
+                  <div className="detail-section refus">
+                    <h3>❌ Commentaire de refus</h3>
+                    <p>{selectedDemande.commentaire_refus}</p>
+                  </div>
+                )}
+              </div>
+
+              {selectedDemande.statut === 'en_attente' && (
+                <div className="modal-actions">
+                  <button 
+                    className="btn-approve"
+                    onClick={() => handleApprouver(selectedDemande.id, 1)}
+                  >
+                    ✓ Approuver
+                  </button>
+                  <button 
+                    className="btn-reject"
+                    onClick={() => {
+                      const commentaire = prompt('Raison du rejet:');
+                      if (commentaire) handleRejeter(selectedDemande.id, commentaire);
+                    }}
+                  >
+                    ✕ Rejeter
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
