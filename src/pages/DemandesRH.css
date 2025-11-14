@@ -475,3 +475,50 @@
     justify-content: center;
   }
 }
+/* Styles pour les erreurs */
+.error-banner {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 2rem;
+  color: #721c24;
+}
+
+.error-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.error-icon {
+  font-size: 1.5rem;
+}
+
+.error-details {
+  flex: 1;
+}
+
+.error-details h4 {
+  margin: 0 0 0.5rem 0;
+  color: #721c24;
+}
+
+.error-details p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.btn-retry {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btn-retry:hover {
+  background: #c0392b;
+}
