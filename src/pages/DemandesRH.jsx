@@ -12,7 +12,7 @@ const DemandesRH = () => {
     date_fin: ''
   });
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
 
   const typesDemande = [
     'congé',
