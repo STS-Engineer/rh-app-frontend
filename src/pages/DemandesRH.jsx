@@ -120,17 +120,29 @@ const DemandesRH = () => {
   };
 
   const getResponsableNameFromEmail = (email) => {
-    if (!email) return 'Non assigné';
-    
-    // Extraire le nom à partir de l'email (ex: "john.doe@entreprise.com" -> "John Doe")
+  if (!email || email === '' || email === null || email === undefined) {
+    return 'Non assigné';
+  }
+  
+  // Vérifier si c'est déjà un nom formaté
+  if (email.includes(' ')) {
+    return email; // C'est déjà un nom
+  }
+  
+  // Extraire le nom à partir de l'email (ex: "john.doe@entreprise.com" -> "John Doe")
+  try {
     const username = email.split('@')[0];
     const nameParts = username.split('.');
     const formattedName = nameParts.map(part => 
-      part.charAt(0).toUpperCase() + part.slice(1)
+      part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
     ).join(' ');
     
     return formattedName;
-  };
+  } catch (error) {
+    console.warn('Erreur formatage email:', email, error);
+    return email; // Retourner l'email original si erreur
+  }
+};
 
   const getApprovalStatus = (demande) => {
     if (demande.statut === 'approuve') {
