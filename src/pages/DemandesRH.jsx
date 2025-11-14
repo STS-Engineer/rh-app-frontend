@@ -67,7 +67,6 @@ const DemandesRH = () => {
       const data = await response.json();
       console.log('✅ Données reçues du backend:', data);
       
-      // DEBUG AVANCÉ - Vérifier ce qui arrive au frontend
       console.log('🐛 DEBUG FRONTEND - Structure des données:');
       if (data.demandes && data.demandes.length > 0) {
         data.demandes.forEach((demande, index) => {
@@ -79,7 +78,6 @@ const DemandesRH = () => {
           console.log('   approuve_responsable1:', demande.approuve_responsable1);
           console.log('   approuve_responsable2:', demande.approuve_responsable2);
           
-          // Test de la fonction de formatage
           const nom1 = getResponsableNameFromEmail(demande.mail_responsable1);
           const nom2 = getResponsableNameFromEmail(demande.mail_responsable2);
           console.log('   🧪 Formatage mail_responsable1:', `"${demande.mail_responsable1}" -> "${nom1}"`);
@@ -149,22 +147,18 @@ const DemandesRH = () => {
       return 'Non assigné';
     }
     
-    // Nettoyer l'email (au cas où il y aurait des espaces)
     const cleanEmail = email.toString().trim();
     
-    // Vérifier si c'est déjà un nom formaté (contient un espace)
     if (cleanEmail.includes(' ')) {
       console.log('🔧 C\'est déjà un nom formaté:', cleanEmail);
       return cleanEmail;
     }
     
-    // Vérifier que c'est un email valide
     if (!cleanEmail.includes('@')) {
       console.log('🔧 Ce n\'est pas un email valide:', cleanEmail);
-      return cleanEmail; // Retourner la valeur telle quelle
+      return cleanEmail;
     }
     
-    // Extraire le nom à partir de l'email
     try {
       const username = cleanEmail.split('@')[0];
       const nameParts = username.split(/[._-]/);
@@ -220,7 +214,6 @@ const DemandesRH = () => {
     fetchDemandes();
   };
 
-  // Fonction de debug pour voir les données
   const debugData = () => {
     console.log('🐛 Données de debug:', {
       filters,
@@ -246,7 +239,6 @@ const DemandesRH = () => {
         </button>
       </div>
 
-      {/* Affichage des erreurs */}
       {error && (
         <div className="error-banner">
           <div className="error-content">
@@ -262,7 +254,6 @@ const DemandesRH = () => {
         </div>
       )}
 
-      {/* Filtres */}
       <div className="filters-section">
         <div className="filters-header">
           <h3>🔍 Filtres de recherche</h3>
@@ -331,7 +322,6 @@ const DemandesRH = () => {
         </div>
       </div>
 
-      {/* Statistiques rapides */}
       <div className="stats-section">
         <div className="stat-card">
           <div className="stat-icon">📥</div>
@@ -369,7 +359,6 @@ const DemandesRH = () => {
         </div>
       </div>
 
-      {/* Liste des demandes */}
       <div className="demandes-list">
         {loading ? (
           <div className="loading">
@@ -431,14 +420,11 @@ const DemandesRH = () => {
                   </div>
                 </div>
 
-                {/* Détails complets de la demande */}
                 <div className="demande-details">
-                  {/* Informations d'approbation */}
                   <div className="approval-status">
                     <strong>Statut d'approbation:</strong> {getApprovalStatus(demande)}
                   </div>
 
-                  {/* Détails spécifiques au type de demande */}
                   {demande.type_demande === 'congé' && (
                     <>
                       {demande.date_depart && (
@@ -528,7 +514,6 @@ const DemandesRH = () => {
                     </div>
                   )}
 
-                  {/* Informations générales */}
                   <div className="detail-item">
                     <span className="label">Dernière mise à jour:</span>
                     <span className="value">{formatDate(demande.updated_at)}</span>
@@ -542,7 +527,6 @@ const DemandesRH = () => {
                   )}
                 </div>
 
-                {/* Section d'approbation détaillée avec noms des responsables */}
                 <div className="approval-details">
                   <div className="approval-item">
                     <span className="approval-label">
