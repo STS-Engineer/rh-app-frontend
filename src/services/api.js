@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // URL de l'API - Configuration pour Azure
-const API_URL = process.env.REACT_APP_API_URL || 'https://avo-hr-managment.azurewebsites.net';
+const API_URL ='https://avo-hr-managment.azurewebsites.net';
 
 console.log('🔧 API URL configurée:', API_URL);
 
