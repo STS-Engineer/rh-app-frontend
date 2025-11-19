@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { employeesAPI } from '../services/api';
 import ArchiveModal from './ArchiveModal';
 import './EmployeeModal.css';
@@ -8,8 +8,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const [formData, setFormData] = useState({});
   const [saving, setSaving] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (employee) {
@@ -72,72 +70,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     } finally {
       setSaving(false);
     }
-  };
-
-  const handleFileUpload = async (file) => {
-    if (!file) return;
-    
-    setUploading(true);
-    try {
-      console.log('📤 Upload du fichier:', file.name, file.type);
-      
-      const uploadFormData = new FormData();
-      uploadFormData.append('dossier_rh', file);
-      uploadFormData.append('employee_id', employee.id);
-      
-      const response = await employeesAPI.uploadDossierRh(uploadFormData);
-      console.log('✅ Fichier uploadé:', response.data);
-      
-      const updatedEmployee = { 
-        ...employee, 
-        dossier_rh: response.data.fileUrl 
-      };
-      
-      setFormData(updatedEmployee);
-      onUpdate(updatedEmployee);
-      alert('✅ Dossier RH uploadé avec succès!');
-      
-    } catch (error) {
-      console.error('❌ Erreur lors de l\'upload:', error);
-      alert('❌ Erreur lors de l\'upload: ' + (error.response?.data?.message || error.message));
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleFileSelect = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.type !== 'application/pdf' && !file.type.startsWith('image/')) {
-        alert('❌ Veuillez sélectionner un fichier PDF ou une image');
-        return;
-      }
-      
-      if (file.size > 10 * 1024 * 1024) {
-        alert('❌ Le fichier est trop volumineux (max 10MB)');
-        return;
-      }
-      
-      handleFileUpload(file);
-    }
-  };
-
-  const takePhoto = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'image/*';
-    input.capture = 'environment';
-    input.onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        handleFileUpload(file);
-      }
-    };
-    input.click();
-  };
-
-  const openFileSelector = () => {
-    fileInputRef.current?.click();
   };
 
   const formatDateForInput = (dateString) => {
@@ -250,6 +182,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
         </div>
 
         <div className="employee-modal-body">
+          {/* En-tête avec photo et informations basiques */}
           <div className="employee-header">
             <img 
               src={getPhotoUrl()} 
@@ -269,6 +202,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
           </div>
 
           {!isEditing ? (
+            // Mode visualisation
             <div className="employee-details-grid">
               <div className="detail-section">
                 <h4>📝 Informations Personnelles</h4>
@@ -308,35 +242,10 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     )}
                   </span>
                 </div>
-                
-                <div className="upload-buttons">
-                  <button 
-                    className="upload-btn"
-                    onClick={openFileSelector}
-                    disabled={uploading}
-                  >
-                    {uploading ? '⏳ Upload...' : '📁 Ajouter Dossier RH'}
-                  </button>
-                  
-                  <button 
-                    className="camera-btn"
-                    onClick={takePhoto}
-                    disabled={uploading}
-                  >
-                    📸 Prendre une Photo
-                  </button>
-                  
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    accept=".pdf,image/*"
-                    style={{ display: 'none' }}
-                  />
-                </div>
               </div>
             </div>
           ) : (
+            // Mode édition
             <div className="edit-form">
               <div className="form-section">
                 <h4>📝 Informations Personnelles</h4>
@@ -376,6 +285,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 </div>
               </div>
 
+              {/* Bouton d'archivage conditionnel */}
               {hasDepartureDate && (
                 <div className="archive-section">
                   <button 
@@ -423,6 +333,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
         </div>
       </div>
 
+      {/* Modal d'archivage */}
       <ArchiveModal
         employee={employee}
         isOpen={showArchiveModal}
