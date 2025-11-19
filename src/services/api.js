@@ -1,28 +1,19 @@
 import axios from 'axios';
 
-// =========================
-// Configuration de l'API
-// =========================
-//
-// En local : utilise http://localhost:5000/api
-// En production (Azure) : définir REACT_APP_API_URL
-//    ex : https://ton-backend.azurewebsites.net/api
-//
-const API_BASE_URL ='https://backend-rh.azurewebsites.net/api';
+// URL de l'API - Configuration pour Azure
+const API_URL = process.env.REACT_APP_API_URL || 'https://avo-hr-managment.azurewebsites.net';
 
-// Création d'une instance axios
+console.log('🔧 API URL configurée:', API_URL);
+
+// Configuration axios avec intercepteur pour le token
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: `${API_URL}/api`,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+  },
 });
 
-// =========================
-// Intercepteurs
-// =========================
-
-// Ajout automatique du token JWT aux requêtes
+// Intercepteur pour ajouter le token à chaque requête
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -36,7 +27,7 @@ api.interceptors.request.use(
   }
 );
 
-// Gestion globale des erreurs d'authentification
+// Intercepteur pour gérer les erreurs
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -48,59 +39,60 @@ api.interceptors.response.use(
   }
 );
 
-// =========================
 // API Employés
-// =========================
-
 export const employeesAPI = {
-  // Récupérer tous les employés actifs
   getAll: () => api.get('/employees'),
   
-  // Récupérer un employé par ID
   getById: (id) => api.get(`/employees/${id}`),
   
-  // Créer un nouvel employé
   create: (employeeData) => api.post('/employees', employeeData),
   
-  // Mettre à jour un employé
   update: (id, employeeData) => api.put(`/employees/${id}`, employeeData),
   
-  // Archiver un employé
-  archiveEmployee: (employeeId, entretien_depart) =>
-    api.put(`/employees/${employeeId}/archive`, { entretien_depart }),
+  search: (query) => api.get('/employees/search', { params: { q: query } }),
   
-  // Rechercher des employés (actifs par défaut côté backend)
-  search: (searchTerm) =>
-    api.get(`/employees/search?q=${encodeURIComponent(searchTerm)}`)
-};
-
-// =========================
-// API Authentification
-// =========================
-
-export const authAPI = {
-  // Login avec email et password
-  login: (email, password) => api.post('/auth/login', { email, password }),
+  archiveEmployee: (id, entretien_depart) => 
+    api.put(`/employees/${id}/archive`, { entretien_depart }),
   
-  // Login avec un objet credentials
-  loginWithCredentials: (credentials) => api.post('/auth/login', credentials),
-  
-  logout: () => {
-    localStorage.removeItem('token');
+  // Nouvelle méthode pour uploader le dossier RH
+  uploadDossierRH: async (id, file) => {
+    const formData = new FormData();
+    formData.append('dossier', file);
+    
+    const token = localStorage.getItem('token');
+    
+    return axios.post(`${API_URL}/api/employees/${id}/upload-dossier`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`
+      }
+    });
   }
 };
 
-// =========================
-// Archives & Recherche avancée
-// =========================
-
+// API Archives
 export const getArchivedEmployees = () => api.get('/employees/archives');
 
-export const searchEmployeesWithStatus = (searchTerm, statut = 'actif') =>
-  api.get(
-    `/employees/search?q=${encodeURIComponent(searchTerm)}&statut=${encodeURIComponent(
-      statut
-    )}`
-  );
+// API Authentification
+export const authAPI = {
+  login: (email, password) => 
+    api.post('/auth/login', { email, password }),
+};
+
+// API Demandes RH
+export const demandesAPI = {
+  getAll: (params) => api.get('/demandes', { params }),
+  
+  getById: (id) => api.get(`/demandes/${id}`),
+  
+  create: (demandeData) => api.post('/demandes', demandeData),
+  
+  update: (id, demandeData) => api.put(`/demandes/${id}`, demandeData),
+  
+  updateStatut: (id, statut, commentaire_refus) => 
+    api.put(`/demandes/${id}/statut`, { statut, commentaire_refus }),
+  
+  delete: (id) => api.delete(`/demandes/${id}`),
+};
 
 export default api;
