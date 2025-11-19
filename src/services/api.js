@@ -1,14 +1,28 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+// =========================
+// Configuration de l'API
+// =========================
+//
+// En local : utilise http://localhost:5000/api
+// En production (Azure) : définir REACT_APP_API_URL
+//    ex : https://ton-backend.azurewebsites.net/api
+//
+const API_BASE_URL ='https://backend-rh.azurewebsites.net/api';
 
+// Création d'une instance axios
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
-  },
+    'Content-Type': 'application/json'
+  }
 });
 
+// =========================
+// Intercepteurs
+// =========================
+
+// Ajout automatique du token JWT aux requêtes
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -22,6 +36,7 @@ api.interceptors.request.use(
   }
 );
 
+// Gestion globale des erreurs d'authentification
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -33,52 +48,59 @@ api.interceptors.response.use(
   }
 );
 
+// =========================
+// API Employés
+// =========================
+
 export const employeesAPI = {
-  getAll: () => api.get('/api/employees'),
+  // Récupérer tous les employés actifs
+  getAll: () => api.get('/employees'),
   
-  getById: (id) => api.get(`/api/employees/${id}`),
+  // Récupérer un employé par ID
+  getById: (id) => api.get(`/employees/${id}`),
   
-  search: (query) => api.get(`/api/employees/search?q=${query}`),
+  // Créer un nouvel employé
+  create: (employeeData) => api.post('/employees', employeeData),
   
-  create: (employeeData) => api.post('/api/employees', employeeData),
+  // Mettre à jour un employé
+  update: (id, employeeData) => api.put(`/employees/${id}`, employeeData),
   
-  update: (id, employeeData) => api.put(`/api/employees/${id}`, employeeData),
+  // Archiver un employé
+  archiveEmployee: (employeeId, entretien_depart) =>
+    api.put(`/employees/${employeeId}/archive`, { entretien_depart }),
   
-  archiveEmployee: (id, entretien_depart) => 
-    api.put(`/api/employees/${id}/archive`, { entretien_depart }),
-  
-  uploadDossierRh: async (formData) => {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/api/employees/upload-dossier-rh`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      body: formData,
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Erreur d\'upload' }));
-      throw new Error(errorData.message || 'Erreur lors de l\'upload');
-    }
-    
-    return response.json();
-  },
+  // Rechercher des employés (actifs par défaut côté backend)
+  search: (searchTerm) =>
+    api.get(`/employees/search?q=${encodeURIComponent(searchTerm)}`)
 };
 
-export const getArchivedEmployees = () => api.get('/api/employees/archives');
+// =========================
+// API Authentification
+// =========================
 
 export const authAPI = {
-  login: (credentials) => api.post('/api/auth/login', credentials),
+  // Login avec email et password
+  login: (email, password) => api.post('/auth/login', { email, password }),
+  
+  // Login avec un objet credentials
+  loginWithCredentials: (credentials) => api.post('/auth/login', credentials),
+  
+  logout: () => {
+    localStorage.removeItem('token');
+  }
 };
 
-export const demandesAPI = {
-  getAll: (params = {}) => api.get('/api/demandes', { params }),
-  getById: (id) => api.get(`/api/demandes/${id}`),
-  create: (demandeData) => api.post('/api/demandes', demandeData),
-  update: (id, demandeData) => api.put(`/api/demandes/${id}`, demandeData),
-  updateStatut: (id, statutData) => api.put(`/api/demandes/${id}/statut`, statutData),
-  delete: (id) => api.delete(`/api/demandes/${id}`),
-};
+// =========================
+// Archives & Recherche avancée
+// =========================
+
+export const getArchivedEmployees = () => api.get('/employees/archives');
+
+export const searchEmployeesWithStatus = (searchTerm, statut = 'actif') =>
+  api.get(
+    `/employees/search?q=${encodeURIComponent(searchTerm)}&statut=${encodeURIComponent(
+      statut
+    )}`
+  );
 
 export default api;
