@@ -87,27 +87,14 @@ export const getArchivedEmployees = () => api.get('/employees/archives');
 
 // API Authentification - CORRECTION ICI
 export const authAPI = {
-  login: async (email, password) => {
-    try {
-      console.log('🔐 Tentative de login:', email);
-      console.log('🔗 URL login:', `${API_URL}/api/auth/login`);
-      
-      const response = await axios.post(`${API_URL}/api/auth/login`, 
-        { email, password },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          timeout: 30000
-        }
-      );
-      
-      console.log('✅ Login réussi:', response.data);
-      return response;
-    } catch (error) {
-      console.error('❌ Erreur login:', error.response?.data || error.message);
-      throw error;
-    }
+  // Login avec email et password
+  login: (email, password) => api.post('/auth/login', { email, password }),
+  
+  // Login avec un objet credentials
+  loginWithCredentials: (credentials) => api.post('/auth/login', credentials),
+  
+  logout: () => {
+    localStorage.removeItem('token');
   }
 };
 
