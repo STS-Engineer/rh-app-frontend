@@ -1,46 +1,31 @@
 import axios from 'axios';
 
-// URL de l'API - Configuration pour Azure
-const API_URL ='https://avo-hr-managment.azurewebsites.net';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
-console.log('🔧 API URL configurée:', API_URL);
-
-// Configuration axios avec intercepteur pour le token
 const api = axios.create({
-  baseURL: `${API_URL}/api`,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 secondes timeout
 });
 
-// Intercepteur pour ajouter le token à chaque requête
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    console.log('📤 Requête API:', config.method.toUpperCase(), config.url);
     return config;
   },
   (error) => {
-    console.error('❌ Erreur requête:', error);
     return Promise.reject(error);
   }
 );
 
-// Intercepteur pour gérer les erreurs
 api.interceptors.response.use(
-  (response) => {
-    console.log('✅ Réponse API:', response.config.url, response.status);
-    return response;
-  },
+  (response) => response,
   (error) => {
-    console.error('❌ Erreur réponse API:', error.response || error);
-    
     if (error.response?.status === 401) {
-      console.log('🚫 Non autorisé - Redirection vers login');
       localStorage.removeItem('token');
       window.location.href = '/';
     }
@@ -48,70 +33,52 @@ api.interceptors.response.use(
   }
 );
 
-// API Employés
 export const employeesAPI = {
-  getAll: () => api.get('/employees'),
+  getAll: () => api.get('/api/employees'),
   
-  getById: (id) => api.get(`/employees/${id}`),
+  getById: (id) => api.get(`/api/employees/${id}`),
   
-  create: (employeeData) => api.post('/employees', employeeData),
+  search: (query) => api.get(`/api/employees/search?q=${query}`),
   
-  update: (id, employeeData) => api.put(`/employees/${id}`, employeeData),
+  create: (employeeData) => api.post('/api/employees', employeeData),
   
-  search: (query) => api.get('/employees/search', { params: { q: query } }),
+  update: (id, employeeData) => api.put(`/api/employees/${id}`, employeeData),
   
   archiveEmployee: (id, entretien_depart) => 
-    api.put(`/employees/${id}/archive`, { entretien_depart }),
+    api.put(`/api/employees/${id}/archive`, { entretien_depart }),
   
-  // Méthode pour uploader le dossier RH
-  uploadDossierRH: async (id, file) => {
-    const formData = new FormData();
-    formData.append('dossier', file);
-    
+  uploadDossierRh: async (formData) => {
     const token = localStorage.getItem('token');
-    
-    console.log('📤 Upload vers:', `${API_URL}/api/employees/${id}/upload-dossier`);
-    
-    return axios.post(`${API_URL}/api/employees/${id}/upload-dossier`, formData, {
+    const response = await fetch(`${API_BASE_URL}/api/employees/upload-dossier-rh`, {
+      method: 'POST',
       headers: {
-        'Content-Type': 'multipart/form-data',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
       },
-      timeout: 60000 // 60 secondes pour l'upload
+      body: formData,
     });
-  }
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Erreur d\'upload' }));
+      throw new Error(errorData.message || 'Erreur lors de l\'upload');
+    }
+    
+    return response.json();
+  },
 };
 
-// API Archives
-export const getArchivedEmployees = () => api.get('/employees/archives');
+export const getArchivedEmployees = () => api.get('/api/employees/archives');
 
-// API Authentification - CORRECTION ICI
 export const authAPI = {
-  // Login avec email et password
-  login: (email, password) => api.post('/auth/login', { email, password }),
-  
-  // Login avec un objet credentials
-  loginWithCredentials: (credentials) => api.post('/auth/login', credentials),
-  
-  logout: () => {
-    localStorage.removeItem('token');
-  }
+  login: (credentials) => api.post('/api/auth/login', credentials),
 };
 
-// API Demandes RH
 export const demandesAPI = {
-  getAll: (params) => api.get('/demandes', { params }),
-  
-  getById: (id) => api.get(`/demandes/${id}`),
-  
-  create: (demandeData) => api.post('/demandes', demandeData),
-  
-  update: (id, demandeData) => api.put(`/demandes/${id}`, demandeData),
-  
-  updateStatut: (id, statut, commentaire_refus) => 
-    api.put(`/demandes/${id}/statut`, { statut, commentaire_refus }),
-  
-  delete: (id) => api.delete(`/demandes/${id}`),
+  getAll: (params = {}) => api.get('/api/demandes', { params }),
+  getById: (id) => api.get(`/api/demandes/${id}`),
+  create: (demandeData) => api.post('/api/demandes', demandeData),
+  update: (id, demandeData) => api.put(`/api/demandes/${id}`, demandeData),
+  updateStatut: (id, statutData) => api.put(`/api/demandes/${id}/statut`, statutData),
+  delete: (id) => api.delete(`/api/demandes/${id}`),
 };
 
 export default api;
