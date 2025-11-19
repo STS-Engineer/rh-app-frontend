@@ -3,15 +3,12 @@ import { employeesAPI } from '../services/api';
 import ArchiveModal from './ArchiveModal';
 import './EmployeeModal.css';
 
-// URL de l'API - Configuration pour Azure
-const API_URL = process.env.REACT_APP_API_URL || 'https://avo-hr-managment.azurewebsites.net';
-
 const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -58,62 +55,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     }
   };
 
-  const handleFileUpload = async (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    console.log('📎 Fichier sélectionné:', {
-      name: file.name,
-      type: file.type,
-      size: file.size
-    });
-
-    // Vérifier le type de fichier
-    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-    if (!allowedTypes.includes(file.type)) {
-      alert('❌ Type de fichier non autorisé. Veuillez choisir un PDF ou une image (JPG, PNG, GIF).');
-      return;
-    }
-
-    // Vérifier la taille (10MB max)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('❌ Le fichier est trop volumineux. Taille maximale : 10MB');
-      return;
-    }
-
-    setUploading(true);
-
-    try {
-      console.log('📤 Upload du dossier RH pour employé ID:', employee.id);
-      
-      // Utiliser la méthode uploadDossierRH de l'API
-      const response = await employeesAPI.uploadDossierRH(employee.id, file);
-      
-      console.log('✅ Dossier uploadé avec succès:', response.data);
-
-      // Mettre à jour l'état local
-      setFormData(prev => ({
-        ...prev,
-        dossier_rh: response.data.filePath
-      }));
-
-      // Mettre à jour la liste des employés
-      onUpdate(response.data.employee);
-
-      alert('✅ Dossier RH uploadé avec succès!');
-      
-    } catch (error) {
-      console.error('❌ Erreur upload:', error);
-      alert('❌ Erreur lors de l\'upload du dossier: ' + (error.response?.data?.error || error.message));
-    } finally {
-      setUploading(false);
-      // Réinitialiser l'input file
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
-
   const handleArchive = async (entretien_depart) => {
     try {
       setSaving(true);
@@ -131,6 +72,72 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+    
+    setUploading(true);
+    try {
+      console.log('📤 Upload du fichier:', file.name, file.type);
+      
+      const uploadFormData = new FormData();
+      uploadFormData.append('dossier_rh', file);
+      uploadFormData.append('employee_id', employee.id);
+      
+      const response = await employeesAPI.uploadDossierRh(uploadFormData);
+      console.log('✅ Fichier uploadé:', response.data);
+      
+      const updatedEmployee = { 
+        ...employee, 
+        dossier_rh: response.data.fileUrl 
+      };
+      
+      setFormData(updatedEmployee);
+      onUpdate(updatedEmployee);
+      alert('✅ Dossier RH uploadé avec succès!');
+      
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'upload:', error);
+      alert('❌ Erreur lors de l\'upload: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.type !== 'application/pdf' && !file.type.startsWith('image/')) {
+        alert('❌ Veuillez sélectionner un fichier PDF ou une image');
+        return;
+      }
+      
+      if (file.size > 10 * 1024 * 1024) {
+        alert('❌ Le fichier est trop volumineux (max 10MB)');
+        return;
+      }
+      
+      handleFileUpload(file);
+    }
+  };
+
+  const takePhoto = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        handleFileUpload(file);
+      }
+    };
+    input.click();
+  };
+
+  const openFileSelector = () => {
+    fileInputRef.current?.click();
   };
 
   const formatDateForInput = (dateString) => {
@@ -167,12 +174,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const getDocumentUrl = (dossierRh) => {
     if (!dossierRh) return null;
     
-    // Si c'est un chemin local (/public/...)
-    if (dossierRh.startsWith('/public/')) {
-      return `${API_URL}${dossierRh}`;
-    }
-    
-    // Si c'est déjà une URL complète
     if (dossierRh.startsWith('http')) {
       return dossierRh;
     }
@@ -180,29 +181,28 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     return null;
   };
 
+  const isPdfUrl = (url) => {
+    if (!url) return false;
+    const lowerUrl = url.toLowerCase();
+    return lowerUrl.endsWith('.pdf') || lowerUrl.includes('.pdf?') || 
+           lowerUrl.includes('/pdf') || lowerUrl.includes('application/pdf');
+  };
+
   const getDocumentDisplayName = (url) => {
-    if (!url) return 'Document';
+    if (!url) return 'Document PDF';
     
     try {
-      // Si c'est un chemin local
-      if (url.startsWith('/public/')) {
-        const filename = url.split('/').pop();
-        return decodeURIComponent(filename);
-      }
-      
-      // Si c'est une URL
       const urlObj = new URL(url);
       const pathname = urlObj.pathname;
       const filename = pathname.split('/').pop();
       
-      if (filename) {
+      if (filename && filename.includes('.pdf')) {
         return decodeURIComponent(filename);
       }
       
       return `Document - ${urlObj.hostname}`;
     } catch {
-      const filename = url.split('/').pop();
-      return decodeURIComponent(filename) || 'Document';
+      return 'Document PDF';
     }
   };
 
@@ -214,8 +214,14 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       return;
     }
 
-    console.log('📄 Ouverture document:', url);
-    window.open(url, '_blank', 'noopener,noreferrer');
+    if (!isPdfUrl(url)) {
+      if (confirm('⚠️ Ce lien ne semble pas être un PDF. Voulez-vous quand même l\'ouvrir?')) {
+        window.open(url, '_blank');
+      }
+      return;
+    }
+
+    window.open(url, '_blank');
   };
 
   const handleClose = () => {
@@ -244,7 +250,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
         </div>
 
         <div className="employee-modal-body">
-          {/* En-tête avec photo et informations basiques */}
           <div className="employee-header">
             <img 
               src={getPhotoUrl()} 
@@ -264,7 +269,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
           </div>
 
           {!isEditing ? (
-            // Mode visualisation
             <div className="employee-details-grid">
               <div className="detail-section">
                 <h4>📝 Informations Personnelles</h4>
@@ -305,66 +309,34 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                   </span>
                 </div>
                 
-                {/* Bouton pour ajouter/modifier le dossier RH */}
-                <div className="upload-section" style={{ marginTop: '15px', padding: '15px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                <div className="upload-buttons">
+                  <button 
+                    className="upload-btn"
+                    onClick={openFileSelector}
+                    disabled={uploading}
+                  >
+                    {uploading ? '⏳ Upload...' : '📁 Ajouter Dossier RH'}
+                  </button>
+                  
+                  <button 
+                    className="camera-btn"
+                    onClick={takePhoto}
+                    disabled={uploading}
+                  >
+                    📸 Prendre une Photo
+                  </button>
+                  
                   <input
-                    ref={fileInputRef}
                     type="file"
-                    accept=".pdf,.jpg,.jpeg,.png,.gif,image/*"
-                    capture="environment"
-                    onChange={handleFileUpload}
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    accept=".pdf,image/*"
                     style={{ display: 'none' }}
                   />
-                  <button
-                    className="upload-dossier-btn"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    style={{
-                      padding: '12px 24px',
-                      backgroundColor: uploading ? '#95a5a6' : '#3498db',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: uploading ? 'not-allowed' : 'pointer',
-                      fontSize: '14px',
-                      fontWeight: 'bold',
-                      transition: 'all 0.3s ease',
-                      width: '100%',
-                      boxShadow: uploading ? 'none' : '0 2px 4px rgba(52, 152, 219, 0.3)'
-                    }}
-                    onMouseOver={(e) => {
-                      if (!uploading) {
-                        e.target.style.backgroundColor = '#2980b9';
-                        e.target.style.transform = 'translateY(-2px)';
-                        e.target.style.boxShadow = '0 4px 8px rgba(52, 152, 219, 0.4)';
-                      }
-                    }}
-                    onMouseOut={(e) => {
-                      if (!uploading) {
-                        e.target.style.backgroundColor = '#3498db';
-                        e.target.style.transform = 'translateY(0)';
-                        e.target.style.boxShadow = '0 2px 4px rgba(52, 152, 219, 0.3)';
-                      }
-                    }}
-                  >
-                    {uploading ? '⏳ Upload en cours...' : '📤 Ajouter/Modifier Dossier RH'}
-                  </button>
-                  <p style={{ 
-                    fontSize: '12px', 
-                    color: '#7f8c8d', 
-                    marginTop: '10px', 
-                    marginBottom: '0',
-                    textAlign: 'center',
-                    lineHeight: '1.5'
-                  }}>
-                    📱 Formats acceptés: PDF, JPG, PNG, GIF (max 10MB)<br/>
-                    📸 Vous pouvez prendre une photo directement depuis votre appareil
-                  </p>
                 </div>
               </div>
             </div>
           ) : (
-            // Mode édition
             <div className="edit-form">
               <div className="form-section">
                 <h4>📝 Informations Personnelles</h4>
@@ -399,12 +371,11 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     name="dossier_rh" 
                     value={formData.dossier_rh || ''} 
                     onChange={handleInputChange} 
-                    placeholder="https://exemple.com/document.pdf ou /public/..." 
+                    placeholder="https://exemple.com/document.pdf" 
                   />
                 </div>
               </div>
 
-              {/* Bouton d'archivage conditionnel */}
               {hasDepartureDate && (
                 <div className="archive-section">
                   <button 
@@ -452,7 +423,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
         </div>
       </div>
 
-      {/* Modal d'archivage */}
       <ArchiveModal
         employee={employee}
         isOpen={showArchiveModal}
