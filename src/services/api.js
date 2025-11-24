@@ -72,6 +72,16 @@ export const employeesAPI = {
   // Rechercher des employés (actifs par défaut côté backend)
   search: (searchTerm) =>
     api.get(`/employees/search?q=${encodeURIComponent(searchTerm)}`)
+
+    // Nouvelle fonction pour uploader le dossier RH
+  uploadDossierRH: (formData) => {
+    return axios.post('/api/employees/upload-dossier-rh', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      },
+      timeout: 60000 // 60 secondes timeout pour les gros fichiers
+    });
+  }
 };
 
 // =========================
@@ -93,7 +103,20 @@ export const authAPI = {
 // =========================
 // Archives & Recherche avancée
 // =========================
-
+export const demandesRHAPI = {
+  getAll: (params = {}) => axios.get('/api/demandes', { params }),
+  
+  getById: (id) => axios.get(`/api/demandes/${id}`),
+  
+  create: (demandeData) => axios.post('/api/demandes', demandeData),
+  
+  update: (id, demandeData) => axios.put(`/api/demandes/${id}`, demandeData),
+  
+  updateStatut: (id, statut, commentaire_refus = null) => 
+    axios.put(`/api/demandes/${id}/statut`, { statut, commentaire_refus }),
+  
+  delete: (id) => axios.delete(`/api/demandes/${id}`)
+};
 export const getArchivedEmployees = () => api.get('/employees/archives');
 
 export const searchEmployeesWithStatus = (searchTerm, statut = 'actif') =>
