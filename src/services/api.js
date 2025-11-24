@@ -1,20 +1,34 @@
 import axios from 'axios';
 
-// Utiliser l'URL de votre backend Azure
-const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
+// =========================
+// Configuration de l'API
+// =========================
+//
+// En local : utilise http://localhost:5000/api
+// En production (Azure) : définir REACT_APP_API_URL
+//    ex : https://ton-backend.azurewebsites.net/api
+//
+const API_BASE_URL ='https://backend-rh.azurewebsites.net/api';
 
-// Configuration axios globale
-axios.defaults.baseURL = API_BASE_URL;
+// Création d'une instance axios
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
 
-// Intercepteur pour ajouter le token automatiquement
-axios.interceptors.request.use(
+// =========================
+// Intercepteurs
+// =========================
+
+// Ajout automatique du token JWT aux requêtes
+api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    // Important pour CORS
-    config.headers['Content-Type'] = 'application/json';
     return config;
   },
   (error) => {
@@ -22,8 +36,8 @@ axios.interceptors.request.use(
   }
 );
 
-// Intercepteur pour gérer les erreurs globales
-axios.interceptors.response.use(
+// Gestion globale des erreurs d'authentification
+api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
@@ -34,57 +48,59 @@ axios.interceptors.response.use(
   }
 );
 
-export const authAPI = {
-  login: (email, password) => {
-    return axios.post('/api/auth/login', { email, password });
-  }
-};
+// =========================
+// API Employés
+// =========================
 
 export const employeesAPI = {
-  getAll: () => axios.get('/api/employees'),
+  // Récupérer tous les employés actifs
+  getAll: () => api.get('/employees'),
   
-  getArchived: () => axios.get('/api/employees/archives'),
+  // Récupérer un employé par ID
+  getById: (id) => api.get(`/employees/${id}`),
   
-  search: (query, statut = 'actif') => 
-    axios.get('/api/employees/search', { params: { q: query, statut } }),
+  // Créer un nouvel employé
+  create: (employeeData) => api.post('/employees', employeeData),
   
-  getById: (id) => axios.get(`/api/employees/${id}`),
+  // Mettre à jour un employé
+  update: (id, employeeData) => api.put(`/employees/${id}`, employeeData),
   
-  create: (employeeData) => axios.post('/api/employees', employeeData),
+  // Archiver un employé
+  archiveEmployee: (employeeId, entretien_depart) =>
+    api.put(`/employees/${employeeId}/archive`, { entretien_depart }),
   
-  update: (id, employeeData) => axios.put(`/api/employees/${id}`, employeeData),
+  // Rechercher des employés (actifs par défaut côté backend)
+  search: (searchTerm) =>
+    api.get(`/employees/search?q=${encodeURIComponent(searchTerm)}`)
+};
+
+// =========================
+// API Authentification
+// =========================
+
+export const authAPI = {
+  // Login avec email et password
+  login: (email, password) => api.post('/auth/login', { email, password }),
   
-  archiveEmployee: (id, entretien_depart) => 
-    axios.put(`/api/employees/${id}/archive`, { entretien_depart }),
+  // Login avec un objet credentials
+  loginWithCredentials: (credentials) => api.post('/auth/login', credentials),
   
-  // Nouvelle fonction pour uploader le dossier RH
-  uploadDossierRH: (formData) => {
-    return axios.post('/api/employees/upload-dossier-rh', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      },
-      timeout: 60000
-    });
+  logout: () => {
+    localStorage.removeItem('token');
   }
 };
 
-export const demandesRHAPI = {
-  getAll: (params = {}) => axios.get('/api/demandes', { params }),
-  
-  getById: (id) => axios.get(`/api/demandes/${id}`),
-  
-  create: (demandeData) => axios.post('/api/demandes', demandeData),
-  
-  update: (id, demandeData) => axios.put(`/api/demandes/${id}`, demandeData),
-  
-  updateStatut: (id, statut, commentaire_refus = null) => 
-    axios.put(`/api/demandes/${id}/statut`, { statut, commentaire_refus }),
-  
-  delete: (id) => axios.delete(`/api/demandes/${id}`)
-};
+// =========================
+// Archives & Recherche avancée
+// =========================
 
-export default {
-  auth: authAPI,
-  employees: employeesAPI,
-  demandes: demandesRHAPI
-};
+export const getArchivedEmployees = () => api.get('/employees/archives');
+
+export const searchEmployeesWithStatus = (searchTerm, statut = 'actif') =>
+  api.get(
+    `/employees/search?q=${encodeURIComponent(searchTerm)}&statut=${encodeURIComponent(
+      statut
+    )}`
+  );
+
+export default api;
