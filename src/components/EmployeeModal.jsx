@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { employeesAPI } from '../services/api';
 import ArchiveModal from './ArchiveModal';
+import DossierRHModal from './DossierRHModal';
 import './EmployeeModal.css';
 
 const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
@@ -8,6 +9,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const [formData, setFormData] = useState({});
   const [saving, setSaving] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [showDossierModal, setShowDossierModal] = useState(false);
 
   useEffect(() => {
     if (employee) {
@@ -242,6 +244,16 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     )}
                   </span>
                 </div>
+                
+                {/* Bouton pour ajouter/mettre à jour le dossier RH */}
+                <div className="dossier-action">
+                  <button 
+                    className="add-dossier-btn"
+                    onClick={() => setShowDossierModal(true)}
+                  >
+                    📁 Ajouter/Mettre à jour le dossier RH
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -339,6 +351,17 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
         isOpen={showArchiveModal}
         onClose={() => setShowArchiveModal(false)}
         onArchive={handleArchive}
+      />
+
+      {/* Modal dossier RH */}
+      <DossierRHModal
+        employee={employee}
+        isOpen={showDossierModal}
+        onClose={() => setShowDossierModal(false)}
+        onSuccess={(updatedEmployee) => {
+          setFormData(updatedEmployee);
+          onUpdate(updatedEmployee);
+        }}
       />
     </div>
   );
