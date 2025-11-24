@@ -18,12 +18,10 @@ const api = axios.create({
   }
 });
 
-// =========================
-// Intercepteurs
-// =========================
 
-// Ajout automatique du token JWT aux requêtes
-api.interceptors.request.use(
+
+// Intercepteur pour ajouter le token automatiquement
+axios.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -36,8 +34,8 @@ api.interceptors.request.use(
   }
 );
 
-// Gestion globale des erreurs d'authentification
-api.interceptors.response.use(
+// Intercepteur pour gérer les erreurs globales
+axios.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
@@ -48,61 +46,40 @@ api.interceptors.response.use(
   }
 );
 
-// =========================
-// API Employés
-// =========================
+export const authAPI = {
+  login: (email, password) => {
+    return axios.post('/api/auth/login', { email, password });
+  }
+};
 
 export const employeesAPI = {
-  // Récupérer tous les employés actifs
-  getAll: () => api.get('/employees'),
+  getAll: () => axios.get('/api/employees'),
   
-  // Récupérer un employé par ID
-  getById: (id) => api.get(`/employees/${id}`),
+  getArchived: () => axios.get('/api/employees/archives'),
   
-  // Créer un nouvel employé
-  create: (employeeData) => api.post('/employees', employeeData),
+  search: (query, statut = 'actif') => 
+    axios.get('/api/employees/search', { params: { q: query, statut } }),
   
-  // Mettre à jour un employé
-  update: (id, employeeData) => api.put(`/employees/${id}`, employeeData),
+  getById: (id) => axios.get(`/api/employees/${id}`),
   
-  // Archiver un employé
-  archiveEmployee: (employeeId, entretien_depart) =>
-    api.put(`/employees/${employeeId}/archive`, { entretien_depart }),
+  create: (employeeData) => axios.post('/api/employees', employeeData),
   
-  // Rechercher des employés (actifs par défaut côté backend)
-  search: (searchTerm) =>
-    api.get(`/employees/search?q=${encodeURIComponent(searchTerm)}`),
-
-    // Nouvelle fonction pour uploader le dossier RH
+  update: (id, employeeData) => axios.put(`/api/employees/${id}`, employeeData),
+  
+  archiveEmployee: (id, entretien_depart) => 
+    axios.put(`/api/employees/${id}/archive`, { entretien_depart }),
+  
+  // Nouvelle fonction pour uploader le dossier RH
   uploadDossierRH: (formData) => {
     return axios.post('/api/employees/upload-dossier-rh', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       },
-      timeout: 60000 // 60 secondes timeout pour les gros fichiers
+      timeout: 60000
     });
   }
 };
 
-// =========================
-// API Authentification
-// =========================
-
-export const authAPI = {
-  // Login avec email et password
-  login: (email, password) => api.post('/auth/login', { email, password }),
-  
-  // Login avec un objet credentials
-  loginWithCredentials: (credentials) => api.post('/auth/login', credentials),
-  
-  logout: () => {
-    localStorage.removeItem('token');
-  }
-};
-
-// =========================
-// Archives & Recherche avancée
-// =========================
 export const demandesRHAPI = {
   getAll: (params = {}) => axios.get('/api/demandes', { params }),
   
@@ -117,13 +94,9 @@ export const demandesRHAPI = {
   
   delete: (id) => axios.delete(`/api/demandes/${id}`)
 };
-export const getArchivedEmployees = () => api.get('/employees/archives');
 
-export const searchEmployeesWithStatus = (searchTerm, statut = 'actif') =>
-  api.get(
-    `/employees/search?q=${encodeURIComponent(searchTerm)}&statut=${encodeURIComponent(
-      statut
-    )}`
-  );
-
-export default api;
+export default {
+  auth: authAPI,
+  employees: employeesAPI,
+  demandes: demandesRHAPI
+};
