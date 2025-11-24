@@ -71,7 +71,7 @@ export const employeesAPI = {
   
   // Rechercher des employés (actifs par défaut côté backend)
   search: (searchTerm) =>
-    api.get(`/employees/search?q=${encodeURIComponent(searchTerm)}`)
+    api.get(`/employees/search?q=${encodeURIComponent(searchTerm)}`),
 
     // Nouvelle fonction pour uploader le dossier RH
   uploadDossierRH: (formData) => {
