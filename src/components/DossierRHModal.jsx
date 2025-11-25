@@ -11,7 +11,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
-  const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
+  const API_BASE_URL = 'https://backend-rh.azurewebsites.net/api';
 
   // Ouvrir la caméra
   const startCamera = async () => {
