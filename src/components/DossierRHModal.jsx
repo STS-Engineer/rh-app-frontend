@@ -17,8 +17,8 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const startCamera = async () => {
     try {
       setIsCapturing(true);
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
       });
       streamRef.current = stream;
       if (videoRef.current) {
@@ -26,7 +26,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       }
     } catch (error) {
       console.error('Erreur caméra:', error);
-      alert('Impossible d\'accéder à la caméra');
+      alert("Impossible d'accéder à la caméra");
       setIsCapturing(false);
     }
   };
@@ -50,18 +50,27 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     canvas.height = videoRef.current.videoHeight;
     context.drawImage(videoRef.current, 0, 0);
 
-    canvas.toBlob(blob => {
-      const file = new File([blob], `capture-${Date.now()}.jpg`, { type: 'image/jpeg' });
-      setPhotos(prev => [...prev, {
-        file: file,
-        preview: URL.createObjectURL(blob),
-        name: `Capture ${prev.length + 1}`
-      }]);
-    }, 'image/jpeg', 0.8);
+    canvas.toBlob(
+      blob => {
+        const file = new File([blob], `capture-${Date.now()}.jpg`, {
+          type: 'image/jpeg'
+        });
+        setPhotos(prev => [
+          ...prev,
+          {
+            file: file,
+            preview: URL.createObjectURL(blob),
+            name: `Capture ${prev.length + 1}`
+          }
+        ]);
+      },
+      'image/jpeg',
+      0.8
+    );
   };
 
   // Upload de photos depuis l'appareil
-  const handleFileUpload = (e) => {
+  const handleFileUpload = e => {
     const files = Array.from(e.target.files);
     const newPhotos = files.map(file => ({
       file: file,
@@ -72,7 +81,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   };
 
   // Supprimer une photo
-  const removePhoto = (index) => {
+  const removePhoto = index => {
     setPhotos(prev => {
       const newPhotos = [...prev];
       URL.revokeObjectURL(newPhotos[index].preview);
@@ -92,27 +101,29 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     try {
       const token = localStorage.getItem('token');
       const formData = new FormData();
-      
+
       photos.forEach(photo => {
         formData.append('photos', photo.file);
       });
 
-      const response = await fetch(`${API_BASE_URL}/api/dossier-rh/upload-photos`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/dossier-rh/upload-photos`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          body: formData
+        }
+      );
 
       if (!response.ok) throw new Error('Erreur upload');
 
       const result = await response.json();
       return result.photos;
-
     } catch (error) {
       console.error('Erreur upload:', error);
-      alert('Erreur lors de l\'upload des photos');
+      alert("Erreur lors de l'upload des photos");
       return null;
     } finally {
       setUploading(false);
@@ -137,26 +148,41 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       if (!uploadedPhotos) return;
 
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/dossier-rh/generate-pdf/${employee.id}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          photos: uploadedPhotos,
-          dossierName: dossierName
-        })
-      });
+      const response = await fetch(
+        `${API_BASE_URL}/api/dossier-rh/generate-pdf/${employee.id}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            photos: uploadedPhotos,
+            dossierName: dossierName
+          })
+        }
+      );
 
-      if (!response.ok) throw new Error('Erreur génération PDF');
+      let result;
+      try {
+        result = await response.json();
+      } catch (e) {
+        console.error('Réponse non JSON de generate-pdf:', e);
+      }
 
-      const result = await response.json();
-      
+      if (!response.ok) {
+        console.error('Réponse erreur generate-pdf:', result);
+        alert(
+          `Erreur lors de la génération du PDF${
+            result?.details ? ' : ' + result.details : ''
+          }`
+        );
+        return;
+      }
+
       alert('✅ Dossier RH généré avec succès!');
       onSuccess(result.employee);
       handleClose();
-
     } catch (error) {
       console.error('Erreur génération PDF:', error);
       alert('Erreur lors de la génération du PDF');
@@ -177,16 +203,25 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
   return (
     <div className="dossier-modal-overlay" onClick={handleClose}>
-      <div className="dossier-modal-content" onClick={e => e.stopPropagation()}>
+      <div
+        className="dossier-modal-content"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="dossier-modal-header">
           <h2>📁 Ajouter un Dossier RH</h2>
-          <button className="close-btn" onClick={handleClose}>×</button>
+          <button className="close-btn" onClick={handleClose}>
+            ×
+          </button>
         </div>
 
         <div className="dossier-modal-body">
           <div className="employee-info">
-            <h3>Pour: {employee.prenom} {employee.nom}</h3>
-            <p>Matricule: {employee.matricule} | Poste: {employee.poste}</p>
+            <h3>
+              Pour: {employee.prenom} {employee.nom}
+            </h3>
+            <p>
+              Matricule: {employee.matricule} | Poste: {employee.poste}
+            </p>
           </div>
 
           <div className="form-section">
@@ -194,7 +229,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
             <input
               type="text"
               value={dossierName}
-              onChange={(e) => setDossierName(e.target.value)}
+              onChange={e => setDossierName(e.target.value)}
               placeholder="Ex: Dossier d'embauche, Évaluation trimestrielle..."
               className="dossier-name-input"
             />
@@ -202,41 +237,53 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
           <div className="photos-section">
             <h4>Photos ({photos.length})</h4>
-            
+
             <div className="capture-controls">
               {!isCapturing ? (
-                <button type="button" className="camera-btn" onClick={startCamera}>
+                <button
+                  type="button"
+                  className="camera-btn"
+                  onClick={startCamera}
+                >
                   📷 Ouvrir la caméra
                 </button>
               ) : (
                 <div className="camera-active">
                   <div className="video-container">
-                    <video 
-                      ref={videoRef} 
-                      autoPlay 
+                    <video
+                      ref={videoRef}
+                      autoPlay
                       playsInline
                       className="camera-video"
                     />
                   </div>
                   <div className="camera-actions">
-                    <button type="button" className="capture-btn" onClick={capturePhoto}>
+                    <button
+                      type="button"
+                      className="capture-btn"
+                      onClick={capturePhoto}
+                    >
                       📸 Capturer
                     </button>
-                    <button type="button" className="stop-camera-btn" onClick={stopCamera}>
+                    <button
+                      type="button"
+                      className="stop-camera-btn"
+                      onClick={stopCamera}
+                    >
                       ❌ Fermer
                     </button>
                   </div>
                 </div>
               )}
 
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="upload-btn"
                 onClick={() => fileInputRef.current?.click()}
               >
                 📁 Uploader des photos
               </button>
-              
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -252,7 +299,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
                 {photos.map((photo, index) => (
                   <div key={index} className="photo-item">
                     <img src={photo.preview} alt={`Preview ${index}`} />
-                    <button 
+                    <button
                       className="remove-photo-btn"
                       onClick={() => removePhoto(index)}
                     >
@@ -267,21 +314,25 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
         </div>
 
         <div className="dossier-modal-footer">
-          <button 
-            className="cancel-btn" 
+          <button
+            className="cancel-btn"
             onClick={handleClose}
             disabled={generating}
           >
             ❌ Annuler
           </button>
-          <button 
+          <button
             className="generate-btn"
             onClick={generatePDF}
-            disabled={generating || uploading || photos.length === 0 || !dossierName.trim()}
+            disabled={
+              generating || uploading || photos.length === 0 || !dossierName.trim()
+            }
           >
-            {generating ? '⏳ Génération...' : 
-             uploading ? '⏳ Upload...' : 
-             '📄 Générer le PDF'}
+            {generating
+              ? '⏳ Génération...'
+              : uploading
+              ? '⏳ Upload...'
+              : '📄 Générer le PDF'}
           </button>
         </div>
       </div>
