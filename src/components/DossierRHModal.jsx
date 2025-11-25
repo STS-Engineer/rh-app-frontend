@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import './DossierRHModal.css';
 
 const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
@@ -11,9 +11,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
-  // Permet de surcharger via .env (REACT_APP_API_BASE_URL)
-  const API_BASE_URL =
-    process.env.REACT_APP_API_BASE_URL || 'https://backend-rh.azurewebsites.net';
+  const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
 
   // Ouvrir la caméra
   const startCamera = async () => {
@@ -42,22 +40,6 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     setIsCapturing(false);
   };
 
-  // Nettoyage caméra à la fermeture du modal / unmount
-  useEffect(() => {
-    if (!isOpen) {
-      stopCamera();
-    }
-    return () => {
-      stopCamera();
-      // nettoyage des previews si le composant est démonté
-      setPhotos(prev => {
-        prev.forEach(photo => URL.revokeObjectURL(photo.preview));
-        return [];
-      });
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen]);
-
   // Capturer une photo
   const capturePhoto = () => {
     if (!videoRef.current) return;
@@ -70,7 +52,6 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
     canvas.toBlob(
       blob => {
-        if (!blob) return;
         const file = new File([blob], `capture-${Date.now()}.jpg`, {
           type: 'image/jpeg'
         });
@@ -79,7 +60,8 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
           {
             file: file,
             preview: URL.createObjectURL(blob),
-            name: `Capture ${prev.length + 1}`
+            name: `Capture ${prev.length + 1}`,
+            filename: `capture-${Date.now()}.jpg`
           }
         ]);
       },
@@ -90,13 +72,12 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
   // Upload de photos depuis l'appareil
   const handleFileUpload = e => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-
+    const files = Array.from(e.target.files);
     const newPhotos = files.map(file => ({
       file: file,
       preview: URL.createObjectURL(file),
-      name: file.name
+      name: file.name,
+      filename: file.name
     }));
     setPhotos(prev => [...prev, ...newPhotos]);
   };
@@ -105,10 +86,8 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const removePhoto = index => {
     setPhotos(prev => {
       const newPhotos = [...prev];
-      if (newPhotos[index]) {
-        URL.revokeObjectURL(newPhotos[index].preview);
-        newPhotos.splice(index, 1);
-      }
+      URL.revokeObjectURL(newPhotos[index].preview);
+      newPhotos.splice(index, 1);
       return newPhotos;
     });
   };
@@ -123,16 +102,13 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     setUploading(true);
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
-        alert('Session expirée, veuillez vous reconnecter.');
-        return null;
-      }
-
       const formData = new FormData();
+
       photos.forEach(photo => {
         formData.append('photos', photo.file);
       });
 
+      console.log('📤 Début upload des photos...');
       const response = await fetch(
         `${API_BASE_URL}/api/dossier-rh/upload-photos`,
         {
@@ -144,32 +120,18 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
         }
       );
 
-      let result;
-      try {
-        result = await response.json();
-      } catch (err) {
-        console.error('Réponse non JSON upload-photos:', err);
-      }
-
       if (!response.ok) {
-        console.error('Réponse erreur upload-photos:', result);
-        alert(
-          `Erreur lors de l'upload des photos${
-            result?.details ? ' : ' + result.details : ''
-          }`
-        );
-        return null;
+        const errorText = await response.text();
+        console.error('❌ Erreur upload:', errorText);
+        throw new Error(`Erreur upload: ${response.status}`);
       }
 
-      if (!result || !Array.isArray(result.photos)) {
-        alert("Réponse inattendue du serveur lors de l'upload des photos");
-        return null;
-      }
-
+      const result = await response.json();
+      console.log('✅ Upload réussi:', result);
       return result.photos;
     } catch (error) {
-      console.error('Erreur upload:', error);
-      alert("Erreur lors de l'upload des photos");
+      console.error('❌ Erreur upload:', error);
+      alert(`Erreur lors de l'upload des photos: ${error.message}`);
       return null;
     } finally {
       setUploading(false);
@@ -190,15 +152,17 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
     setGenerating(true);
     try {
+      console.log('🔄 Début génération PDF...');
+      
       const uploadedPhotos = await uploadPhotos();
-      if (!uploadedPhotos) return;
-
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('Session expirée, veuillez vous reconnecter.');
+      if (!uploadedPhotos) {
+        console.error('❌ Upload des photos échoué');
         return;
       }
 
+      console.log('📸 Photos uploadées:', uploadedPhotos);
+      
+      const token = localStorage.getItem('token');
       const response = await fetch(
         `${API_BASE_URL}/api/dossier-rh/generate-pdf/${employee.id}`,
         {
@@ -218,27 +182,28 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       try {
         result = await response.json();
       } catch (e) {
-        console.error('Réponse non JSON de generate-pdf:', e);
+        console.error('❌ Réponse non JSON:', e);
+        throw new Error('Réponse invalide du serveur');
       }
 
       if (!response.ok) {
-        console.error('Réponse erreur generate-pdf:', result);
-        alert(
-          `Erreur lors de la génération du PDF${
-            result?.details ? ' : ' + result.details : ''
-          }`
+        console.error('❌ Erreur génération PDF:', result);
+        throw new Error(
+          result?.error || result?.details || `Erreur ${response.status}`
         );
-        return;
       }
 
+      console.log('✅ PDF généré avec succès:', result);
       alert('✅ Dossier RH généré avec succès!');
-      if (result && result.employee && onSuccess) {
+      
+      if (onSuccess) {
         onSuccess(result.employee);
       }
+      
       handleClose();
     } catch (error) {
-      console.error('Erreur génération PDF:', error);
-      alert('Erreur lors de la génération du PDF');
+      console.error('❌ Erreur génération PDF:', error);
+      alert(`Erreur lors de la génération du PDF: ${error.message}`);
     } finally {
       setGenerating(false);
     }
@@ -249,7 +214,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     photos.forEach(photo => URL.revokeObjectURL(photo.preview));
     setPhotos([]);
     setDossierName('');
-    onClose && onClose();
+    onClose();
   };
 
   if (!isOpen || !employee) return null;
@@ -261,7 +226,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
         onClick={e => e.stopPropagation()}
       >
         <div className="dossier-modal-header">
-          <h2>📁 Ajouter un Dossier RH</h2>
+          <h2>📁 Créer un Dossier RH</h2>
           <button className="close-btn" onClick={handleClose}>
             ×
           </button>
@@ -333,6 +298,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
                 type="button"
                 className="upload-btn"
                 onClick={() => fileInputRef.current?.click()}
+                disabled={isCapturing}
               >
                 📁 Uploader des photos
               </button>
@@ -349,18 +315,24 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
             {photos.length > 0 && (
               <div className="photos-gallery">
-                {photos.map((photo, index) => (
-                  <div key={index} className="photo-item">
-                    <img src={photo.preview} alt={`Preview ${index}`} />
-                    <button
-                      className="remove-photo-btn"
-                      onClick={() => removePhoto(index)}
-                    >
-                      ×
-                    </button>
-                    <span className="photo-name">{photo.name}</span>
-                  </div>
-                ))}
+                <h5>Photos ajoutées:</h5>
+                <div className="photos-grid">
+                  {photos.map((photo, index) => (
+                    <div key={index} className="photo-item">
+                      <div className="photo-preview">
+                        <img src={photo.preview} alt={`Preview ${index}`} />
+                        <button
+                          className="remove-photo-btn"
+                          onClick={() => removePhoto(index)}
+                          title="Supprimer cette photo"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <span className="photo-name">{photo.name}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -370,7 +342,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
           <button
             className="cancel-btn"
             onClick={handleClose}
-            disabled={generating}
+            disabled={generating || uploading}
           >
             ❌ Annuler
           </button>
@@ -378,14 +350,17 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
             className="generate-btn"
             onClick={generatePDF}
             disabled={
-              generating || uploading || photos.length === 0 || !dossierName.trim()
+              generating || 
+              uploading || 
+              photos.length === 0 || 
+              !dossierName.trim()
             }
           >
             {generating
-              ? '⏳ Génération...'
+              ? '⏳ Génération en cours...'
               : uploading
-              ? '⏳ Upload...'
-              : '📄 Générer le PDF'}
+              ? '⏳ Upload des photos...'
+              : `📄 Générer le PDF (${photos.length} photo${photos.length > 1 ? 's' : ''})`}
           </button>
         </div>
       </div>
