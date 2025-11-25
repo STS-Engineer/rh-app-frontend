@@ -85,7 +85,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const uploadPhotos = async () => {
     if (photos.length === 0) {
       alert('Veuillez ajouter au moins une photo');
-      return;
+      return null;
     }
 
     setUploading(true);
@@ -133,11 +133,9 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
     setGenerating(true);
     try {
-      // Upload des photos d'abord
       const uploadedPhotos = await uploadPhotos();
       if (!uploadedPhotos) return;
 
-      // Générer le PDF
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/api/dossier-rh/generate-pdf/${employee.id}`, {
         method: 'POST',
@@ -169,7 +167,6 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
   const handleClose = () => {
     stopCamera();
-    // Nettoyer les URLs des previews
     photos.forEach(photo => URL.revokeObjectURL(photo.preview));
     setPhotos([]);
     setDossierName('');
@@ -206,7 +203,6 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
           <div className="photos-section">
             <h4>Photos ({photos.length})</h4>
             
-            {/* Contrôles de capture */}
             <div className="capture-controls">
               {!isCapturing ? (
                 <button type="button" className="camera-btn" onClick={startCamera}>
@@ -251,7 +247,6 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
               />
             </div>
 
-            {/* Galerie des photos */}
             {photos.length > 0 && (
               <div className="photos-gallery">
                 {photos.map((photo, index) => (
