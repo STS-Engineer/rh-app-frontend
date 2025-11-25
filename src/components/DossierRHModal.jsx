@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './DossierRHModal.css';
 
 const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
@@ -11,7 +11,9 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
-  const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
+  // Permet de surcharger via .env (REACT_APP_API_BASE_URL)
+  const API_BASE_URL =
+    process.env.REACT_APP_API_BASE_URL || 'https://backend-rh.azurewebsites.net';
 
   // Ouvrir la caméra
   const startCamera = async () => {
@@ -40,6 +42,22 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     setIsCapturing(false);
   };
 
+  // Nettoyage caméra à la fermeture du modal / unmount
+  useEffect(() => {
+    if (!isOpen) {
+      stopCamera();
+    }
+    return () => {
+      stopCamera();
+      // nettoyage des previews si le composant est démonté
+      setPhotos(prev => {
+        prev.forEach(photo => URL.revokeObjectURL(photo.preview));
+        return [];
+      });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
   // Capturer une photo
   const capturePhoto = () => {
     if (!videoRef.current) return;
@@ -52,6 +70,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
     canvas.toBlob(
       blob => {
+        if (!blob) return;
         const file = new File([blob], `capture-${Date.now()}.jpg`, {
           type: 'image/jpeg'
         });
@@ -71,7 +90,9 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
   // Upload de photos depuis l'appareil
   const handleFileUpload = e => {
-    const files = Array.from(e.target.files);
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
     const newPhotos = files.map(file => ({
       file: file,
       preview: URL.createObjectURL(file),
@@ -84,8 +105,10 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const removePhoto = index => {
     setPhotos(prev => {
       const newPhotos = [...prev];
-      URL.revokeObjectURL(newPhotos[index].preview);
-      newPhotos.splice(index, 1);
+      if (newPhotos[index]) {
+        URL.revokeObjectURL(newPhotos[index].preview);
+        newPhotos.splice(index, 1);
+      }
       return newPhotos;
     });
   };
@@ -100,8 +123,12 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     setUploading(true);
     try {
       const token = localStorage.getItem('token');
-      const formData = new FormData();
+      if (!token) {
+        alert('Session expirée, veuillez vous reconnecter.');
+        return null;
+      }
 
+      const formData = new FormData();
       photos.forEach(photo => {
         formData.append('photos', photo.file);
       });
@@ -117,9 +144,28 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
         }
       );
 
-      if (!response.ok) throw new Error('Erreur upload');
+      let result;
+      try {
+        result = await response.json();
+      } catch (err) {
+        console.error('Réponse non JSON upload-photos:', err);
+      }
 
-      const result = await response.json();
+      if (!response.ok) {
+        console.error('Réponse erreur upload-photos:', result);
+        alert(
+          `Erreur lors de l'upload des photos${
+            result?.details ? ' : ' + result.details : ''
+          }`
+        );
+        return null;
+      }
+
+      if (!result || !Array.isArray(result.photos)) {
+        alert("Réponse inattendue du serveur lors de l'upload des photos");
+        return null;
+      }
+
       return result.photos;
     } catch (error) {
       console.error('Erreur upload:', error);
@@ -148,6 +194,11 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       if (!uploadedPhotos) return;
 
       const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Session expirée, veuillez vous reconnecter.');
+        return;
+      }
+
       const response = await fetch(
         `${API_BASE_URL}/api/dossier-rh/generate-pdf/${employee.id}`,
         {
@@ -181,7 +232,9 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       }
 
       alert('✅ Dossier RH généré avec succès!');
-      onSuccess(result.employee);
+      if (result && result.employee && onSuccess) {
+        onSuccess(result.employee);
+      }
       handleClose();
     } catch (error) {
       console.error('Erreur génération PDF:', error);
@@ -196,7 +249,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     photos.forEach(photo => URL.revokeObjectURL(photo.preview));
     setPhotos([]);
     setDossierName('');
-    onClose();
+    onClose && onClose();
   };
 
   if (!isOpen || !employee) return null;
