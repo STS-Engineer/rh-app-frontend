@@ -6,20 +6,12 @@ const DemandesRH = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
-    type_demande: '',
     statut: '',
     date_debut: '',
     date_fin: ''
   });
 
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
-
-  const typesDemande = [
-    'congé',
-    'autorisation_absence',
-    'frais_deplacement',
-    'autre'
-  ];
 
   const statuts = [
     'en_attente',
@@ -51,8 +43,6 @@ const DemandesRH = () => {
         }
       });
 
-      console.log('🔍 Fetching demandes avec filtres:', Object.fromEntries(queryParams));
-
       const response = await fetch(`${API_BASE_URL}/api/demandes?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -65,7 +55,6 @@ const DemandesRH = () => {
       }
 
       const data = await response.json();
-      console.log('✅ Données reçues avec responsables:', data.demandes);
       setDemandes(data.demandes || []);
       
     } catch (error) {
@@ -119,13 +108,11 @@ const DemandesRH = () => {
     });
   };
 
-  // Fonction pour obtenir le nom complet du responsable
   const getResponsableName = (responsablePrenom, responsableNom, email) => {
     if (responsablePrenom && responsableNom) {
       return `${responsablePrenom} ${responsableNom}`;
     }
     if (email) {
-      // Fallback: extraire le nom de l'email
       const username = email.split('@')[0];
       const nameParts = username.split('.');
       const formattedName = nameParts.map(part => 
@@ -157,7 +144,6 @@ const DemandesRH = () => {
 
   const clearFilters = () => {
     setFilters({
-      type_demande: '',
       statut: '',
       date_debut: '',
       date_fin: ''
@@ -169,14 +155,23 @@ const DemandesRH = () => {
     fetchDemandes();
   };
 
+  const getTypeIcon = (type) => {
+    const icons = {
+      'congé': '🏖️',
+      'autorisation_absence': '⏰',
+      'frais_deplacement': '💰',
+      'autre': '📄'
+    };
+    return icons[type] || '📋';
+  };
+
   return (
     <div className="demandes-rh">
       <div className="demandes-header">
-        <h1>📋 Demandes RH</h1>
-        <p>Consultation des demandes de congés, absences et frais</p>
+        <h1>📋 Gestion des Demandes</h1>
+        <p>Suivi et traitement des demandes des collaborateurs</p>
       </div>
 
-      {/* Affichage des erreurs */}
       {error && (
         <div className="error-banner">
           <div className="error-content">
@@ -192,7 +187,7 @@ const DemandesRH = () => {
         </div>
       )}
 
-      {/* Filtres */}
+      {/* Filtres simplifiés */}
       <div className="filters-section">
         <div className="filters-header">
           <h3>🔍 Filtres de recherche</h3>
@@ -203,22 +198,7 @@ const DemandesRH = () => {
         
         <div className="filters-grid">
           <div className="filter-group">
-            <label>Type de demande</label>
-            <select 
-              value={filters.type_demande} 
-              onChange={(e) => handleFilterChange('type_demande', e.target.value)}
-            >
-              <option value="">Tous les types</option>
-              {typesDemande.map(type => (
-                <option key={type} value={type}>
-                  {getTypeDemandeLabel(type)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label>Statut</label>
+            <label>Statut de la demande</label>
             <select 
               value={filters.statut} 
               onChange={(e) => handleFilterChange('statut', e.target.value)}
@@ -256,7 +236,7 @@ const DemandesRH = () => {
         </div>
       </div>
 
-      {/* Statistiques rapides */}
+      {/* Statistiques */}
       <div className="stats-section">
         <div className="stat-card">
           <div className="stat-icon">📥</div>
@@ -323,170 +303,162 @@ const DemandesRH = () => {
           <div className="demandes-grid">
             {demandes.map(demande => (
               <div key={demande.id} className="demande-card">
-                <div className="demande-header">
-                  <div className="demande-info">
-                    <h3>{demande.titre}</h3>
-                    <div className="employe-info">
-                      <div className="employe-avatar">
-                        {demande.employe_photo ? (
-                          <img src={demande.employe_photo} alt={`${demande.employe_prenom} ${demande.employe_nom}`} />
-                        ) : (
-                          <div className="avatar-placeholder">
-                            {demande.employe_prenom?.charAt(0)}{demande.employe_nom?.charAt(0)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="employe-details">
-                        <p className="employe-name">
-                          {demande.employe_prenom} {demande.employe_nom}
-                        </p>
-                        <p className="employe-poste">{demande.employe_poste}</p>
-                        <p className="employe-matricule">Matricule: {demande.employe_matricule}</p>
-                      </div>
-                    </div>
+                {/* En-tête de la carte */}
+                <div className="demande-card-header">
+                  <div className="demande-type-icon">
+                    {getTypeIcon(demande.type_demande)}
                   </div>
-                  <div className="demande-meta">
-                    {getStatutBadge(demande.statut)}
+                  <div className="demande-title-section">
+                    <h3 className="demande-title">{demande.titre}</h3>
                     <span className="demande-type">
                       {getTypeDemandeLabel(demande.type_demande)}
                     </span>
+                  </div>
+                  <div className="demande-meta">
+                    {getStatutBadge(demande.statut)}
                     <span className="demande-date">
-                      Créée le: {formatDate(demande.created_at)}
+                      {formatDate(demande.created_at)}
                     </span>
                   </div>
                 </div>
 
-                {/* Détails complets de la demande */}
-                <div className="demande-details">
+                {/* Informations du collaborateur */}
+                <div className="employe-section">
+                  <div className="employe-avatar">
+                    {demande.employe_photo ? (
+                      <img src={demande.employe_photo} alt={`${demande.employe_prenom} ${demande.employe_nom}`} />
+                    ) : (
+                      <div className="avatar-placeholder">
+                        {demande.employe_prenom?.charAt(0)}{demande.employe_nom?.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="employe-info">
+                    <h4 className="employe-name">
+                      {demande.employe_prenom} {demande.employe_nom}
+                    </h4>
+                    <p className="employe-details">
+                      {demande.employe_poste} • Matricule: {demande.employe_matricule}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Détails de la demande */}
+                <div className="demande-content">
                   {/* Informations d'approbation */}
                   <div className="approval-status">
                     <strong>Statut d'approbation:</strong> {getApprovalStatus(demande)}
                   </div>
 
-                  {/* Détails spécifiques au type de demande */}
-                  {demande.type_demande === 'congé' && (
-                    <>
-                      {demande.date_depart && (
-                        <div className="detail-item">
-                          <span className="label">Date de départ:</span>
-                          <span className="value">{formatDate(demande.date_depart)}</span>
-                        </div>
-                      )}
-                      
-                      {demande.date_retour && (
-                        <div className="detail-item">
-                          <span className="label">Date de retour:</span>
-                          <span className="value">{formatDate(demande.date_retour)}</span>
-                        </div>
-                      )}
+                  {/* Détails spécifiques */}
+                  <div className="details-grid">
+                    {demande.type_demande === 'congé' && (
+                      <>
+                        {demande.date_depart && (
+                          <div className="detail-item">
+                            <span className="detail-label">📅 Date de départ</span>
+                            <span className="detail-value">{formatDate(demande.date_depart)}</span>
+                          </div>
+                        )}
+                        {demande.date_retour && (
+                          <div className="detail-item">
+                            <span className="detail-label">📅 Date de retour</span>
+                            <span className="detail-value">{formatDate(demande.date_retour)}</span>
+                          </div>
+                        )}
+                        {demande.type_conge && (
+                          <div className="detail-item">
+                            <span className="detail-label">📋 Type de congé</span>
+                            <span className="detail-value">{demande.type_conge}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
 
-                      {demande.type_conge && (
-                        <div className="detail-item">
-                          <span className="label">Type de congé:</span>
-                          <span className="value">{demande.type_conge}</span>
-                        </div>
-                      )}
+                    {demande.type_demande === 'autorisation_absence' && (
+                      <>
+                        {demande.date_depart && (
+                          <div className="detail-item">
+                            <span className="detail-label">📅 Date</span>
+                            <span className="detail-value">{formatDate(demande.date_depart)}</span>
+                          </div>
+                        )}
+                        {demande.heure_depart && (
+                          <div className="detail-item">
+                            <span className="detail-label">⏰ Heure de départ</span>
+                            <span className="detail-value">{formatTime(demande.heure_depart)}</span>
+                          </div>
+                        )}
+                        {demande.heure_retour && (
+                          <div className="detail-item">
+                            <span className="detail-label">⏰ Heure de retour</span>
+                            <span className="detail-value">{formatTime(demande.heure_retour)}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
 
-                      {demande.type_conge_autre && (
-                        <div className="detail-item">
-                          <span className="label">Autre type:</span>
-                          <span className="value">{demande.type_conge_autre}</span>
-                        </div>
-                      )}
-                    </>
-                  )}
+                    {demande.type_demande === 'frais_deplacement' && (
+                      <>
+                        {demande.date_depart && (
+                          <div className="detail-item">
+                            <span className="detail-label">📅 Date du déplacement</span>
+                            <span className="detail-value">{formatDate(demande.date_depart)}</span>
+                          </div>
+                        )}
+                        {demande.frais_deplacement && (
+                          <div className="detail-item">
+                            <span className="detail-label">💰 Montant des frais</span>
+                            <span className="detail-value">{parseFloat(demande.frais_deplacement).toFixed(2)} €</span>
+                          </div>
+                        )}
+                      </>
+                    )}
 
-                  {demande.type_demande === 'autorisation_absence' && (
-                    <>
-                      {demande.date_depart && (
-                        <div className="detail-item">
-                          <span className="label">Date:</span>
-                          <span className="value">{formatDate(demande.date_depart)}</span>
-                        </div>
-                      )}
-
-                      {demande.heure_depart && (
-                        <div className="detail-item">
-                          <span className="label">Heure de départ:</span>
-                          <span className="value">{formatTime(demande.heure_depart)}</span>
-                        </div>
-                      )}
-
-                      {demande.heure_retour && (
-                        <div className="detail-item">
-                          <span className="label">Heure de retour:</span>
-                          <span className="value">{formatTime(demande.heure_retour)}</span>
-                        </div>
-                      )}
-
-                      {demande.demi_journee && (
-                        <div className="detail-item">
-                          <span className="label">Demi-journée:</span>
-                          <span className="value">✅ Oui</span>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {demande.type_demande === 'frais_deplacement' && (
-                    <>
-                      {demande.date_depart && (
-                        <div className="detail-item">
-                          <span className="label">Date du déplacement:</span>
-                          <span className="value">{formatDate(demande.date_depart)}</span>
-                        </div>
-                      )}
-
-                      {demande.frais_deplacement && (
-                        <div className="detail-item">
-                          <span className="label">Montant des frais:</span>
-                          <span className="value">{parseFloat(demande.frais_deplacement).toFixed(2)} €</span>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  {demande.type_demande === 'autre' && demande.type_conge_autre && (
                     <div className="detail-item">
-                      <span className="label">Description:</span>
-                      <span className="value">{demande.type_conge_autre}</span>
+                      <span className="detail-label">🔄 Dernière mise à jour</span>
+                      <span className="detail-value">{formatDate(demande.updated_at)}</span>
                     </div>
-                  )}
-
-                  {/* Informations générales */}
-                  <div className="detail-item">
-                    <span className="label">Dernière mise à jour:</span>
-                    <span className="value">{formatDate(demande.updated_at)}</span>
                   </div>
 
+                  {/* Responsables d'approbation */}
+                  <div className="approval-section">
+                    <h4 className="approval-title">🏢 Responsables d'approbation</h4>
+                    <div className="approval-grid">
+                      <div className="approval-item">
+                        <div className="responsable-info">
+                          <span className="responsable-name">
+                            {getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1)}
+                          </span>
+                          <span className="responsable-email">{demande.mail_responsable1 || 'Non assigné'}</span>
+                        </div>
+                        <span className={`approval-badge ${demande.approuve_responsable1 ? 'approved' : 'pending'}`}>
+                          {demande.approuve_responsable1 ? '✅ Approuvé' : '⏳ En attente'}
+                        </span>
+                      </div>
+                      <div className="approval-item">
+                        <div className="responsable-info">
+                          <span className="responsable-name">
+                            {getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2)}
+                          </span>
+                          <span className="responsable-email">{demande.mail_responsable2 || 'Non assigné'}</span>
+                        </div>
+                        <span className={`approval-badge ${demande.approuve_responsable2 ? 'approved' : 'pending'}`}>
+                          {demande.approuve_responsable2 ? '✅ Approuvé' : '⏳ En attente'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Commentaire de refus */}
                   {demande.commentaire_refus && (
-                    <div className="detail-item commentaire-section">
-                      <span className="label">Commentaire de refus:</span>
-                      <span className="value commentaire">{demande.commentaire_refus}</span>
+                    <div className="commentaire-section">
+                      <div className="commentaire-header">
+                        <span className="commentaire-label">💬 Commentaire de refus</span>
+                      </div>
+                      <p className="commentaire-text">{demande.commentaire_refus}</p>
                     </div>
                   )}
-                </div>
-
-                {/* Section d'approbation détaillée avec noms des responsables */}
-                <div className="approval-details">
-                  <div className="approval-item">
-                    <span className="approval-label">
-                      Responsable 1: {getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1)}
-                    </span>
-                    <span className={`approval-status ${demande.approuve_responsable1 ? 'approved' : 'pending'}`}>
-                      {demande.approuve_responsable1 ? '✅ Approuvé' : '⏳ En attente'}
-                    </span>
-                    <small className="approval-email">{demande.mail_responsable1 || 'Non assigné'}</small>
-                  </div>
-                  <div className="approval-item">
-                    <span className="approval-label">
-                      Responsable 2: {getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2)}
-                    </span>
-                    <span className={`approval-status ${demande.approuve_responsable2 ? 'approved' : 'pending'}`}>
-                      {demande.approuve_responsable2 ? '✅ Approuvé' : '⏳ En attente'}
-                    </span>
-                    <small className="approval-email">{demande.mail_responsable2 || 'Non assigné'}</small>
-                  </div>
                 </div>
               </div>
             ))}
