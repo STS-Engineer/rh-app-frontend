@@ -273,4 +273,184 @@
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  font
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.view-entretien-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.entretien-url-preview small {
+  color: #64748b;
+  font-size: 0.8rem;
+  word-break: break-all;
+  max-width: 180px;
+  display: block;
+  font-weight: 500;
+}
+
+.no-entretien {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.archive-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+}
+
+.no-archives {
+  text-align: center;
+  padding: 80px 30px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.empty-archive-icon {
+  font-size: 4.5rem;
+  margin-bottom: 25px;
+  opacity: 0.5;
+  color: #94a3b8;
+}
+
+.no-archives h3 {
+  margin: 0 0 15px 0;
+  color: #1e293b;
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.no-archives p {
+  margin: 0 0 25px 0;
+  color: #64748b;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.loading {
+  text-align: center;
+  padding: 60px 20px;
+  font-size: 1.15rem;
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  margin: 20px 0;
+  font-weight: 500;
+}
+
+.loading-spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #f1f5f9;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@media (max-width: 1024px) {
+  .archives-content {
+    margin-left: 0;
+    padding: 30px;
+  }
+  
+  .archives-grid {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .archives-content {
+    padding: 25px;
+  }
+  
+  .archives-header {
+    padding: 25px;
+  }
+  
+  .archives-header h1 {
+    font-size: 2rem;
+  }
+  
+  .search-section {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+  }
+  
+  .search-bar {
+    min-width: auto;
+  }
+  
+  .action-buttons {
+    justify-content: center;
+    width: 100%;
+  }
+  
+  .refresh-btn, .back-to-team-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .archives-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .archive-actions {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .view-entretien-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .archives-content {
+    padding: 20px;
+  }
+  
+  .archives-header {
+    padding: 20px;
+  }
+  
+  .archives-header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .archive-stat-card {
+    padding: 25px;
+  }
+  
+  .search-section {
+    padding: 20px;
+  }
+}
