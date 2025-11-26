@@ -156,10 +156,7 @@
   gap: 10px;
 }
 
-.filters-header h3::before {
-  content: '🔍';
-  font-size: 1.3rem;
-}
+
 
 .btn-clear {
   background: linear-gradient(135deg, #64748b 0%, #475569 100%);
