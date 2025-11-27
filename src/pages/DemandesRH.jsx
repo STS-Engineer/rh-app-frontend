@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+ import React, { useState, useEffect } from 'react';
 import './DemandesRH.css';
 
 const DemandesRH = () => {
@@ -16,8 +16,8 @@ const DemandesRH = () => {
   const statuts = [
     'en_attente',
     'approuve',
-    'refuse'
-   
+    'refuse',
+    'en_cours'
   ];
 
   useEffect(() => {
