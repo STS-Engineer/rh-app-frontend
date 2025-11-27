@@ -17,7 +17,6 @@ const DemandesRH = () => {
     'en_attente',
     'approuve',
     'refuse'
-   
   ];
 
   useEffect(() => {
@@ -42,6 +41,10 @@ const DemandesRH = () => {
           queryParams.append(key, value);
         }
       });
+
+      // Ajouter limit pour récupérer toutes les demandes
+      queryParams.append('limit', '100');
+      queryParams.append('page', '1');
 
       const response = await fetch(`${API_BASE_URL}/api/demandes?${queryParams}`, {
         headers: {
@@ -87,9 +90,9 @@ const DemandesRH = () => {
 
   const getTypeDemandeLabel = (type) => {
     const labels = {
-      'congé': 'Congé',
-      'autorisation_absence': 'Autorisation d\'absence',
-      'frais_deplacement': 'Frais de déplacement',
+      'conges': 'Congé',
+      'autorisation': 'Autorisation d\'absence',
+      'mission': 'Mission',
       'autre': 'Autre'
     };
     return labels[type] || type;
@@ -135,7 +138,16 @@ const DemandesRH = () => {
         return `✅ Approuvée par ${responsable2} (en attente du 1er responsable)`;
       }
     } else if (demande.statut === 'refuse') {
-      return `❌ Refusée: ${demande.commentaire_refus || 'Raison non spécifiée'}`;
+      // Vérifier qui a refusé
+      if (demande.refuse_par_responsable1) {
+        const responsable1 = getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1);
+        return `❌ Refusée par ${responsable1}: ${demande.commentaire_refus || 'Raison non spécifiée'}`;
+      } else if (demande.refuse_par_responsable2) {
+        const responsable2 = getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2);
+        return `❌ Refusée par ${responsable2}: ${demande.commentaire_refus || 'Raison non spécifiée'}`;
+      } else {
+        return `❌ Refusée: ${demande.commentaire_refus || 'Raison non spécifiée'}`;
+      }
     } else if (demande.statut === 'en_attente') {
       return '⏳ En attente d\'approbation';
     }
@@ -157,12 +169,34 @@ const DemandesRH = () => {
 
   const getTypeIcon = (type) => {
     const icons = {
-      'congé': '🏖️',
-      'autorisation_absence': '⏰',
-      'frais_deplacement': '💰',
+      'conges': '🏖️',
+      'autorisation': '⏰',
+      'mission': '💰',
       'autre': '📄'
     };
     return icons[type] || '📋';
+  };
+
+  const getApprovalBadge = (demande, responsableNum) => {
+    if (responsableNum === 1) {
+      if (demande.refuse_par_responsable1) {
+        return <span className="approval-badge refused">❌ Refusé</span>;
+      }
+      return (
+        <span className={`approval-badge ${demande.approuve_responsable1 ? 'approved' : 'pending'}`}>
+          {demande.approuve_responsable1 ? '✅ Approuvé' : '⏳ En attente'}
+        </span>
+      );
+    } else {
+      if (demande.refuse_par_responsable2) {
+        return <span className="approval-badge refused">❌ Refusé</span>;
+      }
+      return (
+        <span className={`approval-badge ${demande.approuve_responsable2 ? 'approved' : 'pending'}`}>
+          {demande.approuve_responsable2 ? '✅ Approuvé' : '⏳ En attente'}
+        </span>
+      );
+    }
   };
 
   return (
@@ -352,7 +386,7 @@ const DemandesRH = () => {
 
                   {/* Détails spécifiques */}
                   <div className="details-grid">
-                    {demande.type_demande === 'congé' && (
+                    {demande.type_demande === 'conges' && (
                       <>
                         {demande.date_depart && (
                           <div className="detail-item">
@@ -375,7 +409,7 @@ const DemandesRH = () => {
                       </>
                     )}
 
-                    {demande.type_demande === 'autorisation_absence' && (
+                    {demande.type_demande === 'autorisation' && (
                       <>
                         {demande.date_depart && (
                           <div className="detail-item">
@@ -398,7 +432,7 @@ const DemandesRH = () => {
                       </>
                     )}
 
-                    {demande.type_demande === 'frais_deplacement' && (
+                    {demande.type_demande === 'mission' && (
                       <>
                         {demande.date_depart && (
                           <div className="detail-item">
@@ -409,7 +443,7 @@ const DemandesRH = () => {
                         {demande.frais_deplacement && (
                           <div className="detail-item">
                             <span className="detail-label">💰 Montant des frais</span>
-                            <span className="detail-value">{parseFloat(demande.frais_deplacement).toFixed(2)} €</span>
+                            <span className="detail-value">{parseFloat(demande.frais_deplacement).toFixed(2)} TND</span>
                           </div>
                         )}
                       </>
@@ -432,9 +466,7 @@ const DemandesRH = () => {
                           </span>
                           <span className="responsable-email">{demande.mail_responsable1 || 'Non assigné'}</span>
                         </div>
-                        <span className={`approval-badge ${demande.approuve_responsable1 ? 'approved' : 'pending'}`}>
-                          {demande.approuve_responsable1 ? '✅ Approuvé' : '⏳ En attente'}
-                        </span>
+                        {getApprovalBadge(demande, 1)}
                       </div>
                       <div className="approval-item">
                         <div className="responsable-info">
@@ -443,9 +475,7 @@ const DemandesRH = () => {
                           </span>
                           <span className="responsable-email">{demande.mail_responsable2 || 'Non assigné'}</span>
                         </div>
-                        <span className={`approval-badge ${demande.approuve_responsable2 ? 'approved' : 'pending'}`}>
-                          {demande.approuve_responsable2 ? '✅ Approuvé' : '⏳ En attente'}
-                        </span>
+                        {getApprovalBadge(demande, 2)}
                       </div>
                     </div>
                   </div>
