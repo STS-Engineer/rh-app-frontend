@@ -16,8 +16,8 @@ const DemandesRH = () => {
   const statuts = [
     'en_attente',
     'approuve',
-    'refuse',
-    'en_cours'
+    'refuse'
+   
   ];
 
   useEffect(() => {
