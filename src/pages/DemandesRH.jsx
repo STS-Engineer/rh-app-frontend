@@ -21,6 +21,7 @@ const DemandesRH = () => {
 
   useEffect(() => {
     fetchDemandes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   const fetchDemandes = async () => {
@@ -122,96 +123,102 @@ const DemandesRH = () => {
     return 'Non assigné';
   };
 
-const getApprovalStatus = (demande) => {
-  if (demande.statut === 'approuve') {
+  // ✅ Statut global d'approbation (texte en haut de la carte)
+  const getApprovalStatus = (demande) => {
     const hasSecondResponsable = !!demande.mail_responsable2;
-    
-    if (demande.approuve_responsable1 && demande.approuve_responsable2) {
-      return '✅ Approuvée par les deux responsables';
-    } else if (demande.approuve_responsable1 && !hasSecondResponsable) {
-      // Cas où seul le responsable 1 existe et a approuvé
-      const responsable1 = getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1);
-      return `✅ Approuvée par ${responsable1}`;
-    } else if (demande.approuve_responsable1 && hasSecondResponsable) {
-      // Cas où les deux responsables existent, mais seul le 1er a approuvé
-      const responsable1 = getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1);
-      return `✅ Approuvée par ${responsable1} (en attente du 2ème responsable)`;
-    } else if (demande.approuve_responsable2 && hasSecondResponsable) {
-      // Cas où seul le 2ème responsable a approuvé
-      const responsable2 = getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2);
-      return `✅ Approuvée par ${responsable2} (en attente du 1er responsable)`;
-    } else {
+    const responsable1 = getResponsableName(
+      demande.responsable1_prenom,
+      demande.responsable1_nom,
+      demande.mail_responsable1
+    );
+    const responsable2 = hasSecondResponsable
+      ? getResponsableName(
+          demande.responsable2_prenom,
+          demande.responsable2_nom,
+          demande.mail_responsable2
+        )
+      : null;
+
+    if (demande.statut === 'approuve') {
+      if (hasSecondResponsable) {
+        if (demande.approuve_responsable1 && demande.approuve_responsable2) {
+          return '✅ Approuvée par les deux responsables';
+        }
+        if (demande.approuve_responsable1 && !demande.approuve_responsable2) {
+          return `✅ Approuvée (enregistrée comme approuvée, ${responsable1} a validé)`;
+        }
+        if (!demande.approuve_responsable1 && demande.approuve_responsable2) {
+          return `✅ Approuvée (enregistrée comme approuvée, ${responsable2} a validé)`;
+        }
+        return '✅ Approuvée';
+      }
+
+      // Un seul responsable
+      if (demande.approuve_responsable1) {
+        return `✅ Approuvée par ${responsable1}`;
+      }
       return '✅ Approuvée';
     }
-  } else if (demande.statut === 'refuse') {
-    // Identifier qui a refusé
-    if (demande.approuve_responsable1 === false) {
-      const responsable1 = getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1);
-      return `❌ Refusée par ${responsable1}: ${demande.commentaire_refus || 'Raison non spécifiée'}`;
-    } else if (demande.approuve_responsable2 === false) {
-      const responsable2 = getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2);
-      return `❌ Refusée par ${responsable2}: ${demande.commentaire_refus || 'Raison non spécifiée'}`;
-    } else {
-      return `❌ Refusée: ${demande.commentaire_refus || 'Raison non spécifiée'}`;
+
+    if (demande.statut === 'refuse') {
+      if (demande.approuve_responsable1 === false) {
+        return `❌ Refusée par ${responsable1} : ${demande.commentaire_refus || 'Raison non spécifiée'}`;
+      }
+      if (hasSecondResponsable && demande.approuve_responsable2 === false) {
+        return `❌ Refusée par ${responsable2} : ${demande.commentaire_refus || 'Raison non spécifiée'}`;
+      }
+      return `❌ Refusée : ${demande.commentaire_refus || 'Raison non spécifiée'}`;
     }
-  } else if (demande.statut === 'en_attente') {
-    const hasSecondResponsable = !!demande.mail_responsable2;
-    
-    if (demande.approuve_responsable1 === true && hasSecondResponsable) {
-      const responsable1 = getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1);
-      return `⏳ En attente du 2ème responsable (${responsable1} a approuvé)`;
-    } else if (demande.approuve_responsable2 === true && hasSecondResponsable) {
-      const responsable2 = getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2);
-      return `⏳ En attente du 1er responsable (${responsable2} a approuvé)`;
-    } else {
+
+    if (demande.statut === 'en_attente') {
+      if (hasSecondResponsable) {
+        if (demande.approuve_responsable1 === true && (demande.approuve_responsable2 == null)) {
+          return `⏳ En attente du 2ème responsable (${responsable1} a approuvé)`;
+        }
+        if (demande.approuve_responsable2 === true && (demande.approuve_responsable1 == null)) {
+          return `⏳ En attente du 1er responsable (${responsable2} a approuvé)`;
+        }
+      }
       return '⏳ En attente d\'approbation';
     }
-  }
-  return demande.statut;
-};
 
-  // Fonction pour déterminer le statut d'un responsable
+    // Autres statuts éventuels (en_cours, etc.)
+    return demande.statut;
+  };
+
+  // ✅ Statut individuel d'un responsable (badge)
   const getResponsableStatus = (demande, responsableNumber) => {
     const isResponsable1 = responsableNumber === 1;
-    const approuve = isResponsable1 ? demande.approuve_responsable1 : demande.approuve_responsable2;
-    const mailResponsable = isResponsable1 ? demande.mail_responsable1 : demande.mail_responsable2;
-    
-    // Si le champ mail est vide, ne pas afficher ce responsable
+
+    const approuve = isResponsable1
+      ? demande.approuve_responsable1
+      : demande.approuve_responsable2;
+
+    const mailResponsable = isResponsable1
+      ? demande.mail_responsable1
+      : demande.mail_responsable2;
+
+    // Si pas de mail => on n'affiche pas ce responsable
     if (!mailResponsable) {
       return null;
     }
 
-    // Si la demande est refusée, vérifier si ce responsable a refusé
-    if (demande.statut === 'refuse') {
-      if (approuve === false) {
-        return { status: 'refused', label: '❌ Refusé' };
-      } else {
-        return { status: 'cancelled', label: '⚠️ Annulé' };
-      }
-    }
-
-    // Si la demande est approuvée
-    if (demande.statut === 'approuve') {
-      if (approuve === true) {
-        return { status: 'approved', label: '✅ Approuvé' };
-      } else {
-        return { status: 'not_required', label: '➖ Non requis' };
-      }
-    }
-
-    // En attente
+    // On se base UNIQUEMENT sur le champ d'approbation :
+    // true  => approuvé
+    // false => refusé
+    // null/undefined => en attente
     if (approuve === true) {
       return { status: 'approved', label: '✅ Approuvé' };
-    } else if (approuve === false) {
-      return { status: 'refused', label: '❌ Refusé' };
-    } else {
-      return { status: 'pending', label: '⏳ En attente' };
     }
+
+    if (approuve === false) {
+      return { status: 'refused', label: '❌ Refusé' };
+    }
+
+    return { status: 'pending', label: '⏳ En attente' };
   };
 
-  // Fonction pour déterminer si on doit afficher le deuxième responsable
   const shouldShowSecondResponsable = (demande) => {
-    // Afficher le deuxième responsable seulement si le champ mail_responsable2 n'est pas vide
     return !!demande.mail_responsable2;
   };
 
@@ -279,6 +286,7 @@ const getApprovalStatus = (demande) => {
               <option value="">Tous les statuts</option>
               {statuts.map(statut => (
                 <option key={statut} value={statut}>
+                  {/* on réutilise juste le label du badge */}
                   {getStatutBadge(statut).props.children}
                 </option>
               ))}
@@ -399,10 +407,14 @@ const getApprovalStatus = (demande) => {
                 <div className="employe-section">
                   <div className="employe-avatar">
                     {demande.employe_photo ? (
-                      <img src={demande.employe_photo} alt={`${demande.employe_prenom} ${demande.employe_nom}`} />
+                      <img
+                        src={demande.employe_photo}
+                        alt={`${demande.employe_prenom} ${demande.employe_nom}`}
+                      />
                     ) : (
                       <div className="avatar-placeholder">
-                        {demande.employe_prenom?.charAt(0)}{demande.employe_nom?.charAt(0)}
+                        {demande.employe_prenom?.charAt(0)}
+                        {demande.employe_nom?.charAt(0)}
                       </div>
                     )}
                   </div>
@@ -482,7 +494,9 @@ const getApprovalStatus = (demande) => {
                         {demande.frais_deplacement && (
                           <div className="detail-item">
                             <span className="detail-label">💰 Montant des frais</span>
-                            <span className="detail-value">{parseFloat(demande.frais_deplacement).toFixed(2)} €</span>
+                            <span className="detail-value">
+                              {parseFloat(demande.frais_deplacement).toFixed(2)} €
+                            </span>
                           </div>
                         )}
                       </>
@@ -494,43 +508,61 @@ const getApprovalStatus = (demande) => {
                     </div>
                   </div>
 
-                  {/* Responsables d'approbation - CORRIGÉ */}
+                  {/* Responsables d'approbation */}
                   <div className="approval-section">
                     <h4 className="approval-title">🏢 Responsables d'approbation</h4>
                     <div className="approval-grid">
-                      {/* Responsable 1 - Toujours affiché si mail_responsable1 existe */}
-                      {demande.mail_responsable1 && (
-                        <div className="approval-item">
-                          <div className="responsable-info">
-                            <span className="responsable-name">
-                              {getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1)}
-                            </span>
-                            <span className="responsable-email">{demande.mail_responsable1}</span>
-                          </div>
-                          <span className={`approval-badge ${
-                            getResponsableStatus(demande, 1)?.status || 'pending'
-                          }`}>
-                            {getResponsableStatus(demande, 1)?.label || '⏳ En attente'}
-                          </span>
-                        </div>
-                      )}
+                      {/* Responsable 1 */}
+                      {demande.mail_responsable1 && (() => {
+                        const r1Status = getResponsableStatus(demande, 1);
+                        if (!r1Status) return null;
 
-                      {/* Responsable 2 - Affiché seulement si mail_responsable2 existe */}
-                      {shouldShowSecondResponsable(demande) && (
-                        <div className="approval-item">
-                          <div className="responsable-info">
-                            <span className="responsable-name">
-                              {getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2)}
+                        return (
+                          <div className="approval-item">
+                            <div className="responsable-info">
+                              <span className="responsable-name">
+                                {getResponsableName(
+                                  demande.responsable1_prenom,
+                                  demande.responsable1_nom,
+                                  demande.mail_responsable1
+                                )}
+                              </span>
+                              <span className="responsable-email">
+                                {demande.mail_responsable1}
+                              </span>
+                            </div>
+                            <span className={`approval-badge ${r1Status.status}`}>
+                              {r1Status.label}
                             </span>
-                            <span className="responsable-email">{demande.mail_responsable2}</span>
                           </div>
-                          <span className={`approval-badge ${
-                            getResponsableStatus(demande, 2)?.status || 'pending'
-                          }`}>
-                            {getResponsableStatus(demande, 2)?.label || '⏳ En attente'}
-                          </span>
-                        </div>
-                      )}
+                        );
+                      })()}
+
+                      {/* Responsable 2 */}
+                      {shouldShowSecondResponsable(demande) && (() => {
+                        const r2Status = getResponsableStatus(demande, 2);
+                        if (!r2Status) return null;
+
+                        return (
+                          <div className="approval-item">
+                            <div className="responsable-info">
+                              <span className="responsable-name">
+                                {getResponsableName(
+                                  demande.responsable2_prenom,
+                                  demande.responsable2_nom,
+                                  demande.mail_responsable2
+                                )}
+                              </span>
+                              <span className="responsable-email">
+                                {demande.mail_responsable2}
+                              </span>
+                            </div>
+                            <span className={`approval-badge ${r2Status.status}`}>
+                              {r2Status.label}
+                            </span>
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
 
