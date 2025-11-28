@@ -170,26 +170,44 @@ const getApprovalStatus = (demande) => {
   return demande.statut;
 };
 
-// Fonction simplifiée pour déterminer le statut d'un responsable
-const getResponsableStatus = (demande, responsableNumber) => {
-  const isResponsable1 = responsableNumber === 1;
-  const approuve = isResponsable1 ? demande.approuve_responsable1 : demande.approuve_responsable2;
-  const mailResponsable = isResponsable1 ? demande.mail_responsable1 : demande.mail_responsable2;
-  
-  // Si le champ mail est vide, ne pas afficher ce responsable
-  if (!mailResponsable) {
-    return null;
-  }
+  // Fonction pour déterminer le statut d'un responsable
+  const getResponsableStatus = (demande, responsableNumber) => {
+    const isResponsable1 = responsableNumber === 1;
+    const approuve = isResponsable1 ? demande.approuve_responsable1 : demande.approuve_responsable2;
+    const mailResponsable = isResponsable1 ? demande.mail_responsable1 : demande.mail_responsable2;
+    
+    // Si le champ mail est vide, ne pas afficher ce responsable
+    if (!mailResponsable) {
+      return null;
+    }
 
-  // Statuts de base seulement
-  if (approuve === true) {
-    return { status: 'approved', label: '✅ Approuvé' };
-  } else if (approuve === false) {
-    return { status: 'refused', label: '❌ Refusé' };
-  } else {
-    return { status: 'pending', label: '⏳ En attente' };
-  }
-};
+    // Si la demande est refusée, vérifier si ce responsable a refusé
+    if (demande.statut === 'refuse') {
+      if (approuve === false) {
+        return { status: 'refused', label: '❌ Refusé' };
+      } else {
+        return { status: 'cancelled', label: '⚠️ Annulé' };
+      }
+    }
+
+    // Si la demande est approuvée
+    if (demande.statut === 'approuve') {
+      if (approuve === true) {
+        return { status: 'approved', label: '✅ Approuvé' };
+      } else {
+        return { status: 'not_required', label: '➖ Non requis' };
+      }
+    }
+
+    // En attente
+    if (approuve === true) {
+      return { status: 'approved', label: '✅ Approuvé' };
+    } else if (approuve === false) {
+      return { status: 'refused', label: '❌ Refusé' };
+    } else {
+      return { status: 'pending', label: '⏳ En attente' };
+    }
+  };
 
   // Fonction pour déterminer si on doit afficher le deuxième responsable
   const shouldShowSecondResponsable = (demande) => {
