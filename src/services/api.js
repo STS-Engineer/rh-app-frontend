@@ -65,6 +65,23 @@ export const employeesAPI = {
   // Mettre à jour un employé
   update: (id, employeeData) => api.put(`/employees/${id}`, employeeData),
   
+  uploadPhoto: async (employeeId, file) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    
+    const response = await api.post(`/api/employees/${employeeId}/upload-photo`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response;
+  },
+
+  // Supprimer la photo
+  deletePhoto: async (employeeId) => {
+    const response = await api.delete(`/api/employees/${employeeId}/photo`);
+    return response;
+  },
   // Archiver un employé
   archiveEmployee: (employeeId, entretien_depart) =>
     api.put(`/employees/${employeeId}/archive`, { entretien_depart }),
