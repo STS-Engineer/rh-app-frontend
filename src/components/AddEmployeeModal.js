@@ -19,6 +19,9 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     dossier_rh: ''
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -26,6 +29,44 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedPhoto(file);
+      
+      // Créer une preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPhotoPreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemovePhoto = () => {
+    setSelectedPhoto(null);
+    setPhotoPreview(null);
+    setFormData(prev => ({
+      ...prev,
+      photo: ''
+    }));
+  };
+
+  const uploadEmployeePhoto = async (employeeId) => {
+    if (!selectedPhoto) return null;
+
+    setUploadingPhoto(true);
+    try {
+      const response = await employeesAPI.uploadPhoto(employeeId, selectedPhoto);
+      return response.data.photoUrl;
+    } catch (error) {
+      console.error('❌ Erreur upload photo:', error);
+      return null;
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -42,10 +83,21 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
         return;
       }
 
+      // Créer l'employé d'abord
       const response = await employeesAPI.create(formData);
-      console.log('✅ Nouvel employé créé:', response.data);
-      
-      onAdd(response.data);
+      const newEmployee = response.data;
+      console.log('✅ Nouvel employé créé:', newEmployee);
+
+      // Uploader la photo si elle existe
+      if (selectedPhoto) {
+        console.log('📸 Upload photo pour nouvel employé...');
+        const photoUrl = await uploadEmployeePhoto(newEmployee.id);
+        if (photoUrl) {
+          newEmployee.photo = photoUrl;
+        }
+      }
+
+      onAdd(newEmployee);
       alert('✅ Employé créé avec succès!');
       
       // Reset du formulaire
@@ -64,6 +116,8 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
         photo: '',
         dossier_rh: ''
       });
+      setSelectedPhoto(null);
+      setPhotoPreview(null);
       
     } catch (error) {
       console.error('❌ Erreur lors de la création:', error);
@@ -89,7 +143,20 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       photo: '',
       dossier_rh: ''
     });
+    setSelectedPhoto(null);
+    setPhotoPreview(null);
     onClose();
+  };
+
+  const getDefaultAvatar = () => {
+    const initiales = (formData.prenom.charAt(0) + formData.nom.charAt(0)).toUpperCase();
+    return `https://ui-avatars.com/api/?name=${initiales}&background=3498db&color=fff&size=150`;
+  };
+
+  const getPhotoUrl = () => {
+    if (photoPreview) return photoPreview;
+    if (formData.photo) return formData.photo;
+    return getDefaultAvatar();
   };
 
   if (!isOpen) return null;
@@ -103,6 +170,43 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="add-employee-form">
+          {/* Section Photo */}
+          <div className="photo-section">
+            <div className="photo-upload-container">
+              <img 
+                src={getPhotoUrl()} 
+                alt="Preview" 
+                className="employee-photo-preview"
+              />
+              <div className="photo-upload-controls">
+                <label className="photo-upload-btn">
+                  📸 Choisir une photo
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/gif"
+                    onChange={handlePhotoChange}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+                {selectedPhoto && (
+                  <button 
+                    type="button" 
+                    className="remove-photo-btn"
+                    onClick={handleRemovePhoto}
+                  >
+                    🗑️ Supprimer
+                  </button>
+                )}
+                {selectedPhoto && (
+                  <div className="photo-info">
+                    <small>Fichier: {selectedPhoto.name}</small>
+                    <small>Taille: {(selectedPhoto.size / 1024 / 1024).toFixed(2)} MB</small>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="form-grid">
             <div className="form-column">
               <FormInput 
@@ -203,7 +307,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 required 
               />
               <FormInput 
-                label="Photo URL" 
+                label="Photo URL (alternative)" 
                 name="photo" 
                 value={formData.photo} 
                 onChange={handleInputChange} 
@@ -225,15 +329,16 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
             <button 
               type="submit" 
               className="save-btn"
-              disabled={saving}
+              disabled={saving || uploadingPhoto}
             >
-              {saving ? '⏳ Création...' : '💾 Créer Employé'}
+              {saving ? '⏳ Création...' : 
+               uploadingPhoto ? '📸 Upload photo...' : '💾 Créer Employé'}
             </button>
             <button 
               type="button" 
               className="cancel-btn"
               onClick={handleClose}
-              disabled={saving}
+              disabled={saving || uploadingPhoto}
             >
               ❌ Annuler
             </button>
