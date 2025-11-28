@@ -134,10 +134,7 @@
   gap: 6px;
 }
 
-.departure-date::before {
-  content: '⏰';
-  font-size: 0.9rem;
-}
+
 
 .pdf-url-section {
   margin-bottom: 25px;
