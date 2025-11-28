@@ -181,7 +181,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 name="type_contrat" 
                 value={formData.type_contrat} 
                 onChange={handleInputChange}
-                options={['CDI', 'CDD', 'Stage', 'Freelance']}
+                options={['CDI', 'CDD', 'Stage', 'CVP']}
                 required 
               />
               
