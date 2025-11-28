@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './DemandesRH.css';
 
 const DemandesRH = () => {
@@ -19,12 +19,8 @@ const DemandesRH = () => {
     'refuse'
   ];
 
-  useEffect(() => {
-    fetchDemandes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
-
-  const fetchDemandes = async () => {
+  // ✅ fetchDemandes mémorisée, dépend de filters
+  const fetchDemandes = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -32,6 +28,8 @@ const DemandesRH = () => {
       
       if (!token) {
         setError('Token d\'authentification manquant');
+        setDemandes([]);
+        setLoading(false);
         return;
       }
 
@@ -64,7 +62,12 @@ const DemandesRH = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, API_BASE_URL]);
+
+  // ✅ Respecte react-hooks/exhaustive-deps (dépend de fetchDemandes)
+  useEffect(() => {
+    fetchDemandes();
+  }, [fetchDemandes]);
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({
@@ -123,7 +126,7 @@ const DemandesRH = () => {
     return 'Non assigné';
   };
 
-  // ✅ Statut global d'approbation (texte en haut de la carte)
+  // ✅ Statut global d'approbation (texte)
   const getApprovalStatus = (demande) => {
     const hasSecondResponsable = !!demande.mail_responsable2;
     const responsable1 = getResponsableName(
@@ -153,7 +156,6 @@ const DemandesRH = () => {
         return '✅ Approuvée';
       }
 
-      // Un seul responsable
       if (demande.approuve_responsable1) {
         return `✅ Approuvée par ${responsable1}`;
       }
@@ -182,7 +184,6 @@ const DemandesRH = () => {
       return '⏳ En attente d\'approbation';
     }
 
-    // Autres statuts éventuels (en_cours, etc.)
     return demande.statut;
   };
 
@@ -198,15 +199,10 @@ const DemandesRH = () => {
       ? demande.mail_responsable1
       : demande.mail_responsable2;
 
-    // Si pas de mail => on n'affiche pas ce responsable
     if (!mailResponsable) {
       return null;
     }
 
-    // On se base UNIQUEMENT sur le champ d'approbation :
-    // true  => approuvé
-    // false => refusé
-    // null/undefined => en attente
     if (approuve === true) {
       return { status: 'approved', label: '✅ Approuvé' };
     }
@@ -267,7 +263,7 @@ const DemandesRH = () => {
         </div>
       )}
 
-      {/* Filtres simplifiés */}
+      {/* Filtres */}
       <div className="filters-section">
         <div className="filters-header">
           <h3>🔍 Filtres de recherche</h3>
@@ -286,7 +282,6 @@ const DemandesRH = () => {
               <option value="">Tous les statuts</option>
               {statuts.map(statut => (
                 <option key={statut} value={statut}>
-                  {/* on réutilise juste le label du badge */}
                   {getStatutBadge(statut).props.children}
                 </option>
               ))}
@@ -430,7 +425,7 @@ const DemandesRH = () => {
 
                 {/* Détails de la demande */}
                 <div className="demande-content">
-                  {/* Informations d'approbation */}
+                  {/* Statut d'approbation global */}
                   <div className="approval-status">
                     <strong>Statut d'approbation:</strong> {getApprovalStatus(demande)}
                   </div>
