@@ -122,25 +122,53 @@ const DemandesRH = () => {
     return 'Non assigné';
   };
 
-  // Fonction corrigée pour déterminer le statut d'approbation
-  const getApprovalStatus = (demande) => {
-    if (demande.statut === 'approuve') {
-      if (demande.approuve_responsable1 && demande.approuve_responsable2) {
-        return '✅ Approuvée par les deux responsables';
-      } else if (demande.approuve_responsable1) {
-        const responsable1 = getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1);
-        return `✅ Approuvée par ${responsable1} (en attente du 2ème responsable)`;
-      } else if (demande.approuve_responsable2) {
-        const responsable2 = getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2);
-        return `✅ Approuvée par ${responsable2} (en attente du 1er responsable)`;
-      }
-    } else if (demande.statut === 'refuse') {
+const getApprovalStatus = (demande) => {
+  if (demande.statut === 'approuve') {
+    const hasSecondResponsable = !!demande.mail_responsable2;
+    
+    if (demande.approuve_responsable1 && demande.approuve_responsable2) {
+      return '✅ Approuvée par les deux responsables';
+    } else if (demande.approuve_responsable1 && !hasSecondResponsable) {
+      // Cas où seul le responsable 1 existe et a approuvé
+      const responsable1 = getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1);
+      return `✅ Approuvée par ${responsable1}`;
+    } else if (demande.approuve_responsable1 && hasSecondResponsable) {
+      // Cas où les deux responsables existent, mais seul le 1er a approuvé
+      const responsable1 = getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1);
+      return `✅ Approuvée par ${responsable1} (en attente du 2ème responsable)`;
+    } else if (demande.approuve_responsable2 && hasSecondResponsable) {
+      // Cas où seul le 2ème responsable a approuvé
+      const responsable2 = getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2);
+      return `✅ Approuvée par ${responsable2} (en attente du 1er responsable)`;
+    } else {
+      return '✅ Approuvée';
+    }
+  } else if (demande.statut === 'refuse') {
+    // Identifier qui a refusé
+    if (demande.approuve_responsable1 === false) {
+      const responsable1 = getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1);
+      return `❌ Refusée par ${responsable1}: ${demande.commentaire_refus || 'Raison non spécifiée'}`;
+    } else if (demande.approuve_responsable2 === false) {
+      const responsable2 = getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2);
+      return `❌ Refusée par ${responsable2}: ${demande.commentaire_refus || 'Raison non spécifiée'}`;
+    } else {
       return `❌ Refusée: ${demande.commentaire_refus || 'Raison non spécifiée'}`;
-    } else if (demande.statut === 'en_attente') {
+    }
+  } else if (demande.statut === 'en_attente') {
+    const hasSecondResponsable = !!demande.mail_responsable2;
+    
+    if (demande.approuve_responsable1 === true && hasSecondResponsable) {
+      const responsable1 = getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1);
+      return `⏳ En attente du 2ème responsable (${responsable1} a approuvé)`;
+    } else if (demande.approuve_responsable2 === true && hasSecondResponsable) {
+      const responsable2 = getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2);
+      return `⏳ En attente du 1er responsable (${responsable2} a approuvé)`;
+    } else {
       return '⏳ En attente d\'approbation';
     }
-    return demande.statut;
-  };
+  }
+  return demande.statut;
+};
 
   // Fonction pour déterminer le statut d'un responsable
   const getResponsableStatus = (demande, responsableNumber) => {
