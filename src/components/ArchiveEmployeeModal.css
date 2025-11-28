@@ -242,10 +242,6 @@
   gap: 8px;
 }
 
-.departure-date::before {
-  content: '📅';
-  font-size: 0.9rem;
-}
 
 .entretien-btn-container {
   margin-top: 12px;
