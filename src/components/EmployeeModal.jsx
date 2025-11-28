@@ -283,19 +283,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 </div>
               </div>
 
-              <div className="form-section">
-                <h4>🖼️ Photo & Documents</h4>
-                <div className="form-grid">
-                  <FormInput label="Photo URL" name="photo" value={formData.photo} onChange={handleInputChange} placeholder="https://exemple.com/photo.jpg" />
-                  <FormInput 
-                    label="Dossier RH (URL PDF)" 
-                    name="dossier_rh" 
-                    value={formData.dossier_rh || ''} 
-                    onChange={handleInputChange} 
-                    placeholder="https://exemple.com/document.pdf" 
-                  />
-                </div>
-              </div>
+              
 
               {/* Bouton d'archivage conditionnel */}
               {hasDepartureDate && (
