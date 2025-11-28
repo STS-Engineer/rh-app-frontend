@@ -378,3 +378,163 @@
     gap: 15px;
   }
 }
+/* AddEmployeeModal.css additions */
+.photo-section {
+  margin-bottom: 20px;
+  padding: 20px;
+  border: 2px dashed #ddd;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.photo-upload-container {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  justify-content: center;
+}
+
+.employee-photo-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #3498db;
+}
+
+.photo-upload-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.photo-upload-btn {
+  background: #3498db;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+  font-size: 14px;
+}
+
+.photo-upload-btn:hover {
+  background: #2980b9;
+}
+
+.remove-photo-btn {
+  background: #e74c3c;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  border: none;
+  font-size: 12px;
+}
+
+.remove-photo-btn:hover {
+  background: #c0392b;
+}
+
+.photo-upload-btn:disabled,
+.remove-photo-btn:disabled {
+  background: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.photo-info {
+  text-align: left;
+  color: #7f8c8d;
+}
+
+.photo-info small {
+  display: block;
+  margin: 2px 0;
+}
+
+/* EmployeeModal.css additions */
+.photo-section .employee-photo {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #3498db;
+}
+
+.photo-upload-controls {
+  margin-top: 10px;
+}
+
+.document-container {
+  margin: 5px 0;
+}
+
+.document-link {
+  color: #3498db;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.document-link:hover {
+  text-decoration: underline;
+}
+
+.document-preview {
+  margin-top: 2px;
+}
+
+.document-preview small {
+  color: #7f8c8d;
+}
+
+.no-document {
+  color: #95a5a6;
+  font-style: italic;
+}
+
+.dossier-action {
+  margin-top: 10px;
+}
+
+.add-dossier-btn {
+  background: #9b59b6;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.add-dossier-btn:hover {
+  background: #8e44ad;
+}
+
+.archive-section {
+  margin-top: 20px;
+  padding: 15px;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 5px;
+}
+
+.archive-btn {
+  background: #e74c3c;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.archive-btn:hover {
+  background: #c0392b;
+}
+
+.archive-hint {
+  margin: 5px 0 0 0;
+  font-size: 12px;
+  color: #7f8c8d;
+}
