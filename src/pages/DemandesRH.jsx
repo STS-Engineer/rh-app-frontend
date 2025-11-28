@@ -1,4 +1,4 @@
- import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import './DemandesRH.css';
 
 const DemandesRH = () => {
@@ -17,7 +17,6 @@ const DemandesRH = () => {
     'en_attente',
     'approuve',
     'refuse'
-    
   ];
 
   useEffect(() => {
@@ -123,6 +122,7 @@ const DemandesRH = () => {
     return 'Non assigné';
   };
 
+  // Fonction corrigée pour déterminer le statut d'approbation
   const getApprovalStatus = (demande) => {
     if (demande.statut === 'approuve') {
       if (demande.approuve_responsable1 && demande.approuve_responsable2) {
@@ -140,6 +140,51 @@ const DemandesRH = () => {
       return '⏳ En attente d\'approbation';
     }
     return demande.statut;
+  };
+
+  // Fonction pour déterminer le statut d'un responsable
+  const getResponsableStatus = (demande, responsableNumber) => {
+    const isResponsable1 = responsableNumber === 1;
+    const approuve = isResponsable1 ? demande.approuve_responsable1 : demande.approuve_responsable2;
+    const mailResponsable = isResponsable1 ? demande.mail_responsable1 : demande.mail_responsable2;
+    
+    // Si le champ mail est vide, ne pas afficher ce responsable
+    if (!mailResponsable) {
+      return null;
+    }
+
+    // Si la demande est refusée, vérifier si ce responsable a refusé
+    if (demande.statut === 'refuse') {
+      if (approuve === false) {
+        return { status: 'refused', label: '❌ Refusé' };
+      } else {
+        return { status: 'cancelled', label: '⚠️ Annulé' };
+      }
+    }
+
+    // Si la demande est approuvée
+    if (demande.statut === 'approuve') {
+      if (approuve === true) {
+        return { status: 'approved', label: '✅ Approuvé' };
+      } else {
+        return { status: 'not_required', label: '➖ Non requis' };
+      }
+    }
+
+    // En attente
+    if (approuve === true) {
+      return { status: 'approved', label: '✅ Approuvé' };
+    } else if (approuve === false) {
+      return { status: 'refused', label: '❌ Refusé' };
+    } else {
+      return { status: 'pending', label: '⏳ En attente' };
+    }
+  };
+
+  // Fonction pour déterminer si on doit afficher le deuxième responsable
+  const shouldShowSecondResponsable = (demande) => {
+    // Afficher le deuxième responsable seulement si le champ mail_responsable2 n'est pas vide
+    return !!demande.mail_responsable2;
   };
 
   const clearFilters = () => {
@@ -421,32 +466,43 @@ const DemandesRH = () => {
                     </div>
                   </div>
 
-                  {/* Responsables d'approbation */}
+                  {/* Responsables d'approbation - CORRIGÉ */}
                   <div className="approval-section">
                     <h4 className="approval-title">🏢 Responsables d'approbation</h4>
                     <div className="approval-grid">
-                      <div className="approval-item">
-                        <div className="responsable-info">
-                          <span className="responsable-name">
-                            {getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1)}
+                      {/* Responsable 1 - Toujours affiché si mail_responsable1 existe */}
+                      {demande.mail_responsable1 && (
+                        <div className="approval-item">
+                          <div className="responsable-info">
+                            <span className="responsable-name">
+                              {getResponsableName(demande.responsable1_prenom, demande.responsable1_nom, demande.mail_responsable1)}
+                            </span>
+                            <span className="responsable-email">{demande.mail_responsable1}</span>
+                          </div>
+                          <span className={`approval-badge ${
+                            getResponsableStatus(demande, 1)?.status || 'pending'
+                          }`}>
+                            {getResponsableStatus(demande, 1)?.label || '⏳ En attente'}
                           </span>
-                          <span className="responsable-email">{demande.mail_responsable1 || 'Non assigné'}</span>
                         </div>
-                        <span className={`approval-badge ${demande.approuve_responsable1 ? 'approved' : 'pending'}`}>
-                          {demande.approuve_responsable1 ? '✅ Approuvé' : '⏳ En attente'}
-                        </span>
-                      </div>
-                      <div className="approval-item">
-                        <div className="responsable-info">
-                          <span className="responsable-name">
-                            {getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2)}
+                      )}
+
+                      {/* Responsable 2 - Affiché seulement si mail_responsable2 existe */}
+                      {shouldShowSecondResponsable(demande) && (
+                        <div className="approval-item">
+                          <div className="responsable-info">
+                            <span className="responsable-name">
+                              {getResponsableName(demande.responsable2_prenom, demande.responsable2_nom, demande.mail_responsable2)}
+                            </span>
+                            <span className="responsable-email">{demande.mail_responsable2}</span>
+                          </div>
+                          <span className={`approval-badge ${
+                            getResponsableStatus(demande, 2)?.status || 'pending'
+                          }`}>
+                            {getResponsableStatus(demande, 2)?.label || '⏳ En attente'}
                           </span>
-                          <span className="responsable-email">{demande.mail_responsable2 || 'Non assigné'}</span>
                         </div>
-                        <span className={`approval-badge ${demande.approuve_responsable2 ? 'approved' : 'pending'}`}>
-                          {demande.approuve_responsable2 ? '✅ Approuvé' : '⏳ En attente'}
-                        </span>
-                      </div>
+                      )}
                     </div>
                   </div>
 
