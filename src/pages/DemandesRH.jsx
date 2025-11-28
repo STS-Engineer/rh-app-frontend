@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './DemandesRH.css';
+import Sidebar from '../components/Sidebar';
 
 const DemandesRH = () => {
   const [demandes, setDemandes] = useState([]);
@@ -243,6 +244,7 @@ const DemandesRH = () => {
 
   return (
     <div className="demandes-rh">
+      <Sidebar />
       <div className="demandes-header">
         <h1>📋 Gestion des Demandes</h1>
         <p>Suivi et traitement des demandes des collaborateurs</p>
