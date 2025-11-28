@@ -170,42 +170,18 @@ const getApprovalStatus = (demande) => {
   return demande.statut;
 };
 
-// Fonction pour déterminer le statut d'un responsable - CORRIGÉE
+// Fonction simplifiée pour déterminer le statut d'un responsable
 const getResponsableStatus = (demande, responsableNumber) => {
   const isResponsable1 = responsableNumber === 1;
   const approuve = isResponsable1 ? demande.approuve_responsable1 : demande.approuve_responsable2;
-  const mailResponsable = isResponsable1 ? demande.mail_responsable1 : demande.mail_resposable2;
+  const mailResponsable = isResponsable1 ? demande.mail_responsable1 : demande.mail_responsable2;
   
   // Si le champ mail est vide, ne pas afficher ce responsable
   if (!mailResponsable) {
     return null;
   }
 
-  // Si la demande est refusée
-  if (demande.statut === 'refuse') {
-    if (approuve === false) {
-      return { status: 'refused', label: '❌ Refusé' };
-    } else if (approuve === true) {
-      return { status: 'approved_but_refused', label: '✅ Approuvé (demande refusée)' };
-    } else {
-      return { status: 'not_processed', label: '➖ Non traité' };
-    }
-  }
-
-  // Si la demande est approuvée
-  if (demande.statut === 'approuve') {
-    if (approuve === true) {
-      return { status: 'approved', label: '✅ Approuvé' };
-    } else if (approuve === false) {
-      return { status: 'refused_but_approved', label: '❌ Refusé (demande approuvée)' };
-    } else {
-      // Cas où un responsable n'a pas donné son avis mais la demande est approuvée
-      // (peut arriver si l'autre responsable seul suffit)
-      return { status: 'not_required', label: '➖ Non requis' };
-    }
-  }
-
-  // En attente - statut normal
+  // Statuts de base seulement
   if (approuve === true) {
     return { status: 'approved', label: '✅ Approuvé' };
   } else if (approuve === false) {
