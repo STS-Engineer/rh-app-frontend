@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+ import React, { useState, useEffect } from 'react';
 import { employeesAPI } from '../services/api';
 import ArchiveModal from './ArchiveModal';
 import DossierRHModal from './DossierRHModal';
@@ -8,17 +8,12 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const [saving, setSaving] = useState(false);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState(null);
-  const [photoPreview, setPhotoPreview] = useState(null);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [showDossierModal, setShowDossierModal] = useState(false);
 
   useEffect(() => {
     if (employee) {
       setFormData(employee);
-      setPhotoPreview(null);
-      setSelectedPhoto(null);
     }
   }, [employee]);
 
@@ -38,79 +33,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     }
   };
 
-  const handlePhotoChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setSelectedPhoto(file);
-      
-      // Créer une preview
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPhotoPreview(e.target.result);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleRemovePhoto = async () => {
-    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette photo ?')) {
-      try {
-        setUploadingPhoto(true);
-        await employeesAPI.deletePhoto(employee.id);
-        
-        // Mettre à jour l'état local
-        setFormData(prev => ({
-          ...prev,
-          photo: getDefaultAvatar()
-        }));
-        setSelectedPhoto(null);
-        setPhotoPreview(null);
-        
-        // Rafraîchir les données
-        const updatedEmployee = { ...employee, photo: getDefaultAvatar() };
-        onUpdate(updatedEmployee);
-        
-        alert('✅ Photo supprimée avec succès!');
-      } catch (error) {
-        console.error('❌ Erreur suppression photo:', error);
-        alert('❌ Erreur lors de la suppression: ' + (error.response?.data?.message || error.message));
-      } finally {
-        setUploadingPhoto(false);
-      }
-    }
-  };
-
-  const uploadEmployeePhoto = async () => {
-    if (!selectedPhoto) return;
-
-    setUploadingPhoto(true);
-    try {
-      const response = await employeesAPI.uploadPhoto(employee.id, selectedPhoto);
-      const photoUrl = response.data.photoUrl;
-      
-      // Mettre à jour l'état local
-      setFormData(prev => ({
-        ...prev,
-        photo: photoUrl
-      }));
-      setSelectedPhoto(null);
-      setPhotoPreview(null);
-      
-      // Rafraîchir les données
-      const updatedEmployee = { ...employee, photo: photoUrl };
-      onUpdate(updatedEmployee);
-      
-      alert('✅ Photo uploadée avec succès!');
-      return photoUrl;
-    } catch (error) {
-      console.error('❌ Erreur upload photo:', error);
-      alert('❌ Erreur lors de l\'upload: ' + (error.response?.data?.message || error.message));
-      return null;
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
-
   const handleSave = async () => {
     if (saving) return;
     
@@ -118,12 +40,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     try {
       console.log('💾 Sauvegarde des modifications:', formData);
       
-      // Uploader la photo d'abord si elle existe
-      if (selectedPhoto) {
-        await uploadEmployeePhoto();
-      }
-      
-      // Ensuite sauvegarder les autres données
       const updatedEmployee = await employeesAPI.update(employee.id, formData);
       console.log('✅ Employé mis à jour:', updatedEmployee.data);
       
@@ -174,7 +90,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   };
 
   const getPhotoUrl = () => {
-    if (photoPreview) return photoPreview;
     if (formData.photo && isValidUrl(formData.photo)) {
       return formData.photo;
     }
@@ -246,8 +161,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const handleClose = () => {
     setIsEditing(false);
     setFormData(employee);
-    setSelectedPhoto(null);
-    setPhotoPreview(null);
     onClose();
   };
 
@@ -261,7 +174,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
 
   const documentUrl = getDocumentUrl(formData.dossier_rh);
   const hasDepartureDate = formData.date_depart && formData.date_depart.trim() !== '';
-  const isUploadedPhoto = formData.photo && formData.photo.includes('/api/photo/');
 
   return (
     <div className="employee-modal-overlay" onClick={handleClose}>
@@ -274,49 +186,14 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
         <div className="employee-modal-body">
           {/* En-tête avec photo et informations basiques */}
           <div className="employee-header">
-            <div className="photo-section">
-              <img 
-                src={getPhotoUrl()} 
-                alt={`${formData.prenom} ${formData.nom}`}
-                className="employee-photo"
-                onError={(e) => {
-                  e.target.src = getDefaultAvatar();
-                }}
-              />
-              
-              {isEditing && (
-                <div className="photo-upload-controls">
-                  <label className="photo-upload-btn">
-                    📸 Changer la photo
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/jpg,image/png,image/gif"
-                      onChange={handlePhotoChange}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                  
-                  {(isUploadedPhoto || selectedPhoto) && (
-                    <button 
-                      type="button" 
-                      className="remove-photo-btn"
-                      onClick={handleRemovePhoto}
-                      disabled={uploadingPhoto}
-                    >
-                      {uploadingPhoto ? '⏳...' : '🗑️ Supprimer'}
-                    </button>
-                  )}
-                  
-                  {selectedPhoto && (
-                    <div className="photo-info">
-                      <small>Nouveau fichier: {selectedPhoto.name}</small>
-                      <small>Taille: {(selectedPhoto.size / 1024 / 1024).toFixed(2)} MB</small>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-            
+            <img 
+              src={getPhotoUrl()} 
+              alt={`${formData.prenom} ${formData.nom}`}
+              className="employee-photo"
+              onError={(e) => {
+                e.target.src = getDefaultAvatar();
+              }}
+            />
             <div className="employee-basic-info">
               <h3>{formData.prenom} {formData.nom}</h3>
               <p className="employee-matricule">Matricule: {formData.matricule}</p>
@@ -409,13 +286,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               <div className="form-section">
                 <h4>🖼️ Photo & Documents</h4>
                 <div className="form-grid">
-                  <FormInput 
-                    label="Photo URL (alternative)" 
-                    name="photo" 
-                    value={formData.photo || ''} 
-                    onChange={handleInputChange} 
-                    placeholder="https://exemple.com/photo.jpg" 
-                  />
+                  <FormInput label="Photo URL" name="photo" value={formData.photo} onChange={handleInputChange} placeholder="https://exemple.com/photo.jpg" />
                   <FormInput 
                     label="Dossier RH (URL PDF)" 
                     name="dossier_rh" 
@@ -455,20 +326,17 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               <button 
                 className="save-btn" 
                 onClick={handleSave}
-                disabled={saving || uploadingPhoto}
+                disabled={saving}
               >
-                {saving ? '⏳ Sauvegarde...' : 
-                 uploadingPhoto ? '📸 Upload photo...' : '💾 Sauvegarder'}
+                {saving ? '⏳ Sauvegarde...' : '💾 Sauvegarder'}
               </button>
               <button 
                 className="cancel-btn" 
                 onClick={() => {
                   setIsEditing(false);
                   setFormData(employee);
-                  setSelectedPhoto(null);
-                  setPhotoPreview(null);
                 }}
-                disabled={saving || uploadingPhoto}
+                disabled={saving}
               >
                 ❌ Annuler
               </button>
