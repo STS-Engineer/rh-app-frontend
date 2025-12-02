@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import './FicheDePaie.css';
-
+import Sidebar from '../components/Sidebar';
 const FicheDePaie = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -64,6 +64,7 @@ const FicheDePaie = () => {
 
   return (
     <div className="fiche-paie-container">
+      <Sidebar />
       <div className="fiche-paie-header">
         <h1>📄 Fiche de Paie</h1>
         <p className="subtitle">
