@@ -6,7 +6,7 @@ import Team from './pages/Team';
 import Archives from './pages/Archives';
 import Statistics from './pages/Statistics';
 import DemandesRH from './pages/DemandesRH'; 
-import FicheDePaie from './components/FicheDePaie';
+import FicheDePaie from './pages/FicheDePaie';
 import './styles/App.css';
 
 const PrivateRoute = ({ children }) => {
