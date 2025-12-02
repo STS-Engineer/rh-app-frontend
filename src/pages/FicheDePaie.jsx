@@ -183,26 +183,7 @@ const FicheDePaie = () => {
         )}
       </div>
 
-      <div className="info-section">
-        <h3>ℹ️ Instructions</h3>
-        <ol className="instructions-list">
-          <li>
-            <strong>Format du fichier:</strong> Le PDF doit contenir une fiche de paie par page
-          </li>
-          <li>
-            <strong>Matricule requis:</strong> Chaque fiche doit contenir le mot "MATR." ou "MATRICULE" 
-            suivi du numéro de matricule (2 ou 3 chiffres)
-          </li>
-          <li>
-            <strong>Employés dans la base:</strong> Les employés doivent être enregistrés dans la base 
-            avec leur matricule et adresse email
-          </li>
-          <li>
-            <strong>Envoi automatique:</strong> Chaque fiche sera automatiquement envoyée par email 
-            à l'employé correspondant
-          </li>
-        </ol>
-      </div>
+      
     </div>
   );
 };
