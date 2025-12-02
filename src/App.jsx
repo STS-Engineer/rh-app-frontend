@@ -31,6 +31,14 @@ function App() {
             } 
           />
           <Route 
+            path="/fiche-de-paie" 
+            element={
+              <PrivateRoute>
+                <FicheDePaie />
+              </PrivateRoute>
+            } 
+          />
+          <Route 
             path="/team" 
             element={
               <PrivateRoute>
