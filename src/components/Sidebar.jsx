@@ -9,7 +9,8 @@ const Sidebar = () => {
   const menuItems = [
     { path: '/dashboard', label: 'Tableau de Bord', icon: '📊' },
     { path: '/team', label: 'Équipe', icon: '👥' },
-    { path: '/demandes-rh', label: 'Demandes RH', icon: '📋' }, // Nouvel item
+    { path: '/demandes-rh', label: 'Demandes RH', icon: '📋' }, 
+    { path: '/fiche-de-paie', label: 'Fiche de Paie', icon: '💰' },// Nouvel item
     { path: '/archives', label: 'Archives', icon: '📁' },
     { path: '/statistics', label: 'Statistiques', icon: '📈' }, 
     { path: '/settings', label: 'Paramètres', icon: '⚙️' },
@@ -41,13 +42,7 @@ const Sidebar = () => {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="user-info">
-          <div className="user-avatar">👤</div>
-          <div className="user-details">
-            <p className="user-name">Administrateur RH</p>
-            <p className="user-role">Gestionnaire</p>
-          </div>
-        </div>
+        
         <button className="logout-btn" onClick={handleLogout}>
           🚪 Déconnexion
         </button>
