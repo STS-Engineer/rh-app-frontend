@@ -242,6 +242,65 @@ const DemandesRH = () => {
     return icons[type] || '📋';
   };
 
+  // ✅ Export vers Excel (CSV)
+  const handleExportExcel = () => {
+    if (!demandes || demandes.length === 0) {
+      alert('Aucune demande à exporter');
+      return;
+    }
+
+    // Colonnes du fichier
+    const headers = [
+      'ID',
+      'Titre',
+      'Type de demande',
+      'Statut',
+      'Employé',
+      'Matricule',
+      'Date création',
+      'Dernière mise à jour'
+    ];
+
+    // Lignes
+    const rows = demandes.map((d) => [
+      d.id,
+      d.titre,
+      getTypeDemandeLabel(d.type_demande),
+      d.statut,
+      `${d.employe_prenom || ''} ${d.employe_nom || ''}`,
+      d.employe_matricule || '',
+      d.created_at ? formatDate(d.created_at) : '',
+      d.updated_at ? formatDate(d.updated_at) : ''
+    ]);
+
+    // Construction CSV
+    const csvContent =
+      [headers, ...rows]
+        .map(row =>
+          row
+            .map((cell) => {
+              const value = (cell !== null && cell !== undefined) ? String(cell) : '';
+              const escaped = value.replace(/"/g, '""');
+              return `"${escaped}"`;
+            })
+            .join(';') // séparateur ; pour Excel FR
+        )
+        .join('\n');
+
+    // Création du fichier et téléchargement
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'demandes_rh.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="demandes-rh">
       <Sidebar />
@@ -269,9 +328,14 @@ const DemandesRH = () => {
       <div className="filters-section">
         <div className="filters-header">
           <h3>🔍 Filtres de recherche</h3>
-          <button className="btn-clear" onClick={clearFilters}>
-            Effacer les filtres
-          </button>
+          <div className="filters-actions">
+            <button className="btn-clear" onClick={clearFilters}>
+              Effacer les filtres
+            </button>
+            <button className="btn-export" onClick={handleExportExcel}>
+              📤 Exporter vers Excel
+            </button>
+          </div>
         </div>
         
         <div className="filters-grid">
