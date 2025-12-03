@@ -913,3 +913,42 @@
   color: #6c757d;
   border: 1px solid #e9ecef;
 }
+/* Container des boutons dans l'en-tête des filtres */
+.filters-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Bouton Export Excel */
+.btn-export {
+  background-color: #1f7ae0;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: 0.2s ease;
+}
+
+/* Hover */
+.btn-export:hover {
+  background-color: #1564b8;
+  transform: translateY(-1px);
+}
+
+/* Lors du clic */
+.btn-export:active {
+  transform: scale(0.97);
+}
+
+/* Icône export */
+.btn-export span {
+  font-size: 1rem;
+}
+
