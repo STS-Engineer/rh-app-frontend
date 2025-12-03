@@ -6,6 +6,7 @@ const DemandesRH = () => {
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [exporting, setExporting] = useState(false);
   const [filters, setFilters] = useState({
     statut: '',
     date_debut: '',
@@ -64,6 +65,49 @@ const DemandesRH = () => {
       setLoading(false);
     }
   }, [filters, API_BASE_URL]);
+
+  // ✅ Fonction pour exporter en Excel
+  const handleExportExcel = async () => {
+    try {
+      setExporting(true);
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        setError('Token d\'authentification manquant');
+        setExporting(false);
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/demandes/export/excel`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+      }
+
+      // Télécharger le fichier
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const date = new Date().toISOString().split('T')[0];
+      
+      a.href = url;
+      a.download = `demandes_rh_${date}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+    } catch (error) {
+      console.error('❌ Erreur export Excel:', error);
+      setError(`Erreur lors de l'export: ${error.message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // ✅ Respecte react-hooks/exhaustive-deps (dépend de fetchDemandes)
   useEffect(() => {
@@ -269,9 +313,18 @@ const DemandesRH = () => {
       <div className="filters-section">
         <div className="filters-header">
           <h3>🔍 Filtres de recherche</h3>
-          <button className="btn-clear" onClick={clearFilters}>
-            Effacer les filtres
-          </button>
+          <div className="filters-actions">
+            <button className="btn-clear" onClick={clearFilters}>
+              Effacer les filtres
+            </button>
+            <button 
+              className="btn-export" 
+              onClick={handleExportExcel}
+              disabled={exporting || loading}
+            >
+              {exporting ? '⏳ Génération Excel...' : '📊 Exporter en Excel'}
+            </button>
+          </div>
         </div>
         
         <div className="filters-grid">
