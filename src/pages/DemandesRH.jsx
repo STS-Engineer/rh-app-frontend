@@ -333,7 +333,7 @@ const DemandesRH = () => {
               Effacer les filtres
             </button>
             <button className="btn-export" onClick={handleExportExcel}>
-              📤 Exporter vers Excel
+              <span>📤</span> Exporter Excel
             </button>
           </div>
         </div>
