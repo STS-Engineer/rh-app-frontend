@@ -553,3 +553,50 @@
     padding-bottom: 20px;
   }
 }
+/* EmployeeModal.css - Ajoutez ces styles */
+
+.photo-change-section {
+  margin-top: 15px;
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 5px;
+  border: 1px dashed #ddd;
+}
+
+.file-input {
+  display: none;
+}
+
+.change-photo-btn {
+  display: inline-block;
+  background: #28a745;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.change-photo-btn:hover {
+  background: #218838;
+}
+
+.photo-change-notice {
+  display: inline-block;
+  margin-left: 10px;
+  color: #28a745;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.photo-preview-section {
+  margin: 10px 0;
+}
+
+.photo-preview-section img {
+  max-width: 100px;
+  max-height: 100px;
+  border-radius: 5px;
+  border: 2px solid #ddd;
+}
