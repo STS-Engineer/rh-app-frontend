@@ -2,7 +2,7 @@
 import api from './api';
 
 export const photoService = {
-  // Uploader une photo d'employé (même méthode que dossier RH)
+  // Uploader une photo d'employé
   uploadEmployeePhoto: async (file) => {
     const formData = new FormData();
     formData.append('photo', file);
@@ -10,7 +10,8 @@ export const photoService = {
     try {
       console.log('📤 Upload photo employé en cours...');
       
-      const response = await api.post('/api/employees/upload-photo', formData, {
+      // CORRECTION : Utiliser '/employees/upload-photo' au lieu de '/api/employees/upload-photo'
+      const response = await api.post('/employees/upload-photo', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -25,7 +26,32 @@ export const photoService = {
     }
   },
 
-  // Générer avatar par défaut (sans upload)
+  // Supprimer une photo d'employé
+  deleteEmployeePhoto: async (photoUrl) => {
+    try {
+      console.log('🗑️ Suppression photo:', photoUrl);
+      
+      // CORRECTION : Utiliser '/employees/delete-photo' au lieu de '/api/employees/delete-photo'
+      const response = await api.delete('/employees/delete-photo', {
+        data: { photoUrl }
+      });
+
+      console.log('✅ Photo supprimée:', response.data);
+      return response.data;
+
+    } catch (error) {
+      console.error('❌ Erreur suppression photo:', error);
+      throw error;
+    }
+  },
+
+  // Vérifier si une URL est Azure
+  isAzureUrl: (url) => {
+    if (!url) return false;
+    return url.includes('.blob.core.windows.net');
+  },
+
+  // Générer avatar par défaut
   generateDefaultAvatar: (nom, prenom) => {
     const initiales = (prenom?.charAt(0) + nom?.charAt(0)).toUpperCase();
     const colors = [
