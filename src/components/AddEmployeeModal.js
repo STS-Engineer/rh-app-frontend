@@ -25,13 +25,11 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Vérifier le type de fichier
       if (!file.type.startsWith('image/')) {
         alert('❌ Veuillez sélectionner une image (jpg, png, gif)');
         return;
       }
       
-      // Vérifier la taille (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         alert('❌ La taille de l\'image ne doit pas dépasser 5MB');
         return;
@@ -39,7 +37,6 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       
       setSelectedFile(file);
       
-      // Créer un preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhotoPreview(reader.result);
@@ -83,7 +80,6 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
         } catch (uploadError) {
           console.error('❌ Erreur upload photo:', uploadError);
           alert('⚠️ Erreur lors de l\'upload de la photo. Utilisation d\'un avatar par défaut.');
-          // En cas d'erreur d'upload, utiliser avatar par défaut
           photoUrl = photoService.generateDefaultAvatar(formData.nom, formData.prenom);
         } finally {
           setUploading(false);
