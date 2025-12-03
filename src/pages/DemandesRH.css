@@ -951,4 +951,103 @@
 .btn-export span {
   font-size: 1rem;
 }
+/* Styles pour les filtres améliorés */
+.filters-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
 
+.btn-clear {
+  padding: 8px 16px;
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.btn-clear:hover {
+  background-color: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.btn-export {
+  padding: 8px 16px;
+  background-color: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background-color 0.3s;
+}
+
+.btn-export:hover {
+  background-color: #059669;
+}
+
+.active-filters {
+  margin-top: 15px;
+  padding: 12px;
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #0369a1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.active-filters strong {
+  font-weight: 600;
+}
+
+/* Styles pour les badges d'approbation */
+.approval-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.approval-badge.approved {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.approval-badge.refused {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.approval-badge.pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+/* Responsive design pour les filtres */
+@media (max-width: 768px) {
+  .filters-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .filters-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .active-filters {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+}
