@@ -1,5 +1,6 @@
- import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { employeesAPI } from '../services/api';
+import { photoService } from '../services/photoService'; // Import ajouté
 import ArchiveModal from './ArchiveModal';
 import DossierRHModal from './DossierRHModal';
 import './EmployeeModal.css';
@@ -10,10 +11,14 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const [saving, setSaving] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [showDossierModal, setShowDossierModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState('');
 
   useEffect(() => {
     if (employee) {
       setFormData(employee);
+      setSelectedFile(null);
+      setPhotoPreview('');
     }
   }, [employee]);
 
@@ -33,23 +38,66 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     }
   };
 
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Vérifications
+      if (!file.type.startsWith('image/')) {
+        alert('❌ Veuillez sélectionner une image');
+        return;
+      }
+      
+      if (file.size > 5 * 1024 * 1024) {
+        alert('❌ La taille ne doit pas dépasser 5MB');
+        return;
+      }
+      
+      setSelectedFile(file);
+      
+      // Preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = async () => {
     if (saving) return;
     
     setSaving(true);
     try {
-      console.log('💾 Sauvegarde des modifications:', formData);
+      console.log('💾 Sauvegarde des modifications');
       
-      const updatedEmployee = await employeesAPI.update(employee.id, formData);
-      console.log('✅ Employé mis à jour:', updatedEmployee.data);
+      let updatedData = { ...formData };
       
-      onUpdate(updatedEmployee.data);
+      // Si nouvelle photo sélectionnée
+      if (selectedFile) {
+        try {
+          console.log('📤 Upload nouvelle photo...');
+          const uploadResult = await photoService.uploadEmployeePhoto(selectedFile);
+          updatedData.photo = uploadResult.photoUrl;
+          console.log('✅ Nouvelle photo uploadée:', updatedData.photo);
+        } catch (uploadError) {
+          console.error('❌ Erreur upload photo:', uploadError);
+          alert('⚠️ Erreur upload photo. Ancienne photo conservée.');
+        }
+      }
+      
+      const response = await employeesAPI.update(employee.id, updatedData);
+      console.log('✅ Employé mis à jour:', response.data);
+      
+      onUpdate(response.data);
       setIsEditing(false);
+      setSelectedFile(null);
+      setPhotoPreview('');
+      
       alert('✅ Modifications sauvegardées avec succès!');
       
     } catch (error) {
-      console.error('❌ Erreur lors de la sauvegarde:', error);
-      alert('❌ Erreur lors de la sauvegarde: ' + (error.response?.data?.message || error.message));
+      console.error('❌ Erreur sauvegarde:', error);
+      alert('❌ Erreur sauvegarde: ' + (error.response?.data?.message || error.message));
     } finally {
       setSaving(false);
     }
@@ -158,97 +206,11 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     window.open(url, '_blank');
   };
 
-
-
-
-
-
-
-
-// Dans EmployeeModal.jsx - Ajoutez ces fonctions
-
-const [selectedFile, setSelectedFile] = useState(null);
-const [photoPreview, setPhotoPreview] = useState('');
-
-const handlePhotoChange = (e) => {
-  const file = e.target.files[0];
-  if (file) {
-    // Vérifications similaires
-    if (!file.type.startsWith('image/')) {
-      alert('❌ Veuillez sélectionner une image');
-      return;
-    }
-    
-    if (file.size > 5 * 1024 * 1024) {
-      alert('❌ La taille ne doit pas dépasser 5MB');
-      return;
-    }
-    
-    setSelectedFile(file);
-    
-    // Preview
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPhotoPreview(reader.result);
-      setFormData(prev => ({
-        ...prev,
-        photo: reader.result // Temporaire pour preview
-      }));
-    };
-    reader.readAsDataURL(file);
-  }
-};
-
-// Modifiez handleSave pour gérer l'upload de photo
-const handleSave = async () => {
-  if (saving) return;
-  
-  setSaving(true);
-  try {
-    console.log('💾 Sauvegarde des modifications');
-    
-    let updatedData = { ...formData };
-    
-    // Si nouvelle photo sélectionnée
-    if (selectedFile) {
-      try {
-        console.log('📤 Upload nouvelle photo...');
-        const uploadResult = await photoService.uploadEmployeePhoto(selectedFile);
-        updatedData.photo = uploadResult.photoUrl;
-        console.log('✅ Nouvelle photo uploadée:', updatedData.photo);
-      } catch (uploadError) {
-        console.error('❌ Erreur upload photo:', uploadError);
-        alert('⚠️ Erreur upload photo. Ancienne photo conservée.');
-      }
-    }
-    
-    const response = await employeesAPI.update(employee.id, updatedData);
-    console.log('✅ Employé mis à jour:', response.data);
-    
-    onUpdate(response.data);
-    setIsEditing(false);
-    setSelectedFile(null);
-    setPhotoPreview('');
-    
-    alert('✅ Modifications sauvegardées avec succès!');
-    
-  } catch (error) {
-    console.error('❌ Erreur sauvegarde:', error);
-    alert('❌ Erreur sauvegarde: ' + (error.response?.data?.message || error.message));
-  } finally {
-    setSaving(false);
-  }
-};
-
-
-
-
-
- 
- 
   const handleClose = () => {
     setIsEditing(false);
     setFormData(employee);
+    setSelectedFile(null);
+    setPhotoPreview('');
     onClose();
   };
 
@@ -262,6 +224,7 @@ const handleSave = async () => {
 
   const documentUrl = getDocumentUrl(formData.dossier_rh);
   const hasDepartureDate = formData.date_depart && formData.date_depart.trim() !== '';
+  const currentPhotoUrl = photoPreview || getPhotoUrl();
 
   return (
     <div className="employee-modal-overlay" onClick={handleClose}>
@@ -275,7 +238,7 @@ const handleSave = async () => {
           {/* En-tête avec photo et informations basiques */}
           <div className="employee-header">
             <img 
-              src={getPhotoUrl()} 
+              src={currentPhotoUrl} 
               alt={`${formData.prenom} ${formData.nom}`}
               className="employee-photo"
               onError={(e) => {
@@ -288,6 +251,27 @@ const handleSave = async () => {
               <p className="employee-poste">{formData.poste}</p>
               <p className="employee-departement">{formData.site_dep}</p>
               <p className="employee-contrat">{formData.type_contrat}</p>
+              
+              {/* Bouton pour changer la photo en mode édition */}
+              {isEditing && (
+                <div className="photo-change-section">
+                  <input
+                    type="file"
+                    id="change-photo"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    className="file-input"
+                  />
+                  <label htmlFor="change-photo" className="change-photo-btn">
+                    📷 Changer la photo
+                  </label>
+                  {selectedFile && (
+                    <span className="photo-change-notice">
+                      Nouvelle photo sélectionnée
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -371,8 +355,6 @@ const handleSave = async () => {
                 </div>
               </div>
 
-              
-
               {/* Bouton d'archivage conditionnel */}
               {hasDepartureDate && (
                 <div className="archive-section">
@@ -411,6 +393,8 @@ const handleSave = async () => {
                 onClick={() => {
                   setIsEditing(false);
                   setFormData(employee);
+                  setSelectedFile(null);
+                  setPhotoPreview('');
                 }}
                 disabled={saving}
               >
