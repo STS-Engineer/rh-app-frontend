@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { employeesAPI } from '../services/api';
-import { photoService } from '../services/photoService'; // Import ajouté
+import { photoService } from '../services/photoService';
 import ArchiveModal from './ArchiveModal';
 import DossierRHModal from './DossierRHModal';
 import './EmployeeModal.css';
@@ -41,7 +41,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Vérifications
       if (!file.type.startsWith('image/')) {
         alert('❌ Veuillez sélectionner une image');
         return;
@@ -54,7 +53,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       
       setSelectedFile(file);
       
-      // Preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setPhotoPreview(reader.result);
