@@ -8,19 +8,36 @@ const DemandesRH = () => {
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     statut: '',
+    type_demande: '',
     date_debut: '',
     date_fin: ''
   });
+  const [filtersApplied, setFiltersApplied] = useState(false);
+  const [timeoutId, setTimeoutId] = useState(null);
 
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
 
-  const statuts = [
-    'en_attente',
-    'approuve',
-    'refuse'
-  ];
+  const statuts = ['en_attente', 'approuve', 'refuse'];
+  const typesDemande = ['congé', 'autorisation_absence', 'mission'];
 
-  // ✅ fetchDemandes mémorisée, dépend de filters
+  const getStatutLabel = (statut) => {
+    const labels = {
+      'en_attente': 'En attente',
+      'approuve': 'Approuvé',
+      'refuse': 'Refusé'
+    };
+    return labels[statut] || statut;
+  };
+
+  const getTypeDemandeLabel = (type) => {
+    const labels = {
+      'congé': 'Congé',
+      'autorisation_absence': 'Autorisation d\'absence',
+      'mission': 'Mission'
+    };
+    return labels[type] || type;
+  };
+
   const fetchDemandes = useCallback(async () => {
     try {
       setLoading(true);
@@ -36,11 +53,23 @@ const DemandesRH = () => {
 
       const queryParams = new URLSearchParams();
       
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value && value !== '') {
-          queryParams.append(key, value);
-        }
-      });
+      if (filters.statut && filters.statut !== '') {
+        queryParams.append('statut', filters.statut);
+      }
+      
+      if (filters.type_demande && filters.type_demande !== '') {
+        queryParams.append('type_demande', filters.type_demande);
+      }
+      
+      if (filters.date_debut && filters.date_debut !== '') {
+        queryParams.append('date_debut', filters.date_debut);
+      }
+      
+      if (filters.date_fin && filters.date_fin !== '') {
+        queryParams.append('date_fin', filters.date_fin);
+      }
+
+      console.log('🔍 Filtres envoyés:', Object.fromEntries(queryParams));
 
       const response = await fetch(`${API_BASE_URL}/api/demandes?${queryParams}`, {
         headers: {
@@ -54,6 +83,7 @@ const DemandesRH = () => {
       }
 
       const data = await response.json();
+      console.log('📊 Données reçues:', data.demandes?.length || 0, 'demandes');
       setDemandes(data.demandes || []);
       
     } catch (error) {
@@ -65,38 +95,42 @@ const DemandesRH = () => {
     }
   }, [filters, API_BASE_URL]);
 
-  // ✅ Respecte react-hooks/exhaustive-deps (dépend de fetchDemandes)
+  // Debounce pour éviter les requêtes excessives
   useEffect(() => {
-    fetchDemandes();
-  }, [fetchDemandes]);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    
+    const newTimeoutId = setTimeout(() => {
+      fetchDemandes();
+    }, 300);
+    
+    setTimeoutId(newTimeoutId);
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [filters]);
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({
       ...prev,
       [key]: value
     }));
+    setFiltersApplied(true);
   };
 
   const getStatutBadge = (statut) => {
     const statutConfig = {
       'en_attente': { label: 'En attente', class: 'statut-en-attente' },
       'approuve': { label: 'Approuvé', class: 'statut-approuve' },
-      'refuse': { label: 'Refusé', class: 'statut-refuse' },
-      'en_cours': { label: 'En cours', class: 'statut-en-cours' }
+      'refuse': { label: 'Refusé', class: 'statut-refuse' }
     };
     
     const config = statutConfig[statut] || { label: statut, class: 'statut-default' };
     return <span className={`statut-badge ${config.class}`}>{config.label}</span>;
-  };
-
-  const getTypeDemandeLabel = (type) => {
-    const labels = {
-      'congé': 'Congé',
-      'autorisation_absence': 'Autorisation d\'absence',
-      'frais_deplacement': 'Frais de déplacement',
-      'autre': 'Autre'
-    };
-    return labels[type] || type;
   };
 
   const formatDate = (dateString) => {
@@ -127,7 +161,6 @@ const DemandesRH = () => {
     return 'Non assigné';
   };
 
-  // ✅ Statut global d'approbation (texte)
   const getApprovalStatus = (demande) => {
     const hasSecondResponsable = !!demande.mail_responsable2;
     const responsable1 = getResponsableName(
@@ -188,7 +221,6 @@ const DemandesRH = () => {
     return demande.statut;
   };
 
-  // ✅ Statut individuel d'un responsable (badge)
   const getResponsableStatus = (demande, responsableNumber) => {
     const isResponsable1 = responsableNumber === 1;
 
@@ -222,9 +254,11 @@ const DemandesRH = () => {
   const clearFilters = () => {
     setFilters({
       statut: '',
+      type_demande: '',
       date_debut: '',
       date_fin: ''
     });
+    setFiltersApplied(false);
   };
 
   const retryFetch = () => {
@@ -236,20 +270,17 @@ const DemandesRH = () => {
     const icons = {
       'congé': '🏖️',
       'autorisation_absence': '⏰',
-      'frais_deplacement': '💰',
-      'autre': '📄'
+      'mission': '✈️'
     };
-    return icons[type] || '📋';
+    return icons[type] || '📄';
   };
 
-  // ✅ Export vers Excel (CSV)
   const handleExportExcel = () => {
     if (!demandes || demandes.length === 0) {
       alert('Aucune demande à exporter');
       return;
     }
 
-    // Colonnes du fichier
     const headers = [
       'ID',
       'Titre',
@@ -261,19 +292,17 @@ const DemandesRH = () => {
       'Dernière mise à jour'
     ];
 
-    // Lignes
     const rows = demandes.map((d) => [
       d.id,
       d.titre,
       getTypeDemandeLabel(d.type_demande),
-      d.statut,
+      getStatutLabel(d.statut),
       `${d.employe_prenom || ''} ${d.employe_nom || ''}`,
       d.employe_matricule || '',
       d.created_at ? formatDate(d.created_at) : '',
       d.updated_at ? formatDate(d.updated_at) : ''
     ]);
 
-    // Construction CSV
     const csvContent =
       [headers, ...rows]
         .map(row =>
@@ -283,17 +312,16 @@ const DemandesRH = () => {
               const escaped = value.replace(/"/g, '""');
               return `"${escaped}"`;
             })
-            .join(';') // séparateur ; pour Excel FR
+            .join(';')
         )
         .join('\n');
 
-    // Création du fichier et téléchargement
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'demandes_rh.csv');
+    link.setAttribute('download', `demandes_rh_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -329,11 +357,11 @@ const DemandesRH = () => {
         <div className="filters-header">
           <h3>🔍 Filtres de recherche</h3>
           <div className="filters-actions">
-            <button className="btn-clear" onClick={clearFilters}>
-              Effacer les filtres
-            </button>
             <button className="btn-export" onClick={handleExportExcel}>
               <span>📤</span> Exporter Excel
+            </button>
+            <button className="btn-clear" onClick={clearFilters}>
+              Effacer les filtres
             </button>
           </div>
         </div>
@@ -348,14 +376,29 @@ const DemandesRH = () => {
               <option value="">Tous les statuts</option>
               {statuts.map(statut => (
                 <option key={statut} value={statut}>
-                  {getStatutBadge(statut).props.children}
+                  {getStatutLabel(statut)}
                 </option>
               ))}
             </select>
           </div>
 
           <div className="filter-group">
-            <label>Date de début</label>
+            <label>Type de demande</label>
+            <select 
+              value={filters.type_demande} 
+              onChange={(e) => handleFilterChange('type_demande', e.target.value)}
+            >
+              <option value="">Tous les types</option>
+              {typesDemande.map(type => (
+                <option key={type} value={type}>
+                  {getTypeDemandeLabel(type)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Date de départ (début)</label>
             <input 
               type="date" 
               value={filters.date_debut}
@@ -364,7 +407,7 @@ const DemandesRH = () => {
           </div>
 
           <div className="filter-group">
-            <label>Date de fin</label>
+            <label>Date de départ (fin)</label>
             <input 
               type="date" 
               value={filters.date_fin}
@@ -373,9 +416,15 @@ const DemandesRH = () => {
           </div>
         </div>
 
-        <div className="filters-info">
-          <small>Les filtres s'appliquent automatiquement</small>
-        </div>
+        {filtersApplied && (
+          <div className="active-filters">
+            <strong>Filtres actifs :</strong>
+            {filters.statut && ` Statut: ${getStatutLabel(filters.statut)}`}
+            {filters.type_demande && ` Type: ${getTypeDemandeLabel(filters.type_demande)}`}
+            {filters.date_debut && ` Du: ${formatDate(filters.date_debut)}`}
+            {filters.date_fin && ` Au: ${formatDate(filters.date_fin)}`}
+          </div>
+        )}
       </div>
 
       {/* Statistiques */}
@@ -436,9 +485,9 @@ const DemandesRH = () => {
           <div className="no-data">
             <div className="no-data-icon">📭</div>
             <h3>Aucune demande trouvée</h3>
-            <p>Ajustez vos filtres ou vérifiez si des demandes existent</p>
-            <button className="btn-primary" onClick={fetchDemandes}>
-              🔄 Actualiser
+            <p>{filtersApplied ? 'Aucune demande ne correspond à vos filtres' : 'Aucune demande enregistrée pour le moment'}</p>
+            <button className="btn-primary" onClick={clearFilters}>
+              {filtersApplied ? 'Effacer les filtres' : 'Actualiser'}
             </button>
           </div>
         ) : (
@@ -544,17 +593,23 @@ const DemandesRH = () => {
                       </>
                     )}
 
-                    {demande.type_demande === 'frais_deplacement' && (
+                    {demande.type_demande === 'mission' && (
                       <>
                         {demande.date_depart && (
                           <div className="detail-item">
-                            <span className="detail-label">📅 Date du déplacement</span>
+                            <span className="detail-label">📅 Date de départ</span>
                             <span className="detail-value">{formatDate(demande.date_depart)}</span>
+                          </div>
+                        )}
+                        {demande.date_retour && (
+                          <div className="detail-item">
+                            <span className="detail-label">📅 Date de retour</span>
+                            <span className="detail-value">{formatDate(demande.date_retour)}</span>
                           </div>
                         )}
                         {demande.frais_deplacement && (
                           <div className="detail-item">
-                            <span className="detail-label">💰 Montant des frais</span>
+                            <span className="detail-label">💰 Frais de mission</span>
                             <span className="detail-value">
                               {parseFloat(demande.frais_deplacement).toFixed(2)} €
                             </span>
