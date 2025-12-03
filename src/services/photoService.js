@@ -10,7 +10,6 @@ export const photoService = {
     try {
       console.log('📤 Upload photo employé en cours...');
       
-      // CORRECTION : Utiliser '/employees/upload-photo' au lieu de '/api/employees/upload-photo'
       const response = await api.post('/employees/upload-photo', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
@@ -24,31 +23,6 @@ export const photoService = {
       console.error('❌ Erreur upload photo:', error);
       throw error;
     }
-  },
-
-  // Supprimer une photo d'employé
-  deleteEmployeePhoto: async (photoUrl) => {
-    try {
-      console.log('🗑️ Suppression photo:', photoUrl);
-      
-      // CORRECTION : Utiliser '/employees/delete-photo' au lieu de '/api/employees/delete-photo'
-      const response = await api.delete('/employees/delete-photo', {
-        data: { photoUrl }
-      });
-
-      console.log('✅ Photo supprimée:', response.data);
-      return response.data;
-
-    } catch (error) {
-      console.error('❌ Erreur suppression photo:', error);
-      throw error;
-    }
-  },
-
-  // Vérifier si une URL est Azure
-  isAzureUrl: (url) => {
-    if (!url) return false;
-    return url.includes('.blob.core.windows.net');
   },
 
   // Générer avatar par défaut
