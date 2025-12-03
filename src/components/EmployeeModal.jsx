@@ -158,6 +158,94 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     window.open(url, '_blank');
   };
 
+
+
+
+
+
+
+
+// Dans EmployeeModal.jsx - Ajoutez ces fonctions
+
+const [selectedFile, setSelectedFile] = useState(null);
+const [photoPreview, setPhotoPreview] = useState('');
+
+const handlePhotoChange = (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    // Vérifications similaires
+    if (!file.type.startsWith('image/')) {
+      alert('❌ Veuillez sélectionner une image');
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      alert('❌ La taille ne doit pas dépasser 5MB');
+      return;
+    }
+    
+    setSelectedFile(file);
+    
+    // Preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPhotoPreview(reader.result);
+      setFormData(prev => ({
+        ...prev,
+        photo: reader.result // Temporaire pour preview
+      }));
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+// Modifiez handleSave pour gérer l'upload de photo
+const handleSave = async () => {
+  if (saving) return;
+  
+  setSaving(true);
+  try {
+    console.log('💾 Sauvegarde des modifications');
+    
+    let updatedData = { ...formData };
+    
+    // Si nouvelle photo sélectionnée
+    if (selectedFile) {
+      try {
+        console.log('📤 Upload nouvelle photo...');
+        const uploadResult = await photoService.uploadEmployeePhoto(selectedFile);
+        updatedData.photo = uploadResult.photoUrl;
+        console.log('✅ Nouvelle photo uploadée:', updatedData.photo);
+      } catch (uploadError) {
+        console.error('❌ Erreur upload photo:', uploadError);
+        alert('⚠️ Erreur upload photo. Ancienne photo conservée.');
+      }
+    }
+    
+    const response = await employeesAPI.update(employee.id, updatedData);
+    console.log('✅ Employé mis à jour:', response.data);
+    
+    onUpdate(response.data);
+    setIsEditing(false);
+    setSelectedFile(null);
+    setPhotoPreview('');
+    
+    alert('✅ Modifications sauvegardées avec succès!');
+    
+  } catch (error) {
+    console.error('❌ Erreur sauvegarde:', error);
+    alert('❌ Erreur sauvegarde: ' + (error.response?.data?.message || error.message));
+  } finally {
+    setSaving(false);
+  }
+};
+
+
+
+
+
+ 
+ 
   const handleClose = () => {
     setIsEditing(false);
     setFormData(employee);
