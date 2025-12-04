@@ -14,7 +14,7 @@ const DemandesRH = () => {
   });
   const [filtersApplied, setFiltersApplied] = useState(false);
   const [timeoutId, setTimeoutId] = useState(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [lastResponse, setLastResponse] = useState(null);
 
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
 
@@ -39,7 +39,7 @@ const DemandesRH = () => {
     return labels[type] || type;
   };
 
-  const fetchDemandes = useCallback(async () => {
+  const fetchDemandes = useCallback(async (force = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -54,76 +54,110 @@ const DemandesRH = () => {
 
       const queryParams = new URLSearchParams();
       
-      // Ajouter seulement les filtres non vides
-      if (filters.statut && filters.statut !== '') {
+      // Ajouter les filtres seulement s'ils ont une valeur
+      if (filters.statut) {
         queryParams.append('statut', filters.statut);
       }
       
-      if (filters.type_demande && filters.type_demande !== '') {
+      if (filters.type_demande) {
         queryParams.append('type_demande', filters.type_demande);
       }
       
-      if (filters.date_debut && filters.date_debut !== '') {
+      if (filters.date_debut) {
         queryParams.append('date_debut', filters.date_debut);
       }
       
-      if (filters.date_fin && filters.date_fin !== '') {
+      if (filters.date_fin) {
         queryParams.append('date_fin', filters.date_fin);
       }
 
-      // Forcer le rafraîchissement avec un timestamp
-      queryParams.append('_t', Date.now());
+      // Ajouter un timestamp pour éviter le cache
+      if (force) {
+        queryParams.append('_t', Date.now());
+      }
 
-      console.log('🔍 Filtres envoyés:', Object.fromEntries(queryParams));
-      console.log('🔗 URL complète:', `${API_BASE_URL}/api/demandes?${queryParams}`);
+      const url = `${API_BASE_URL}/api/demandes?${queryParams}`;
+      console.log('🔗 URL de la requête:', url);
+      console.log('🔍 Filtres actifs:', {
+        statut: filters.statut || 'tous',
+        type_demande: filters.type_demande || 'tous',
+        date_debut: filters.date_debut || 'toutes',
+        date_fin: filters.date_fin || 'toutes'
+      });
 
-      const response = await fetch(`${API_BASE_URL}/api/demandes?${queryParams}`, {
+      const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        cache: 'no-store', // Empêcher le cache
-        credentials: 'include'
+        cache: 'no-cache'
+      });
+
+      console.log('📡 Réponse HTTP:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Erreur HTTP:', response.status, errorText);
+        console.error('❌ Erreur serveur:', errorText);
         throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
       console.log('📊 Données reçues:', {
-        total: data.demandes?.length || 0,
-        pagination: data.pagination
+        success: data.success,
+        count: data.demandes?.length || 0,
+        total: data.pagination?.total || 0,
+        hasData: !!data.demandes && Array.isArray(data.demandes)
       });
       
-      setDemandes(data.demandes || []);
+      setLastResponse(data);
+      
+      if (data.success && Array.isArray(data.demandes)) {
+        setDemandes(data.demandes);
+        console.log(`✅ ${data.demandes.length} demandes chargées avec succès`);
+      } else {
+        console.warn('⚠️ Réponse inattendue du serveur:', data);
+        setDemandes([]);
+      }
       
     } catch (error) {
-      console.error('❌ Erreur récupération demandes:', error);
-      setError(`Erreur: ${error.message}`);
+      console.error('❌ Erreur récupération demandes:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
+      setError(`Erreur de connexion: ${error.message}`);
       setDemandes([]);
     } finally {
       setLoading(false);
     }
-  }, [filters, API_BASE_URL, refreshTrigger]);
+  }, [filters, API_BASE_URL]);
 
-  // Effet pour récupérer les demandes initiales
+  // Effet initial
   useEffect(() => {
-    fetchDemandes();
+    console.log('🚀 Composant monté - Chargement initial');
+    fetchDemandes(true);
   }, []);
 
-  // Debounce pour éviter les requêtes excessives lors du changement de filtre
+  // Effet pour les changements de filtre
   useEffect(() => {
+    console.log('🔄 Filtres modifiés:', filters);
+    
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
     
+    // Vérifier si des filtres sont actifs
+    const hasActiveFilters = filters.statut || filters.type_demande || filters.date_debut || filters.date_fin;
+    setFiltersApplied(hasActiveFilters);
+    
     const newTimeoutId = setTimeout(() => {
-      console.log('🔄 Application des filtres:', filters);
-      fetchDemandes();
-    }, 500); // Augmenter le délai à 500ms
+      console.log('📤 Envoi des filtres au serveur');
+      fetchDemandes(true);
+    }, 300);
     
     setTimeoutId(newTimeoutId);
     
@@ -135,12 +169,29 @@ const DemandesRH = () => {
   }, [filters]);
 
   const handleFilterChange = (key, value) => {
-    console.log(`📝 Modification filtre ${key}: ${value}`);
+    console.log(`📝 Modification filtre ${key}: "${value}" (ancienne valeur: "${filters[key]}")`);
     setFilters(prev => ({
       ...prev,
       [key]: value
     }));
-    setFiltersApplied(true);
+  };
+
+  const clearFilters = () => {
+    console.log('🧹 Effacement de tous les filtres');
+    setFilters({
+      statut: '',
+      type_demande: '',
+      date_debut: '',
+      date_fin: ''
+    });
+    setFiltersApplied(false);
+    // Recharger sans filtres
+    setTimeout(() => fetchDemandes(true), 100);
+  };
+
+  const retryFetch = () => {
+    console.log('🔄 Nouvelle tentative de chargement');
+    fetchDemandes(true);
   };
 
   const getStatutBadge = (statut) => {
@@ -163,18 +214,6 @@ const DemandesRH = () => {
     }
   };
 
-  const formatTime = (timeString) => {
-    if (!timeString) return 'N/A';
-    try {
-      return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('fr-FR', {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (e) {
-      return timeString;
-    }
-  };
-
   const getResponsableName = (responsablePrenom, responsableNom, email) => {
     if (responsablePrenom && responsableNom) {
       return `${responsablePrenom} ${responsableNom}`;
@@ -188,122 +227,6 @@ const DemandesRH = () => {
       return formattedName;
     }
     return 'Non assigné';
-  };
-
-  const getApprovalStatus = (demande) => {
-    const hasSecondResponsable = !!demande.mail_responsable2;
-    const responsable1 = getResponsableName(
-      demande.responsable1_prenom,
-      demande.responsable1_nom,
-      demande.mail_responsable1
-    );
-    const responsable2 = hasSecondResponsable
-      ? getResponsableName(
-          demande.responsable2_prenom,
-          demande.responsable2_nom,
-          demande.mail_responsable2
-        )
-      : null;
-
-    if (demande.statut === 'approuve') {
-      if (hasSecondResponsable) {
-        if (demande.approuve_responsable1 && demande.approuve_responsable2) {
-          return '✅ Approuvée par les deux responsables';
-        }
-        if (demande.approuve_responsable1 && !demande.approuve_responsable2) {
-          return `✅ Approuvée (enregistrée comme approuvée, ${responsable1} a validé)`;
-        }
-        if (!demande.approuve_responsable1 && demande.approuve_responsable2) {
-          return `✅ Approuvée (enregistrée comme approuvée, ${responsable2} a validé)`;
-        }
-        return '✅ Approuvée';
-      }
-
-      if (demande.approuve_responsable1) {
-        return `✅ Approuvée par ${responsable1}`;
-      }
-      return '✅ Approuvée';
-    }
-
-    if (demande.statut === 'refuse') {
-      if (demande.approuve_responsable1 === false) {
-        return `❌ Refusée par ${responsable1} : ${demande.commentaire_refus || 'Raison non spécifiée'}`;
-      }
-      if (hasSecondResponsable && demande.approuve_responsable2 === false) {
-        return `❌ Refusée par ${responsable2} : ${demande.commentaire_refus || 'Raison non spécifiée'}`;
-      }
-      return `❌ Refusée : ${demande.commentaire_refus || 'Raison non spécifiée'}`;
-    }
-
-    if (demande.statut === 'en_attente') {
-      if (hasSecondResponsable) {
-        if (demande.approuve_responsable1 === true && (demande.approuve_responsable2 == null)) {
-          return `⏳ En attente du 2ème responsable (${responsable1} a approuvé)`;
-        }
-        if (demande.approuve_responsable2 === true && (demande.approuve_responsable1 == null)) {
-          return `⏳ En attente du 1er responsable (${responsable2} a approuvé)`;
-        }
-      }
-      return '⏳ En attente d\'approbation';
-    }
-
-    return demande.statut;
-  };
-
-  const getResponsableStatus = (demande, responsableNumber) => {
-    const isResponsable1 = responsableNumber === 1;
-
-    const approuve = isResponsable1
-      ? demande.approuve_responsable1
-      : demande.approuve_responsable2;
-
-    const mailResponsable = isResponsable1
-      ? demande.mail_responsable1
-      : demande.mail_responsable2;
-
-    if (!mailResponsable) {
-      return null;
-    }
-
-    if (approuve === true) {
-      return { status: 'approved', label: '✅ Approuvé' };
-    }
-
-    if (approuve === false) {
-      return { status: 'refused', label: '❌ Refusé' };
-    }
-
-    return { status: 'pending', label: '⏳ En attente' };
-  };
-
-  const shouldShowSecondResponsable = (demande) => {
-    return !!demande.mail_responsable2;
-  };
-
-  const clearFilters = () => {
-    console.log('🧹 Effacement des filtres');
-    setFilters({
-      statut: '',
-      type_demande: '',
-      date_debut: '',
-      date_fin: ''
-    });
-    setFiltersApplied(false);
-    // Forcer un rafraîchissement immédiat
-    setTimeout(() => {
-      fetchDemandes();
-    }, 100);
-  };
-
-  const retryFetch = () => {
-    console.log('🔄 Tentative de récupération');
-    setError(null);
-    setRefreshTrigger(prev => prev + 1);
-  };
-
-  const forceRefresh = () => {
-    console.log('🔁 Forcer le rafraîchissement');
-    setRefreshTrigger(prev => prev + 1);
   };
 
   const getTypeIcon = (type) => {
@@ -321,59 +244,38 @@ const DemandesRH = () => {
       return;
     }
 
-    const headers = [
-      'ID',
-      'Titre',
-      'Type de demande',
-      'Statut',
-      'Employé',
-      'Matricule',
-      'Date création',
-      'Dernière mise à jour'
-    ];
-
-    const rows = demandes.map((d) => [
+    const headers = ['ID', 'Titre', 'Type', 'Statut', 'Employé', 'Matricule', 'Date création'];
+    const rows = demandes.map(d => [
       d.id,
       d.titre,
       getTypeDemandeLabel(d.type_demande),
       getStatutLabel(d.statut),
-      `${d.employe_prenom || ''} ${d.employe_nom || ''}`,
+      `${d.employe_prenom} ${d.employe_nom}`,
       d.employe_matricule || '',
-      d.created_at ? formatDate(d.created_at) : '',
-      d.updated_at ? formatDate(d.updated_at) : ''
+      formatDate(d.created_at)
     ]);
 
-    const csvContent =
-      [headers, ...rows]
-        .map(row =>
-          row
-            .map((cell) => {
-              const value = (cell !== null && cell !== undefined) ? String(cell) : '';
-              const escaped = value.replace(/"/g, '""');
-              return `"${escaped}"`;
-            })
-            .join(';')
-        )
-        .join('\n');
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(';'))
+      .join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `demandes_rh_${new Date().toISOString().split('T')[0]}.csv`);
+    link.download = `demandes_${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
     URL.revokeObjectURL(url);
   };
 
   return (
     <div className="demandes-rh">
       <Sidebar />
+      
       <div className="demandes-header">
-        <h1>📋 Gestion des Demandes</h1>
+        <h1>📋 Gestion des Demandes RH</h1>
         <p>Suivi et traitement des demandes des collaborateurs</p>
       </div>
 
@@ -382,7 +284,7 @@ const DemandesRH = () => {
           <div className="error-content">
             <span className="error-icon">⚠️</span>
             <div className="error-details">
-              <h4>Erreur de connexion</h4>
+              <h4>Erreur</h4>
               <p>{error}</p>
             </div>
             <button className="btn-retry" onClick={retryFetch}>
@@ -397,51 +299,49 @@ const DemandesRH = () => {
         <div className="filters-header">
           <h3>🔍 Filtres de recherche</h3>
           <div className="filters-actions">
-            <button className="btn-export" onClick={handleExportExcel}>
-              <span>📤</span> Exporter Excel
+            <button className="btn-export" onClick={handleExportExcel} disabled={demandes.length === 0}>
+              📤 Exporter
             </button>
-            <button className="btn-refresh" onClick={forceRefresh}>
+            <button className="btn-refresh" onClick={retryFetch}>
               🔄 Actualiser
             </button>
-            <button className="btn-clear" onClick={clearFilters}>
-              🧹 Effacer les filtres
-            </button>
+            {filtersApplied && (
+              <button className="btn-clear" onClick={clearFilters}>
+                🧹 Effacer filtres
+              </button>
+            )}
           </div>
         </div>
         
         <div className="filters-grid">
           <div className="filter-group">
-            <label>Statut de la demande</label>
+            <label>Statut</label>
             <select 
               value={filters.statut} 
               onChange={(e) => handleFilterChange('statut', e.target.value)}
             >
               <option value="">Tous les statuts</option>
-              {statuts.map(statut => (
-                <option key={statut} value={statut}>
-                  {getStatutLabel(statut)}
-                </option>
+              {statuts.map(s => (
+                <option key={s} value={s}>{getStatutLabel(s)}</option>
               ))}
             </select>
           </div>
 
           <div className="filter-group">
-            <label>Type de demande</label>
+            <label>Type</label>
             <select 
               value={filters.type_demande} 
               onChange={(e) => handleFilterChange('type_demande', e.target.value)}
             >
               <option value="">Tous les types</option>
-              {typesDemande.map(type => (
-                <option key={type} value={type}>
-                  {getTypeDemandeLabel(type)}
-                </option>
+              {typesDemande.map(t => (
+                <option key={t} value={t}>{getTypeDemandeLabel(t)}</option>
               ))}
             </select>
           </div>
 
           <div className="filter-group">
-            <label>Date de départ (début)</label>
+            <label>Date début</label>
             <input 
               type="date" 
               value={filters.date_debut}
@@ -450,7 +350,7 @@ const DemandesRH = () => {
           </div>
 
           <div className="filter-group">
-            <label>Date de départ (fin)</label>
+            <label>Date fin</label>
             <input 
               type="date" 
               value={filters.date_fin}
@@ -461,13 +361,12 @@ const DemandesRH = () => {
 
         {filtersApplied && (
           <div className="active-filters">
-            <strong>Filtres actifs :</strong>
-            {filters.statut && ` Statut: ${getStatutLabel(filters.statut)}`}
-            {filters.type_demande && ` Type: ${getTypeDemandeLabel(filters.type_demande)}`}
-            {filters.date_debut && ` Du: ${formatDate(filters.date_debut)}`}
-            {filters.date_fin && ` Au: ${formatDate(filters.date_fin)}`}
-            <span className="filter-count">
-              ({demandes.length} résultat{demandes.length !== 1 ? 's' : ''})
+            <span className="filter-tag">
+              Filtres actifs: 
+              {filters.statut && <span className="tag">Statut: {getStatutLabel(filters.statut)}</span>}
+              {filters.type_demande && <span className="tag">Type: {getTypeDemandeLabel(filters.type_demande)}</span>}
+              {filters.date_debut && <span className="tag">À partir du: {formatDate(filters.date_debut)}</span>}
+              {filters.date_fin && <span className="tag">Jusqu'au: {formatDate(filters.date_fin)}</span>}
             </span>
           </div>
         )}
@@ -475,275 +374,146 @@ const DemandesRH = () => {
 
       {/* Statistiques */}
       <div className="stats-section">
-        <div className="stat-card">
-          <div className="stat-icon">📥</div>
-          <div className="stat-info">
+        <div className="stat-card total">
+          <div className="stat-icon">📋</div>
+          <div className="stat-content">
             <div className="stat-number">{demandes.length}</div>
             <div className="stat-label">Total demandes</div>
           </div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card pending">
           <div className="stat-icon">⏳</div>
-          <div className="stat-info">
-            <div className="stat-number">
-              {demandes.filter(d => d.statut === 'en_attente').length}
-            </div>
+          <div className="stat-content">
+            <div className="stat-number">{demandes.filter(d => d.statut === 'en_attente').length}</div>
             <div className="stat-label">En attente</div>
           </div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card approved">
           <div className="stat-icon">✅</div>
-          <div className="stat-info">
-            <div className="stat-number">
-              {demandes.filter(d => d.statut === 'approuve').length}
-            </div>
+          <div className="stat-content">
+            <div className="stat-number">{demandes.filter(d => d.statut === 'approuve').length}</div>
             <div className="stat-label">Approuvées</div>
           </div>
         </div>
-        <div className="stat-card">
+        <div className="stat-card refused">
           <div className="stat-icon">❌</div>
-          <div className="stat-info">
-            <div className="stat-number">
-              {demandes.filter(d => d.statut === 'refuse').length}
-            </div>
+          <div className="stat-content">
+            <div className="stat-number">{demandes.filter(d => d.statut === 'refuse').length}</div>
             <div className="stat-label">Refusées</div>
           </div>
         </div>
       </div>
 
       {/* Liste des demandes */}
-      <div className="demandes-list">
+      <div className="demandes-content">
         {loading ? (
-          <div className="loading">
+          <div className="loading-state">
             <div className="spinner"></div>
-            <div>Chargement des demandes...</div>
-            <div className="loading-details">
-              Application des filtres: {filtersApplied ? 'Oui' : 'Non'}
-            </div>
+            <p>Chargement des demandes...</p>
+            {filtersApplied && <p className="loading-sub">Application des filtres</p>}
           </div>
         ) : error ? (
-          <div className="no-data">
-            <div className="no-data-icon">🚫</div>
-            <h3>Impossible de charger les demandes</h3>
+          <div className="error-state">
+            <div className="error-icon">⚠️</div>
+            <h3>Erreur de chargement</h3>
             <p>{error}</p>
-            <button className="btn-primary" onClick={retryFetch}>
-              🔄 Réessayer
+            <button className="btn-retry" onClick={retryFetch}>
+              Réessayer
             </button>
           </div>
         ) : demandes.length === 0 ? (
-          <div className="no-data">
-            <div className="no-data-icon">📭</div>
+          <div className="empty-state">
+            <div className="empty-icon">📭</div>
             <h3>Aucune demande trouvée</h3>
-            <p>{filtersApplied ? 'Aucune demande ne correspond à vos filtres' : 'Aucune demande enregistrée pour le moment'}</p>
-            <button className="btn-primary" onClick={clearFilters}>
-              {filtersApplied ? '🧹 Effacer les filtres' : '🔄 Actualiser'}
-            </button>
+            <p>
+              {filtersApplied 
+                ? 'Aucune demande ne correspond à vos critères de recherche' 
+                : 'Aucune demande disponible pour le moment'
+              }
+            </p>
+            {filtersApplied && (
+              <button className="btn-clear-all" onClick={clearFilters}>
+                Afficher toutes les demandes
+              </button>
+            )}
           </div>
         ) : (
-          <div className="demandes-grid">
-            {demandes.map(demande => (
-              <div key={demande.id} className="demande-card">
-                {/* En-tête de la carte */}
-                <div className="demande-card-header">
-                  <div className="demande-type-icon">
-                    {getTypeIcon(demande.type_demande)}
-                  </div>
-                  <div className="demande-title-section">
-                    <h3 className="demande-title">{demande.titre}</h3>
-                    <span className="demande-type">
-                      {getTypeDemandeLabel(demande.type_demande)}
-                    </span>
-                  </div>
-                  <div className="demande-meta">
-                    {getStatutBadge(demande.statut)}
-                    <span className="demande-date">
-                      {formatDate(demande.created_at)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Informations du collaborateur */}
-                <div className="employe-section">
-                  <div className="employe-avatar">
-                    {demande.employe_photo ? (
-                      <img
-                        src={demande.employe_photo}
-                        alt={`${demande.employe_prenom} ${demande.employe_nom}`}
-                      />
-                    ) : (
-                      <div className="avatar-placeholder">
-                        {demande.employe_prenom?.charAt(0)}
-                        {demande.employe_nom?.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="employe-info">
-                    <h4 className="employe-name">
-                      {demande.employe_prenom} {demande.employe_nom}
-                    </h4>
-                    <p className="employe-details">
-                      {demande.employe_poste} • Matricule: {demande.employe_matricule}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Détails de la demande */}
-                <div className="demande-content">
-                  {/* Statut d'approbation global */}
-                  <div className="approval-status">
-                    <strong>Statut d'approbation:</strong> {getApprovalStatus(demande)}
-                  </div>
-
-                  {/* Détails spécifiques */}
-                  <div className="details-grid">
-                    {demande.type_demande === 'congé' && (
-                      <>
-                        {demande.date_depart && (
-                          <div className="detail-item">
-                            <span className="detail-label">📅 Date de départ</span>
-                            <span className="detail-value">{formatDate(demande.date_depart)}</span>
-                          </div>
-                        )}
-                        {demande.date_retour && (
-                          <div className="detail-item">
-                            <span className="detail-label">📅 Date de retour</span>
-                            <span className="detail-value">{formatDate(demande.date_retour)}</span>
-                          </div>
-                        )}
-                        {demande.type_conge && (
-                          <div className="detail-item">
-                            <span className="detail-label">📋 Type de congé</span>
-                            <span className="detail-value">{demande.type_conge}</span>
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                    {demande.type_demande === 'autorisation_absence' && (
-                      <>
-                        {demande.date_depart && (
-                          <div className="detail-item">
-                            <span className="detail-label">📅 Date</span>
-                            <span className="detail-value">{formatDate(demande.date_depart)}</span>
-                          </div>
-                        )}
-                        {demande.heure_depart && (
-                          <div className="detail-item">
-                            <span className="detail-label">⏰ Heure de départ</span>
-                            <span className="detail-value">{formatTime(demande.heure_depart)}</span>
-                          </div>
-                        )}
-                        {demande.heure_retour && (
-                          <div className="detail-item">
-                            <span className="detail-label">⏰ Heure de retour</span>
-                            <span className="detail-value">{formatTime(demande.heure_retour)}</span>
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                    {demande.type_demande === 'mission' && (
-                      <>
-                        {demande.date_depart && (
-                          <div className="detail-item">
-                            <span className="detail-label">📅 Date de départ</span>
-                            <span className="detail-value">{formatDate(demande.date_depart)}</span>
-                          </div>
-                        )}
-                        {demande.date_retour && (
-                          <div className="detail-item">
-                            <span className="detail-label">📅 Date de retour</span>
-                            <span className="detail-value">{formatDate(demande.date_retour)}</span>
-                          </div>
-                        )}
-                        {demande.frais_deplacement && (
-                          <div className="detail-item">
-                            <span className="detail-label">💰 Frais de mission</span>
-                            <span className="detail-value">
-                              {parseFloat(demande.frais_deplacement).toFixed(2)} €
-                            </span>
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                    <div className="detail-item">
-                      <span className="detail-label">🔄 Dernière mise à jour</span>
-                      <span className="detail-value">{formatDate(demande.updated_at)}</span>
-                    </div>
-                  </div>
-
-                  {/* Responsables d'approbation */}
-                  <div className="approval-section">
-                    <h4 className="approval-title">🏢 Responsables d'approbation</h4>
-                    <div className="approval-grid">
-                      {/* Responsable 1 */}
-                      {demande.mail_responsable1 && (() => {
-                        const r1Status = getResponsableStatus(demande, 1);
-                        if (!r1Status) return null;
-
-                        return (
-                          <div className="approval-item">
-                            <div className="responsable-info">
-                              <span className="responsable-name">
-                                {getResponsableName(
-                                  demande.responsable1_prenom,
-                                  demande.responsable1_nom,
-                                  demande.mail_responsable1
-                                )}
-                              </span>
-                              <span className="responsable-email">
-                                {demande.mail_responsable1}
-                              </span>
-                            </div>
-                            <span className={`approval-badge ${r1Status.status}`}>
-                              {r1Status.label}
-                            </span>
-                          </div>
-                        );
-                      })()}
-
-                      {/* Responsable 2 */}
-                      {shouldShowSecondResponsable(demande) && (() => {
-                        const r2Status = getResponsableStatus(demande, 2);
-                        if (!r2Status) return null;
-
-                        return (
-                          <div className="approval-item">
-                            <div className="responsable-info">
-                              <span className="responsable-name">
-                                {getResponsableName(
-                                  demande.responsable2_prenom,
-                                  demande.responsable2_nom,
-                                  demande.mail_responsable2
-                                )}
-                              </span>
-                              <span className="responsable-email">
-                                {demande.mail_responsable2}
-                              </span>
-                            </div>
-                            <span className={`approval-badge ${r2Status.status}`}>
-                              {r2Status.label}
-                            </span>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-
-                  {/* Commentaire de refus */}
-                  {demande.commentaire_refus && (
-                    <div className="commentaire-section">
-                      <div className="commentaire-header">
-                        <span className="commentaire-label">💬 Commentaire de refus</span>
-                      </div>
-                      <p className="commentaire-text">{demande.commentaire_refus}</p>
-                    </div>
-                  )}
-                </div>
+          <>
+            <div className="results-header">
+              <h3>Résultats ({demandes.length})</h3>
+              <div className="results-info">
+                {lastResponse?.pagination && (
+                  <span className="pagination-info">
+                    Page {lastResponse.pagination.page} sur {lastResponse.pagination.pages}
+                  </span>
+                )}
               </div>
-            ))}
-          </div>
+            </div>
+            
+            <div className="demandes-grid">
+              {demandes.map(demande => (
+                <div key={demande.id} className="demande-card">
+                  <div className="card-header">
+                    <div className="demande-type">
+                      <span className="type-icon">{getTypeIcon(demande.type_demande)}</span>
+                      <span className="type-label">{getTypeDemandeLabel(demande.type_demande)}</span>
+                    </div>
+                    <div className="demande-status">
+                      {getStatutBadge(demande.statut)}
+                    </div>
+                  </div>
+                  
+                  <div className="card-body">
+                    <h3 className="demande-title">{demande.titre}</h3>
+                    
+                    <div className="employe-info">
+                      <div className="avatar">
+                        {demande.employe_photo ? (
+                          <img src={demande.employe_photo} alt="Employé" />
+                        ) : (
+                          <div className="avatar-default">
+                            {demande.employe_prenom?.[0]}{demande.employe_nom?.[0]}
+                          </div>
+                        )}
+                      </div>
+                      <div className="employe-details">
+                        <h4>{demande.employe_prenom} {demande.employe_nom}</h4>
+                        <p>{demande.employe_poste} • {demande.employe_matricule}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="demande-details">
+                      {demande.date_depart && (
+                        <div className="detail">
+                          <span className="label">📅 Date:</span>
+                          <span className="value">{formatDate(demande.date_depart)}</span>
+                        </div>
+                      )}
+                      
+                      {demande.date_retour && (
+                        <div className="detail">
+                          <span className="label">📅 Retour:</span>
+                          <span className="value">{formatDate(demande.date_retour)}</span>
+                        </div>
+                      )}
+                      
+                      <div className="detail">
+                        <span className="label">🔄 Mise à jour:</span>
+                        <span className="value">{formatDate(demande.updated_at)}</span>
+                      </div>
+                    </div>
+                    
+                    {demande.commentaire_refus && (
+                      <div className="commentaire">
+                        <span className="comment-label">💬 Commentaire:</span>
+                        <p>{demande.commentaire_refus}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>
