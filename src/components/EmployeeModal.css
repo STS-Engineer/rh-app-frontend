@@ -1,3 +1,5 @@
+/* EmployeeModal.css - Version corrigée */
+
 .employee-modal-overlay {
   position: fixed;
   top: 0;
@@ -22,7 +24,7 @@
   overflow-y: auto;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(20px);
+  color: #1e293b; /* Texte sombre pour contraste */
 }
 
 .employee-modal-header {
@@ -55,6 +57,7 @@
   background: linear-gradient(135deg, #1e293b 0%, #475569 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .close-btn {
@@ -80,6 +83,12 @@
 
 .employee-modal-body {
   padding: 30px;
+  color: #1e293b; /* Assure que le texte est visible */
+}
+
+/* Ajout de styles pour les textes dans le body */
+.employee-modal-body * {
+  color: inherit; /* Hérite la couleur du parent */
 }
 
 .employee-header {
@@ -107,7 +116,7 @@
 
 .employee-basic-info h3 {
   margin: 0 0 8px 0;
-  color: black;
+  color: #1e293b; /* Couleur sombre */
   font-size: 1.8rem;
   font-weight: 800;
   line-height: 1.2;
@@ -249,6 +258,18 @@
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
 
+.archive-link {
+  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+  color: white !important;
+  border: 1px solid #f59e0b !important;
+}
+
+.archive-link:hover {
+  background: linear-gradient(135deg, #d97706, #b45309) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3) !important;
+}
+
 .document-preview {
   margin-top: 4px;
 }
@@ -298,6 +319,36 @@
   box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
 }
 
+/* Badge d'archivage dans le modal normal */
+.employee-basic-info .archive-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  margin-top: 12px;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.employee-basic-info .badge-icon {
+  font-size: 1.2rem;
+}
+
+.employee-basic-info .badge-text {
+  font-size: 0.95rem;
+}
+
+.employee-basic-info .archive-date {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+}
+
 .edit-form {
   display: flex;
   flex-direction: column;
@@ -334,8 +385,8 @@
 
 .form-input-group label {
   margin-bottom: 8px;
+  color: #1e293b; /* Texte sombre */
   font-weight: 600;
-  color: #1e293b;
   font-size: 0.95rem;
 }
 
@@ -348,6 +399,11 @@
   background: #ffffff;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   font-weight: 500;
+  color: #1e293b; /* Texte sombre pour l'input */
+}
+
+.form-input::placeholder {
+  color: #94a3b8; /* Placeholder gris */
 }
 
 .form-input:focus {
@@ -369,8 +425,13 @@
   margin-top: 25px;
 }
 
+.archive-section h4 {
+  color: #92400e !important;
+  border-bottom-color: #f59e0b !important;
+}
+
 .archive-btn {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
   color: white;
   border: none;
   padding: 12px 20px;
@@ -385,10 +446,15 @@
   gap: 8px;
 }
 
-.archive-btn:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+.archive-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d97706, #b45309);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+}
+
+.archive-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .archive-hint {
@@ -470,6 +536,105 @@
   gap: 15px;
 }
 
+/* Actions en mode visualisation */
+.view-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.archive-action-btn {
+  padding: 14px 28px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.3s;
+  justify-content: center;
+  min-width: 200px;
+}
+
+.archive-action-btn:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+
+/* Photo change section */
+.photo-change-section {
+  margin-top: 15px;
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 5px;
+  border: 1px dashed #ddd;
+}
+
+.file-input {
+  display: none;
+}
+
+.change-photo-btn {
+  display: inline-block;
+  background: #28a745;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s;
+}
+
+.change-photo-btn:hover {
+  background: #218838;
+}
+
+.photo-change-notice {
+  display: inline-block;
+  margin-left: 10px;
+  color: #28a745;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.photo-preview-section {
+  margin: 10px 0;
+}
+
+.photo-preview-section img {
+  max-width: 100px;
+  max-height: 100px;
+  border-radius: 5px;
+  border: 2px solid #ddd;
+}
+
+/* États d'archivage */
+.employee-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+.status-active {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.status-archive {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+/* Responsive */
 @media (max-width: 1024px) {
   .employee-modal-content {
     width: 95%;
@@ -525,9 +690,29 @@
     width: 100%;
   }
   
-  .edit-btn, .save-btn, .cancel-btn {
+  .edit-btn, .save-btn, .cancel-btn, .archive-action-btn {
     width: 100%;
     justify-content: center;
+    min-width: unset;
+  }
+  
+  .view-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .archive-badge {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .archive-date {
+    border-left: none;
+    padding-left: 0;
+    margin-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    padding-top: 4px;
   }
 }
 
@@ -551,279 +736,5 @@
   .employee-header {
     margin-bottom: 20px;
     padding-bottom: 20px;
-  }
-}
-/* EmployeeModal.css - Ajoutez ces styles */
-
-.photo-change-section {
-  margin-top: 15px;
-  padding: 10px;
-  background: #f5f5f5;
-  border-radius: 5px;
-  border: 1px dashed #ddd;
-}
-
-.file-input {
-  display: none;
-}
-
-.change-photo-btn {
-  display: inline-block;
-  background: #28a745;
-  color: white;
-  padding: 8px 15px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background 0.3s;
-}
-
-.change-photo-btn:hover {
-  background: #218838;
-}
-
-.photo-change-notice {
-  display: inline-block;
-  margin-left: 10px;
-  color: #28a745;
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.photo-preview-section {
-  margin: 10px 0;
-}
-
-.photo-preview-section img {
-  max-width: 100px;
-  max-height: 100px;
-  border-radius: 5px;
-  border: 2px solid #ddd;
-}
-/* Badge d'archivage */
-.archive-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-weight: 600;
-  margin-top: 12px;
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-}
-
-.badge-icon {
-  font-size: 1.2rem;
-}
-
-.badge-text {
-  font-size: 0.95rem;
-}
-
-.archive-date {
-  font-size: 0.85rem;
-  opacity: 0.9;
-  margin-left: 8px;
-  padding-left: 8px;
-  border-left: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-/* Document d'archive */
-.archive-link {
-  background: linear-gradient(135deg, #f59e0b, #d97706) !important;
-  color: white !important;
-  border: 1px solid #f59e0b !important;
-}
-
-.archive-link:hover {
-  background: linear-gradient(135deg, #d97706, #b45309) !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3) !important;
-}
-
-/* Section d'archivage dans l'édition */
-.archive-section {
-  margin-top: 24px;
-  padding: 20px;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border-radius: 12px;
-  border: 2px solid #f59e0b;
-  text-align: center;
-}
-
-.archive-btn {
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  transition: all 0.3s;
-}
-
-.archive-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #d97706, #b45309);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
-}
-
-.archive-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.archive-hint {
-  margin: 12px 0 0 0;
-  color: #92400e;
-  font-size: 0.9rem;
-  opacity: 0.9;
-}
-
-/* Actions en mode visualisation */
-.view-actions {
-  display: flex;
-  gap: 16px;
-  justify-content: center;
-}
-
-.archive-action-btn {
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  transition: all 0.3s;
-}
-
-.archive-action-btn:hover {
-  background: linear-gradient(135deg, #d97706, #b45309);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
-}
-
-/* États d'archivage */
-.employee-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 0.9rem;
-  margin-top: 8px;
-}
-
-.status-active {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-}
-
-.status-archive {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: white;
-}
-
-/* Amélioration des boutons d'action */
-.edit-actions, .view-actions {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.edit-btn, .save-btn, .cancel-btn, .archive-action-btn {
-  padding: 14px 28px;
-  border-radius: 12px;
-  font-weight: 600;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.3s;
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  justify-content: center;
-  min-width: 200px;
-}
-
-.edit-btn {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  color: white;
-}
-
-.edit-btn:hover {
-  background: linear-gradient(135deg, #1d4ed8, #1e40af);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
-}
-
-.save-btn {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-}
-
-.save-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #059669, #047857);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
-}
-
-.save-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.cancel-btn {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: white;
-}
-
-.cancel-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #dc2626, #b91c1c);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
-}
-
-.cancel-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .edit-actions, .view-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .edit-btn, .save-btn, .cancel-btn, .archive-action-btn {
-    width: 100%;
-    min-width: unset;
-  }
-  
-  .archive-badge {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-  }
-  
-  .archive-date {
-    border-left: none;
-    padding-left: 0;
-    margin-left: 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.3);
-    padding-top: 4px;
   }
 }
