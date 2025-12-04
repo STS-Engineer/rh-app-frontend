@@ -196,7 +196,7 @@ const Dashboard = () => {
             <div className="stat-icon">💰</div>
             <div className="stat-info">
               <h3>Masse Salariale</h3>
-              <p className="stat-number">{stats.totalSalary.toLocaleString('fr-FR')} €</p>
+              <p className="stat-number">{stats.totalSalary.toLocaleString('fr-FR')} DT</p>
               <p className="stat-detail">
                 Salaire brut mensuel total
               </p>
@@ -341,7 +341,7 @@ const Dashboard = () => {
             </div>
             <div className="summary-item">
               <span className="summary-label">Masse salariale:</span>
-              <span className="summary-value">{stats.totalSalary.toLocaleString('fr-FR')} €</span>
+              <span className="summary-value">{stats.totalSalary.toLocaleString('fr-FR')} DT</span>
             </div>
             <div className="summary-item">
               <span className="summary-label">Employés archivés:</span>
