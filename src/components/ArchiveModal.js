@@ -84,7 +84,7 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
 
           {/* Section Lien PDF - Maintenant obligatoire */}
           <div className="pdf-url-section">
-            <h4>📎 Lien vers le PDF d'entretien *</h4>
+            <h4> Lien vers le PDF d'entretien *</h4>
             <div className="url-input-group">
               <input
                 type="url"
@@ -138,7 +138,7 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
           )}
 
           <div className="warning-message">
-            <p>⚠️ <strong>Attention:</strong> Après archivage, l'employé sera déplacé vers la liste des archives et ne sera plus visible dans la liste des employés actifs. Cette action est irréversible.</p>
+            <p><strong>Attention:</strong> Après archivage, l'employé sera déplacé vers la liste des archives et ne sera plus visible dans la liste des employés actifs. Cette action est irréversible.</p>
           </div>
         </div>
 
