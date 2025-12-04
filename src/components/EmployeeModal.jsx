@@ -101,20 +101,82 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     }
   };
 
-  const handleArchive = async (entretien_depart) => {
+  const handleArchive = async (pdfUrl) => {
     try {
       setSaving(true);
-      const response = await employeesAPI.archiveEmployee(employee.id, entretien_depart);
-      console.log('✅ Employé archivé:', response.data);
       
-      onArchive(response.data);
+      console.log('📁 Archivage employé avec PDF URL:', pdfUrl);
+      
+      // Utiliser l'API directement avec la bonne URL
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('Non authentifié. Veuillez vous reconnecter.');
+      }
+      
+      const backendUrl = 'https://backend-rh.azurewebsites.net';
+      const archiveUrl = `${backendUrl}/api/employees/${employee.id}/archive`;
+      
+      console.log('📤 Requête vers:', archiveUrl);
+      
+      const response = await fetch(archiveUrl, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          pdf_url: pdfUrl,
+          entretien_depart: 'Entretien de départ archivé'
+        })
+      });
+
+      const contentType = response.headers.get('content-type');
+      let data;
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        console.error('❌ Réponse non-JSON:', text.substring(0, 200));
+        try {
+          data = JSON.parse(text);
+        } catch {
+          throw new Error(`Erreur serveur (${response.status}): ${text.substring(0, 100)}`);
+        }
+      }
+
+      if (!response.ok) {
+        console.error('❌ Erreur réponse:', data);
+        throw new Error(data.error || data.message || `Erreur ${response.status}`);
+      }
+
+      console.log('✅ Archivage réussi:', data);
+      
+      // Mettre à jour l'état local
+      if (data.employee) {
+        setFormData(data.employee);
+      }
+      
+      // Appeler la fonction parent
+      onArchive(data.employee || { id: employee.id, statut: 'archive' });
+      
       setShowArchiveModal(false);
       onClose();
-      alert('✅ Employé archivé avec succès!');
+      
+      alert('✅ Employé archivé avec succès! Le PDF a été joint au dossier.');
       
     } catch (error) {
       console.error('❌ Erreur lors de l\'archivage:', error);
-      alert('❌ Erreur lors de l\'archivage: ' + (error.response?.data?.message || error.message));
+      
+      let errorMessage = error.message;
+      
+      if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+        errorMessage = 'Erreur réseau. Vérifiez votre connexion.';
+      } else if (error.message.includes('Unexpected token')) {
+        errorMessage = 'Erreur serveur. Contactez l\'administrateur.';
+      }
+      
+      alert(`❌ Erreur lors de l'archivage: ${errorMessage}`);
     } finally {
       setSaving(false);
     }
@@ -250,6 +312,19 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               <p className="employee-departement">{formData.site_dep}</p>
               <p className="employee-contrat">{formData.type_contrat}</p>
               
+              {/* Indicateur d'archivage */}
+              {formData.statut === 'archive' && (
+                <div className="archive-badge">
+                  <span className="badge-icon">📁</span>
+                  <span className="badge-text">Archivé</span>
+                  {formData.date_depart && (
+                    <span className="archive-date">
+                      Depuis: {formatDateForDisplay(formData.date_depart)}
+                    </span>
+                  )}
+                </div>
+              )}
+              
               {/* Bouton pour changer la photo en mode édition */}
               {isEditing && (
                 <div className="photo-change-section">
@@ -315,6 +390,28 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                   </span>
                 </div>
                 
+                {/* Document d'archive PDF */}
+                {formData.pdf_archive_url && (
+                  <div className="document-row">
+                    <strong>Entretien de départ:</strong>
+                    <span>
+                      <div className="document-container">
+                        <a 
+                          href={formData.pdf_archive_url} 
+                          onClick={(e) => handleDocumentClick(e, formData.pdf_archive_url)}
+                          className="document-link archive-link"
+                          title={formData.pdf_archive_url}
+                        >
+                          📁 PDF d'entretien
+                        </a>
+                        <div className="document-preview">
+                          <small>🔗 {truncateUrl(formData.pdf_archive_url, 40)}</small>
+                        </div>
+                      </div>
+                    </span>
+                  </div>
+                )}
+                
                 {/* Bouton pour ajouter/mettre à jour le dossier RH */}
                 <div className="dossier-action">
                   <button 
@@ -354,17 +451,17 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               </div>
 
               {/* Bouton d'archivage conditionnel */}
-              {hasDepartureDate && (
+              {!hasDepartureDate && (
                 <div className="archive-section">
                   <button 
                     type="button"
                     className="archive-btn"
                     onClick={() => setShowArchiveModal(true)}
                   >
-                    📁 Insérer entretien de départ
+                    📁 Archiver l'employé
                   </button>
                   <p className="archive-hint">
-                    Cliquez pour ajouter l'entretien de départ et archiver l'employé
+                    Ajouter une date de départ et archiver l'employé avec son entretien de départ
                   </p>
                 </div>
               )}
@@ -374,9 +471,30 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
 
         <div className="employee-modal-footer">
           {!isEditing ? (
-            <button className="edit-btn" onClick={() => setIsEditing(true)}>
-              ✏️ Modifier les informations
-            </button>
+            <div className="view-actions">
+              <button className="edit-btn" onClick={() => setIsEditing(true)}>
+                ✏️ Modifier les informations
+              </button>
+              
+              {/* Bouton d'archivage dans le mode visualisation */}
+              {!formData.date_depart && formData.statut !== 'archive' && (
+                <button 
+                  className="archive-action-btn"
+                  onClick={() => {
+                    // D'abord mettre une date de départ
+                    const today = new Date().toISOString().split('T')[0];
+                    setFormData(prev => ({
+                      ...prev,
+                      date_depart: today
+                    }));
+                    // Puis ouvrir le modal d'archivage
+                    setTimeout(() => setShowArchiveModal(true), 100);
+                  }}
+                >
+                  📁 Archiver l'employé
+                </button>
+              )}
+            </div>
           ) : (
             <div className="edit-actions">
               <button 
