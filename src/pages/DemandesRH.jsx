@@ -14,6 +14,7 @@ const DemandesRH = () => {
   });
   const [filtersApplied, setFiltersApplied] = useState(false);
   const [timeoutId, setTimeoutId] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
 
@@ -53,6 +54,7 @@ const DemandesRH = () => {
 
       const queryParams = new URLSearchParams();
       
+      // Ajouter seulement les filtres non vides
       if (filters.statut && filters.statut !== '') {
         queryParams.append('statut', filters.statut);
       }
@@ -69,41 +71,59 @@ const DemandesRH = () => {
         queryParams.append('date_fin', filters.date_fin);
       }
 
+      // Forcer le rafraîchissement avec un timestamp
+      queryParams.append('_t', Date.now());
+
       console.log('🔍 Filtres envoyés:', Object.fromEntries(queryParams));
+      console.log('🔗 URL complète:', `${API_BASE_URL}/api/demandes?${queryParams}`);
 
       const response = await fetch(`${API_BASE_URL}/api/demandes?${queryParams}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        cache: 'no-store', // Empêcher le cache
+        credentials: 'include'
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Erreur HTTP:', response.status, errorText);
         throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('📊 Données reçues:', data.demandes?.length || 0, 'demandes');
+      console.log('📊 Données reçues:', {
+        total: data.demandes?.length || 0,
+        pagination: data.pagination
+      });
+      
       setDemandes(data.demandes || []);
       
     } catch (error) {
       console.error('❌ Erreur récupération demandes:', error);
-      setError(error.message);
+      setError(`Erreur: ${error.message}`);
       setDemandes([]);
     } finally {
       setLoading(false);
     }
-  }, [filters, API_BASE_URL]);
+  }, [filters, API_BASE_URL, refreshTrigger]);
 
-  // Debounce pour éviter les requêtes excessives
+  // Effet pour récupérer les demandes initiales
+  useEffect(() => {
+    fetchDemandes();
+  }, []);
+
+  // Debounce pour éviter les requêtes excessives lors du changement de filtre
   useEffect(() => {
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
     
     const newTimeoutId = setTimeout(() => {
+      console.log('🔄 Application des filtres:', filters);
       fetchDemandes();
-    }, 300);
+    }, 500); // Augmenter le délai à 500ms
     
     setTimeoutId(newTimeoutId);
     
@@ -115,6 +135,7 @@ const DemandesRH = () => {
   }, [filters]);
 
   const handleFilterChange = (key, value) => {
+    console.log(`📝 Modification filtre ${key}: ${value}`);
     setFilters(prev => ({
       ...prev,
       [key]: value
@@ -135,15 +156,23 @@ const DemandesRH = () => {
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('fr-FR');
+    try {
+      return new Date(dateString).toLocaleDateString('fr-FR');
+    } catch (e) {
+      return dateString;
+    }
   };
 
   const formatTime = (timeString) => {
     if (!timeString) return 'N/A';
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return timeString;
+    }
   };
 
   const getResponsableName = (responsablePrenom, responsableNom, email) => {
@@ -252,6 +281,7 @@ const DemandesRH = () => {
   };
 
   const clearFilters = () => {
+    console.log('🧹 Effacement des filtres');
     setFilters({
       statut: '',
       type_demande: '',
@@ -259,11 +289,21 @@ const DemandesRH = () => {
       date_fin: ''
     });
     setFiltersApplied(false);
+    // Forcer un rafraîchissement immédiat
+    setTimeout(() => {
+      fetchDemandes();
+    }, 100);
   };
 
   const retryFetch = () => {
+    console.log('🔄 Tentative de récupération');
     setError(null);
-    fetchDemandes();
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  const forceRefresh = () => {
+    console.log('🔁 Forcer le rafraîchissement');
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const getTypeIcon = (type) => {
@@ -360,8 +400,11 @@ const DemandesRH = () => {
             <button className="btn-export" onClick={handleExportExcel}>
               <span>📤</span> Exporter Excel
             </button>
+            <button className="btn-refresh" onClick={forceRefresh}>
+              🔄 Actualiser
+            </button>
             <button className="btn-clear" onClick={clearFilters}>
-              Effacer les filtres
+              🧹 Effacer les filtres
             </button>
           </div>
         </div>
@@ -423,6 +466,9 @@ const DemandesRH = () => {
             {filters.type_demande && ` Type: ${getTypeDemandeLabel(filters.type_demande)}`}
             {filters.date_debut && ` Du: ${formatDate(filters.date_debut)}`}
             {filters.date_fin && ` Au: ${formatDate(filters.date_fin)}`}
+            <span className="filter-count">
+              ({demandes.length} résultat{demandes.length !== 1 ? 's' : ''})
+            </span>
           </div>
         )}
       </div>
@@ -470,7 +516,10 @@ const DemandesRH = () => {
         {loading ? (
           <div className="loading">
             <div className="spinner"></div>
-            Chargement des demandes...
+            <div>Chargement des demandes...</div>
+            <div className="loading-details">
+              Application des filtres: {filtersApplied ? 'Oui' : 'Non'}
+            </div>
           </div>
         ) : error ? (
           <div className="no-data">
@@ -487,7 +536,7 @@ const DemandesRH = () => {
             <h3>Aucune demande trouvée</h3>
             <p>{filtersApplied ? 'Aucune demande ne correspond à vos filtres' : 'Aucune demande enregistrée pour le moment'}</p>
             <button className="btn-primary" onClick={clearFilters}>
-              {filtersApplied ? 'Effacer les filtres' : 'Actualiser'}
+              {filtersApplied ? '🧹 Effacer les filtres' : '🔄 Actualiser'}
             </button>
           </div>
         ) : (
