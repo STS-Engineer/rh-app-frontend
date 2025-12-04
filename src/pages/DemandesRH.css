@@ -1330,3 +1330,74 @@
     align-self: flex-start;
   }
 }
+/* Style spécifique pour le type de congé */
+.detail.type-conge {
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+  border: 1px solid #7dd3fc;
+  margin: 10px 0;
+}
+
+.detail.type-conge .label {
+  color: #0369a1;
+  font-weight: 600;
+}
+
+.detail.type-conge .value {
+  color: #0c4a6e;
+  font-weight: 700;
+}
+
+/* Animation pour le filtre qui apparaît */
+.filter-group {
+  transition: all 0.3s ease;
+}
+
+/* Responsive pour les filtres */
+@media (max-width: 768px) {
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  /* Assurer que le filtre type_conge occupe toute la largeur */
+  .filter-group:has(select[value*="congé"]) {
+    grid-column: 1;
+  }
+}
+
+/* Amélioration visuelle pour le filtre actif */
+.tag {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px;
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+}
+
+.tag::before {
+  content: '×';
+  font-weight: bold;
+  cursor: pointer;
+  padding-right: 4px;
+}
+
+/* Animation pour les filtres */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filter-group:nth-child(3) {
+  animation: fadeIn 0.3s ease-out;
+}
