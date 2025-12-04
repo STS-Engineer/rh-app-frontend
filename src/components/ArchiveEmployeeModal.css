@@ -1,3 +1,6 @@
+/* ArchiveEmployeeModal.css - Version corrigée */
+
+/* IMPORTANT: Prefixer les classes pour éviter les conflits */
 .archive-employee-modal-overlay {
   position: fixed;
   top: 0;
@@ -37,7 +40,6 @@
     0 0 0 1px rgba(255, 255, 255, 0.1);
   animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #e2e8f0;
 }
 
 .archive-employee-modal-content::before {
@@ -70,7 +72,7 @@
   position: relative;
 }
 
-.header-content {
+.archive-employee-modal-header .header-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -78,7 +80,7 @@
   gap: 16px;
 }
 
-.header-content h2 {
+.archive-employee-modal-header h2 {
   margin: 0;
   font-size: 1.8rem;
   font-weight: 700;
@@ -88,12 +90,12 @@
   gap: 12px;
 }
 
-.header-icon {
+.archive-employee-modal-header .header-icon {
   font-size: 1.6rem;
   color: #f59e0b;
 }
 
-.archive-badge {
+.archive-employee-modal-header .archive-badge {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -108,7 +110,7 @@
   box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
-.close-btn {
+.archive-employee-modal-header .close-btn {
   position: absolute;
   top: 20px;
   right: 20px;
@@ -127,7 +129,7 @@
   z-index: 1;
 }
 
-.close-btn:hover {
+.archive-employee-modal-header .close-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: rotate(90deg);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -136,10 +138,11 @@
 /* Body */
 .archive-employee-modal-body {
   padding: 32px;
+  color: #e2e8f0; /* Texte clair pour thème sombre */
 }
 
 /* En-tête employé */
-.employee-header {
+.archive-employee-modal-body .employee-header {
   display: flex;
   gap: 24px;
   margin-bottom: 32px;
@@ -149,7 +152,7 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.employee-photo {
+.archive-employee-modal-body .employee-photo {
   width: 140px;
   height: 140px;
   border-radius: 16px;
@@ -159,30 +162,30 @@
   flex-shrink: 0;
 }
 
-.employee-basic-info {
+.archive-employee-modal-body .employee-basic-info {
   flex: 1;
 }
 
-.employee-basic-info h3 {
+.archive-employee-modal-body .employee-basic-info h3 {
   margin: 0 0 16px 0;
   font-size: 1.8rem;
   color: white;
   font-weight: 700;
 }
 
-.info-grid {
+.archive-employee-modal-body .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 16px;
 }
 
-.info-item {
+.archive-employee-modal-body .info-item {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.info-label {
+.archive-employee-modal-body .info-label {
   font-size: 0.875rem;
   color: #94a3b8;
   font-weight: 600;
@@ -190,7 +193,7 @@
   letter-spacing: 0.5px;
 }
 
-.info-value {
+.archive-employee-modal-body .info-value {
   font-size: 1.1rem;
   color: #e2e8f0;
   font-weight: 600;
@@ -198,20 +201,20 @@
 }
 
 /* Grille de détails */
-.employee-details-grid {
+.archive-employee-modal-body .employee-details-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 24px;
 }
 
-.detail-section {
+.archive-employee-modal-body .detail-section {
   background: rgba(255, 255, 255, 0.05);
   border-radius: 16px;
   padding: 24px;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.detail-section h4 {
+.archive-employee-modal-body .detail-section h4 {
   margin: 0 0 20px 0;
   font-size: 1.2rem;
   color: white;
@@ -221,12 +224,12 @@
   font-weight: 600;
 }
 
-.section-icon {
+.archive-employee-modal-body .section-icon {
   font-size: 1.3rem;
   color: #f59e0b;
 }
 
-.detail-row {
+.archive-employee-modal-body .detail-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -235,47 +238,47 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.detail-row:last-child {
+.archive-employee-modal-body .detail-row:last-child {
   margin-bottom: 0;
   padding-bottom: 0;
   border-bottom: none;
 }
 
-.detail-label {
+.archive-employee-modal-body .detail-label {
   flex: 1;
 }
 
-.detail-value {
+.archive-employee-modal-body .detail-value {
   flex: 2;
   text-align: right;
   color: #cbd5e1;
 }
 
-.detail-label strong {
+.archive-employee-modal-body .detail-label strong {
   color: #94a3b8;
   font-weight: 600;
 }
 
 /* Dates de départ */
-.departure-date {
+.archive-employee-modal-body .departure-date {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 4px;
 }
 
-.departure-days {
+.archive-employee-modal-body .departure-days {
   font-size: 0.85rem;
   color: #f59e0b;
   font-weight: 500;
 }
 
 /* Section Documents */
-.documents-section {
+.archive-employee-modal-body .documents-section {
   grid-column: span 2;
 }
 
-.document-card {
+.archive-employee-modal-body .document-card {
   background: rgba(0, 0, 0, 0.3);
   border-radius: 12px;
   padding: 20px;
@@ -284,32 +287,32 @@
   transition: all 0.3s;
 }
 
-.document-card:hover {
+.archive-employee-modal-body .document-card:hover {
   background: rgba(0, 0, 0, 0.4);
   border-color: rgba(245, 158, 11, 0.3);
   transform: translateY(-2px);
 }
 
-.document-card.main-document {
+.archive-employee-modal-body .document-card.main-document {
   border-left: 4px solid #10b981;
 }
 
-.document-card.legacy-document {
+.archive-employee-modal-body .document-card.legacy-document {
   border-left: 4px solid #94a3b8;
 }
 
-.document-card.dossier-card {
+.archive-employee-modal-body .document-card.dossier-card {
   border-left: 4px solid #3b82f6;
 }
 
-.document-header {
+.archive-employee-modal-body .document-header {
   display: flex;
   align-items: center;
   gap: 16px;
   margin-bottom: 16px;
 }
 
-.document-icon {
+.archive-employee-modal-body .document-icon {
   font-size: 2rem;
   width: 48px;
   height: 48px;
@@ -321,59 +324,59 @@
   flex-shrink: 0;
 }
 
-.document-info {
+.archive-employee-modal-body .document-info {
   flex: 1;
 }
 
-.document-title {
+.archive-employee-modal-body .document-title {
   margin: 0 0 4px 0;
   color: white;
   font-size: 1.1rem;
   font-weight: 600;
 }
 
-.document-subtitle {
+.archive-employee-modal-body .document-subtitle {
   margin: 0;
   color: #94a3b8;
   font-size: 0.9rem;
 }
 
-.document-details {
+.archive-employee-modal-body .document-details {
   margin-bottom: 16px;
   padding: 12px;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
 }
 
-.document-url {
+.archive-employee-modal-body .document-url {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 8px;
 }
 
-.url-label {
+.archive-employee-modal-body .url-label {
   font-size: 0.85rem;
   color: #94a3b8;
   font-weight: 600;
   white-space: nowrap;
 }
 
-.url-value {
+.archive-employee-modal-body .url-value {
   font-family: 'Courier New', monospace;
   font-size: 0.85rem;
   color: #cbd5e1;
   word-break: break-all;
 }
 
-.document-preview {
+.archive-employee-modal-body .document-preview {
   font-size: 0.9rem;
   color: #94a3b8;
   font-style: italic;
 }
 
 /* Boutons documents */
-.view-document-btn {
+.archive-employee-modal-body .view-document-btn {
   width: 100%;
   padding: 14px;
   border: none;
@@ -388,49 +391,49 @@
   transition: all 0.3s;
 }
 
-.view-document-btn.primary {
+.archive-employee-modal-body .view-document-btn.primary {
   background: linear-gradient(135deg, #10b981, #059669);
   color: white;
 }
 
-.view-document-btn.primary:hover:not(:disabled) {
+.archive-employee-modal-body .view-document-btn.primary:hover:not(:disabled) {
   background: linear-gradient(135deg, #059669, #047857);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
 }
 
-.view-document-btn.secondary {
+.archive-employee-modal-body .view-document-btn.secondary {
   background: linear-gradient(135deg, #6b7280, #4b5563);
   color: white;
 }
 
-.view-document-btn.secondary:hover:not(:disabled) {
+.archive-employee-modal-body .view-document-btn.secondary:hover:not(:disabled) {
   background: linear-gradient(135deg, #4b5563, #374151);
   transform: translateY(-2px);
 }
 
-.view-document-btn.tertiary {
+.archive-employee-modal-body .view-document-btn.tertiary {
   background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   color: white;
 }
 
-.view-document-btn.tertiary:hover {
+.archive-employee-modal-body .view-document-btn.tertiary:hover {
   background: linear-gradient(135deg, #1d4ed8, #1e40af);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
 }
 
-.view-document-btn:disabled {
+.archive-employee-modal-body .view-document-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
   transform: none !important;
 }
 
-.btn-icon {
+.archive-employee-modal-body .btn-icon {
   font-size: 1.2rem;
 }
 
-.loading-spinner {
+.archive-employee-modal-body .loading-spinner {
   width: 20px;
   height: 20px;
   border: 2px solid rgba(255, 255, 255, 0.3);
@@ -447,33 +450,33 @@
 }
 
 /* Aucun document */
-.no-documents {
+.archive-employee-modal-body .no-documents {
   text-align: center;
   padding: 40px 20px;
 }
 
-.no-docs-icon {
+.archive-employee-modal-body .no-docs-icon {
   font-size: 4rem;
   color: #94a3b8;
   margin-bottom: 16px;
   opacity: 0.5;
 }
 
-.no-docs-text {
+.archive-employee-modal-body .no-docs-text {
   margin: 0 0 8px 0;
   color: #94a3b8;
   font-size: 1.2rem;
   font-weight: 600;
 }
 
-.no-docs-subtext {
+.archive-employee-modal-body .no-docs-subtext {
   margin: 0;
   color: #64748b;
   font-size: 0.95rem;
 }
 
 /* Badge de statut */
-.status-badge {
+.archive-employee-modal-body .status-badge {
   display: inline-block;
   padding: 6px 12px;
   border-radius: 20px;
@@ -482,7 +485,7 @@
   letter-spacing: 0.5px;
 }
 
-.status-badge.archive {
+.archive-employee-modal-body .status-badge.archive {
   background: linear-gradient(135deg, #f59e0b, #d97706);
   color: white;
 }
@@ -495,15 +498,15 @@
   border-radius: 0 0 20px 20px;
 }
 
-.footer-actions {
+.archive-employee-modal-footer .footer-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
 }
 
-.print-btn,
-.close-modal-btn {
+.archive-employee-modal-footer .print-btn,
+.archive-employee-modal-footer .close-modal-btn {
   padding: 12px 24px;
   border: none;
   border-radius: 10px;
@@ -516,28 +519,28 @@
   transition: all 0.3s;
 }
 
-.print-btn {
+.archive-employee-modal-footer .print-btn {
   background: linear-gradient(135deg, #6b7280, #4b5563);
   color: white;
 }
 
-.print-btn:hover {
+.archive-employee-modal-footer .print-btn:hover {
   background: linear-gradient(135deg, #4b5563, #374151);
   transform: translateY(-2px);
 }
 
-.close-modal-btn {
+.archive-employee-modal-footer .close-modal-btn {
   background: linear-gradient(135deg, #3b82f6, #1d4ed8);
   color: white;
 }
 
-.close-modal-btn:hover {
+.archive-employee-modal-footer .close-modal-btn:hover {
   background: linear-gradient(135deg, #1d4ed8, #1e40af);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
 }
 
-.footer-note {
+.archive-employee-modal-footer .footer-note {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -548,12 +551,12 @@
   border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
-.note-icon {
+.archive-employee-modal-footer .note-icon {
   color: #f59e0b;
   flex-shrink: 0;
 }
 
-.note-text {
+.archive-employee-modal-footer .note-text {
   color: #fbbf24;
   font-size: 0.9rem;
   text-align: center;
@@ -561,20 +564,20 @@
 
 /* Responsive */
 @media (max-width: 1024px) {
-  .employee-details-grid {
+  .archive-employee-modal-body .employee-details-grid {
     grid-template-columns: 1fr;
   }
   
-  .documents-section {
+  .archive-employee-modal-body .documents-section {
     grid-column: span 1;
   }
   
-  .employee-header {
+  .archive-employee-modal-body .employee-header {
     flex-direction: column;
     text-align: center;
   }
   
-  .employee-photo {
+  .archive-employee-modal-body .employee-photo {
     width: 120px;
     height: 120px;
   }
@@ -594,24 +597,24 @@
     padding: 20px;
   }
   
-  .header-content {
+  .archive-employee-modal-header .header-content {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
   
-  .footer-actions {
+  .archive-employee-modal-footer .footer-actions {
     flex-direction: column;
     gap: 12px;
   }
   
-  .print-btn,
-  .close-modal-btn {
+  .archive-employee-modal-footer .print-btn,
+  .archive-employee-modal-footer .close-modal-btn {
     width: 100%;
     justify-content: center;
   }
   
-  .info-grid {
+  .archive-employee-modal-body .info-grid {
     grid-template-columns: 1fr;
   }
 }
