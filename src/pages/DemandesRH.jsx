@@ -9,6 +9,7 @@ const DemandesRH = () => {
   const [filters, setFilters] = useState({
     statut: '',
     type_demande: '',
+    type_conge: '',
     date_debut: '',
     date_fin: ''
   });
@@ -22,6 +23,28 @@ const DemandesRH = () => {
 
   const statuts = ['en_attente', 'approuve', 'refuse'];
   const typesDemande = ['congé', 'autorisation_absence', 'mission'];
+  const typesConge = [
+    'congé payé',
+    'congé sans solde',
+    'congé maladie',
+    'congé maternité',
+    'congé paternité',
+    'congé exceptionnel',
+    'autre'
+  ];
+
+  // Fonction utilitaire pour compter les filtres actifs
+  const getActiveFiltersCount = () => {
+    let count = 0;
+    if (filters.statut) count++;
+    if (filters.type_demande) count++;
+    if (filters.type_conge) count++;
+    if (filters.date_debut) count++;
+    if (filters.date_fin) count++;
+    return count;
+  };
+
+  const activeFiltersCount = getActiveFiltersCount();
 
   const getStatutLabel = (statut) => {
     const labels = {
@@ -37,6 +60,19 @@ const DemandesRH = () => {
       'congé': 'Congé',
       'autorisation_absence': 'Autorisation d\'absence',
       'mission': 'Mission'
+    };
+    return labels[type] || type;
+  };
+
+  const getTypeCongeLabel = (type) => {
+    const labels = {
+      'congé payé': 'Congé payé',
+      'congé sans solde': 'Congé sans solde',
+      'congé maladie': 'Congé maladie',
+      'congé maternité': 'Congé maternité',
+      'congé paternité': 'Congé paternité',
+      'congé exceptionnel': 'Congé exceptionnel',
+      'autre': 'Autre'
     };
     return labels[type] || type;
   };
@@ -84,6 +120,7 @@ const DemandesRH = () => {
         return;
       }
 
+      // Utiliser la route /filter pour les filtres avancés
       const queryParams = new URLSearchParams();
       
       if (filters.statut) {
@@ -92,6 +129,11 @@ const DemandesRH = () => {
       
       if (filters.type_demande) {
         queryParams.append('type_demande', filters.type_demande);
+      }
+      
+      // Ajouter le filtre type_conge seulement s'il y a une valeur
+      if (filters.type_conge) {
+        queryParams.append('type_conge', filters.type_conge);
       }
       
       if (filters.date_debut) {
@@ -106,8 +148,16 @@ const DemandesRH = () => {
         queryParams.append('_t', Date.now());
       }
 
-      const url = `${API_BASE_URL}/api/demandes?${queryParams}`;
+      // Utiliser la nouvelle route /filter
+      const url = `${API_BASE_URL}/api/demandes/filter?${queryParams}`;
       console.log('🔗 URL de la requête:', url);
+      console.log('🔍 Filtres actifs:', {
+        statut: filters.statut || 'tous',
+        type_demande: filters.type_demande || 'tous',
+        type_conge: filters.type_conge || 'tous',
+        date_debut: filters.date_debut || 'toutes',
+        date_fin: filters.date_fin || 'toutes'
+      });
 
       const response = await fetch(url, {
         headers: {
@@ -148,11 +198,13 @@ const DemandesRH = () => {
     }
   }, [filters, API_BASE_URL]);
 
+  // Effet initial
   useEffect(() => {
     console.log('🚀 Composant monté - Chargement initial');
     fetchDemandes(true);
   }, []);
 
+  // Effet pour les changements de filtre
   useEffect(() => {
     console.log('🔄 Filtres modifiés:', filters);
     
@@ -160,7 +212,8 @@ const DemandesRH = () => {
       clearTimeout(timeoutId);
     }
     
-    const hasActiveFilters = filters.statut || filters.type_demande || filters.date_debut || filters.date_fin;
+    // Vérifier si des filtres sont actifs
+    const hasActiveFilters = activeFiltersCount > 0;
     setFiltersApplied(hasActiveFilters);
     
     const newTimeoutId = setTimeout(() => {
@@ -177,12 +230,34 @@ const DemandesRH = () => {
     };
   }, [filters]);
 
+  // Effet pour gérer la logique des filtres
+  useEffect(() => {
+    // Si type_demande n'est plus "congé", réinitialiser type_conge
+    if (filters.type_demande !== 'congé' && filters.type_conge) {
+      console.log('🔄 Réinitialisation type_conge car type_demande a changé');
+      setFilters(prev => ({
+        ...prev,
+        type_conge: ''
+      }));
+    }
+  }, [filters.type_demande]);
+
   const handleFilterChange = (key, value) => {
     console.log(`📝 Modification filtre ${key}: "${value}"`);
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
+    
+    // Si on change le type_demande et que ce n'est pas "congé", réinitialiser type_conge
+    if (key === 'type_demande' && value !== 'congé') {
+      setFilters(prev => ({
+        ...prev,
+        [key]: value,
+        type_conge: ''
+      }));
+    } else {
+      setFilters(prev => ({
+        ...prev,
+        [key]: value
+      }));
+    }
   };
 
   const clearFilters = () => {
@@ -190,6 +265,7 @@ const DemandesRH = () => {
     setFilters({
       statut: '',
       type_demande: '',
+      type_conge: '',
       date_debut: '',
       date_fin: ''
     });
@@ -321,11 +397,12 @@ const DemandesRH = () => {
       return;
     }
 
-    const headers = ['ID', 'Titre', 'Type', 'Statut', 'Employé', 'Matricule', 'Date création', 'Responsable 1', 'Responsable 2'];
+    const headers = ['ID', 'Titre', 'Type', 'Type Congé', 'Statut', 'Employé', 'Matricule', 'Date création', 'Responsable 1', 'Responsable 2'];
     const rows = demandes.map(d => [
       d.id,
       d.titre,
       getTypeDemandeLabel(d.type_demande),
+      d.type_conge === 'autre' ? d.type_conge_autre || 'Autre' : getTypeCongeLabel(d.type_conge) || '',
       getStatutLabel(d.statut),
       `${d.employe_prenom} ${d.employe_nom}`,
       d.employe_matricule || '',
@@ -370,6 +447,13 @@ const DemandesRH = () => {
                 <div className="info-item">
                   <strong>Type:</strong> {getTypeDemandeLabel(demande.type_demande)}
                 </div>
+                {demande.type_conge && (
+                  <div className="info-item">
+                    <strong>Type de congé:</strong> {demande.type_conge === 'autre' 
+                      ? demande.type_conge_autre || 'Autre' 
+                      : getTypeCongeLabel(demande.type_conge)}
+                  </div>
+                )}
                 <div className="info-item">
                   <strong>Statut:</strong> {getStatutBadge(demande.statut)}
                 </div>
@@ -469,12 +553,6 @@ const DemandesRH = () => {
                     <span className="detail-value">{demande.frais_deplacement} DH</span>
                   </div>
                 )}
-                {demande.type_conge && (
-                  <div className="detail-row">
-                    <span className="detail-label">🎯 Type de congé:</span>
-                    <span className="detail-value">{demande.type_conge}</span>
-                  </div>
-                )}
                 {demande.demi_journee && (
                   <div className="detail-row">
                     <span className="detail-label">🕐 Demi-journée:</span>
@@ -562,7 +640,7 @@ const DemandesRH = () => {
           </div>
 
           <div className="filter-group">
-            <label>Type</label>
+            <label>Type de demande</label>
             <select 
               value={filters.type_demande} 
               onChange={(e) => handleFilterChange('type_demande', e.target.value)}
@@ -573,6 +651,22 @@ const DemandesRH = () => {
               ))}
             </select>
           </div>
+
+          {/* Filtre type de congé - seulement visible si type_demande = "congé" */}
+          {filters.type_demande === 'congé' && (
+            <div className="filter-group">
+              <label>Type de congé</label>
+              <select 
+                value={filters.type_conge} 
+                onChange={(e) => handleFilterChange('type_conge', e.target.value)}
+              >
+                <option value="">Tous les types de congé</option>
+                {typesConge.map(t => (
+                  <option key={t} value={t}>{getTypeCongeLabel(t)}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="filter-group">
             <label>Date début</label>
@@ -593,12 +687,13 @@ const DemandesRH = () => {
           </div>
         </div>
 
-        {filtersApplied && (
+        {activeFiltersCount > 0 && (
           <div className="active-filters">
             <span className="filter-tag">
-              Filtres actifs: 
+              Filtres actifs ({activeFiltersCount}): 
               {filters.statut && <span className="tag">Statut: {getStatutLabel(filters.statut)}</span>}
               {filters.type_demande && <span className="tag">Type: {getTypeDemandeLabel(filters.type_demande)}</span>}
+              {filters.type_conge && <span className="tag">Type congé: {getTypeCongeLabel(filters.type_conge)}</span>}
               {filters.date_debut && <span className="tag">À partir du: {formatDate(filters.date_debut)}</span>}
               {filters.date_fin && <span className="tag">Jusqu'au: {formatDate(filters.date_fin)}</span>}
             </span>
@@ -723,6 +818,18 @@ const DemandesRH = () => {
                         <p>{demande.employe_poste} • Matricule: {demande.employe_matricule || 'N/A'}</p>
                       </div>
                     </div>
+                    
+                    {/* Afficher le type de congé si applicable */}
+                    {demande.type_conge && (
+                      <div className="detail type-conge">
+                        <span className="label">🎯 Type de congé:</span>
+                        <span className="value">
+                          {demande.type_conge === 'autre' 
+                            ? demande.type_conge_autre || 'Autre' 
+                            : getTypeCongeLabel(demande.type_conge)}
+                        </span>
+                      </div>
+                    )}
                     
                     <div className="approval-status">
                       <strong>Processus d'approbation :</strong>
