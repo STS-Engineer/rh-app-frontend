@@ -262,7 +262,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 name="type_contrat" 
                 value={formData.type_contrat} 
                 onChange={handleInputChange}
-                options={['CDI', 'CDD', 'Stage', 'CVP']}
+                options={['CDI', 'CDD', 'Stage', 'CIVP']}
                 required 
               />
               
