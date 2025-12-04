@@ -1,12 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import './ArchiveModal.css';
 
 const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
   const [pdfUrl, setPdfUrl] = useState('');
   const [isUrlValid, setIsUrlValid] = useState(true);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef(null);
 
   const validateUrl = (url) => {
-    if (!url) return false; // Le lien PDF est maintenant obligatoire
+    if (!url) return false;
     
     try {
       new URL(url);
@@ -34,9 +37,83 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
     }
   };
 
+  const handleFileSelect = () => {
+    fileInputRef.current.click();
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Vérifier que c'est un PDF
+    if (file.type !== 'application/pdf') {
+      alert('❌ Veuillez sélectionner un fichier PDF');
+      return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) { // 50MB max
+      alert('❌ Le fichier est trop volumineux (max 50MB)');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    const formData = new FormData();
+    formData.append('pdfFile', file);
+
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Simuler la progression
+      const interval = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return prev;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      const response = await fetch('/api/archive/upload-pdf', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      clearInterval(interval);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erreur lors de l\'upload');
+      }
+
+      const data = await response.json();
+      setUploadProgress(100);
+      
+      // Mettre à jour l'URL avec le PDF uploadé
+      setPdfUrl(data.pdfUrl);
+      setIsUrlValid(true);
+      
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 500);
+
+    } catch (error) {
+      console.error('❌ Erreur upload:', error);
+      alert(`❌ Erreur: ${error.message}`);
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
   const handleSubmit = () => {
     if (!pdfUrl.trim()) {
-      alert('❌ Veuillez ajouter le lien vers le PDF de l\'entretien de départ');
+      alert('❌ Veuillez ajouter le PDF de l\'entretien de départ');
       return;
     }
 
@@ -53,6 +130,8 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
   const handleClose = () => {
     setPdfUrl('');
     setIsUrlValid(true);
+    setIsUploading(false);
+    setUploadProgress(0);
     onClose();
   };
 
@@ -82,9 +161,40 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
             </div>
           </div>
 
-          {/* Section Lien PDF - Maintenant obligatoire */}
+          {/* Section Upload PDF - Alternative moderne */}
+          <div className="pdf-upload-section">
+            <h4>📤 Télécharger le PDF d'entretien *</h4>
+            <div className="upload-area" onClick={handleFileSelect}>
+              {isUploading ? (
+                <div className="upload-progress">
+                  <div className="progress-bar">
+                    <div 
+                      className="progress-fill" 
+                      style={{ width: `${uploadProgress}%` }}
+                    ></div>
+                  </div>
+                  <p>Upload en cours... {uploadProgress}%</p>
+                </div>
+              ) : (
+                <>
+                  <div className="upload-icon">📄</div>
+                  <p>Cliquez pour sélectionner un fichier PDF</p>
+                  <p className="upload-hint">Format: PDF • Max: 50MB</p>
+                </>
+              )}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept=".pdf,application/pdf"
+                style={{ display: 'none' }}
+              />
+            </div>
+          </div>
+
+          {/* OU Section Lien PDF */}
           <div className="pdf-url-section">
-            <h4> Lien vers le PDF d'entretien *</h4>
+            <h4>🔗 OU entrer un lien existant</h4>
             <div className="url-input-group">
               <input
                 type="url"
@@ -92,7 +202,6 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
                 onChange={handlePdfUrlChange}
                 placeholder="https://exemple.com/entretien-depart.pdf"
                 className={`url-input ${!isUrlValid && pdfUrl ? 'error' : ''}`}
-                required
               />
               {pdfUrl && isUrlValid && (
                 <button 
@@ -100,7 +209,7 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
                   className="test-link-btn"
                   onClick={handleTestPdfLink}
                 >
-                  🔗 Tester le lien
+                  🔗 Tester
                 </button>
               )}
             </div>
@@ -109,15 +218,12 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
                 ❌ Veuillez entrer une URL valide vers un fichier PDF
               </p>
             )}
-            <p className="url-hint">
-              💡 Exemples: Google Drive, Dropbox, OneDrive, ou tout hébergeur de fichiers PDF
-            </p>
           </div>
 
           {/* Aperçu du lien PDF */}
           {pdfUrl && isUrlValid && (
             <div className="pdf-preview">
-              <h4>🔗 Aperçu du Lien PDF</h4>
+              <h4>✅ PDF Prêt</h4>
               <div className="pdf-link-preview">
                 <a 
                   href={pdfUrl} 
@@ -138,7 +244,7 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
           )}
 
           <div className="warning-message">
-            <p><strong>Attention:</strong> Après archivage, l'employé sera déplacé vers la liste des archives et ne sera plus visible dans la liste des employés actifs. Cette action est irréversible.</p>
+            <p><strong>Attention:</strong> Après archivage, l'employé sera déplacé vers la liste des archives. Cette action est irréversible.</p>
           </div>
         </div>
 
@@ -146,13 +252,14 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
           <button 
             className="archive-confirm-btn"
             onClick={handleSubmit}
-            disabled={!pdfUrl.trim() || !isUrlValid}
+            disabled={!pdfUrl.trim() || !isUrlValid || isUploading}
           >
-            💾 Archiver l'Employé
+            {isUploading ? '📤 Upload en cours...' : '💾 Archiver l\'Employé'}
           </button>
           <button 
             className="archive-cancel-btn"
             onClick={handleClose}
+            disabled={isUploading}
           >
             ❌ Annuler
           </button>
