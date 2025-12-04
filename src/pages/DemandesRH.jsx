@@ -96,7 +96,7 @@ const DemandesRH = () => {
         return;
       }
 
-      // Utiliser la route standard /api/demandes (sans /filter)
+      // Utiliser la route standard /api/demandes
       const queryParams = new URLSearchParams();
       
       if (filters.statut) {
@@ -119,7 +119,6 @@ const DemandesRH = () => {
         queryParams.append('_t', Date.now());
       }
 
-      // Retour à la route standard
       const url = `${API_BASE_URL}/api/demandes?${queryParams}`;
       console.log('🔗 URL de la requête:', url);
       console.log('🔍 Filtres actifs:', {
@@ -146,7 +145,8 @@ const DemandesRH = () => {
       const data = await response.json();
       console.log('📊 Données reçues:', {
         success: data.success,
-        count: data.demandes?.length || 0
+        count: data.demandes?.length || 0,
+        hasData: !!data.demandes && Array.isArray(data.demandes)
       });
       
       setLastResponse(data);
@@ -201,7 +201,7 @@ const DemandesRH = () => {
   }, [filters]);
 
   const handleFilterChange = (key, value) => {
-    console.log(`📝 Modification filtre ${key}: "${value}"`);
+    console.log(`📝 Modification filtre ${key}: "${value}" (ancienne valeur: "${filters[key]}")`);
     setFilters(prev => ({
       ...prev,
       [key]: value
@@ -280,62 +280,6 @@ const DemandesRH = () => {
   const handleViewDetails = (demande) => {
     setSelectedDemande(demande);
     setShowModal(true);
-  };
-
-  const handleApprove = async (demandeId) => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/demandes/${demandeId}/statut`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          statut: 'approuve'
-        })
-      });
-
-      if (response.ok) {
-        alert('Demande approuvée avec succès!');
-        fetchDemandes(true);
-      } else {
-        throw new Error('Échec de l\'approbation');
-      }
-    } catch (error) {
-      console.error('Erreur approbation:', error);
-      alert('Erreur lors de l\'approbation');
-    }
-  };
-
-  const handleRefuse = async (demandeId) => {
-    const commentaire = prompt('Veuillez saisir un commentaire pour le refus:');
-    if (commentaire === null) return;
-    
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/demandes/${demandeId}/statut`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          statut: 'refuse',
-          commentaire_refus: commentaire
-        })
-      });
-
-      if (response.ok) {
-        alert('Demande refusée avec succès!');
-        fetchDemandes(true);
-      } else {
-        throw new Error('Échec du refus');
-      }
-    } catch (error) {
-      console.error('Erreur refus:', error);
-      alert('Erreur lors du refus');
-    }
   };
 
   const handleExportExcel = () => {
@@ -534,8 +478,8 @@ const DemandesRH = () => {
       <Sidebar />
       
       <div className="demandes-header">
-        <h1>📋 Gestion des Demandes RH</h1>
-        <p>Suivi et traitement des demandes des collaborateurs</p>
+        <h1>📋 Consultation des Demandes RH</h1>
+        <p>Visualisation et suivi des demandes des collaborateurs</p>
       </div>
 
       {error && (
@@ -834,6 +778,11 @@ const DemandesRH = () => {
                         <span className="label">📝 Créé le:</span>
                         <span className="value">{formatDate(demande.created_at)}</span>
                       </div>
+                      
+                      <div className="detail">
+                        <span className="label">🔄 Dernière mise à jour:</span>
+                        <span className="value">{formatDate(demande.updated_at)}</span>
+                      </div>
                     </div>
                     
                     {demande.commentaire_refus && (
@@ -843,20 +792,11 @@ const DemandesRH = () => {
                       </div>
                     )}
                     
+                    {/* Bouton d'action unique - Voir détails seulement */}
                     <div className="card-actions">
                       <button className="btn-action btn-view" onClick={() => handleViewDetails(demande)}>
-                        👁️ Voir détails
+                        👁️ Voir les détails complets
                       </button>
-                      {demande.statut === 'en_attente' && (
-                        <>
-                          <button className="btn-action btn-approve" onClick={() => handleApprove(demande.id)}>
-                            ✅ Approuver
-                          </button>
-                          <button className="btn-action btn-refuse" onClick={() => handleRefuse(demande.id)}>
-                            ❌ Refuser
-                          </button>
-                        </>
-                      )}
                     </div>
                   </div>
                 </div>
