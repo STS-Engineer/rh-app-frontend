@@ -12,7 +12,7 @@ const EmployeeCard = ({ employee, onClick }) => {
         />
         <div className="employee-info">
           <h3 className="employee-name">{employee.prenom} {employee.nom}</h3>
-          <p className="employee-cin">{employee.cin}</p>
+          
         </div>
       </div>
       <div className="card-body">
