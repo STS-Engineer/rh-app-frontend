@@ -96,6 +96,16 @@ const DemandesRH = () => {
         return;
       }
 
+      // DEBUG : Afficher les filtres envoyés
+      console.log('🔍 Debug frontend - Filtres envoyés:', {
+        type_demande: filters.type_demande,
+        statut: filters.statut,
+        date_debut: filters.date_debut,
+        date_fin: filters.date_fin,
+        rawType: typeof filters.type_demande,
+        isEmpty: filters.type_demande === ''
+      });
+
       // Utiliser la route standard /api/demandes
       const queryParams = new URLSearchParams();
       
@@ -317,6 +327,28 @@ const DemandesRH = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Fonction de test pour vérifier les filtres
+  const testFiltres = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    
+    console.log('🧪 Test des filtres...');
+    
+    // Test avec "congé"
+    const testUrl = `${API_BASE_URL}/api/debug/demandes-filtres?type_demande=congé`;
+    try {
+      const response = await fetch(testUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      console.log('🧪 Résultat test "congé":', data);
+    } catch (error) {
+      console.error('❌ Erreur test:', error);
+    }
+  };
+
   const Modal = ({ demande, onClose }) => {
     if (!demande) return null;
 
@@ -492,6 +524,9 @@ const DemandesRH = () => {
             </div>
             <button className="btn-retry" onClick={retryFetch}>
               🔄 Réessayer
+            </button>
+            <button className="btn-test" onClick={testFiltres}>
+              🧪 Tester filtres
             </button>
           </div>
         </div>
