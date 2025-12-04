@@ -565,18 +565,7 @@ const DemandesRH = () => {
             </select>
           </div>
 
-          <div className="filter-group">
-            <label>Type de demande</label>
-            <select 
-              value={filters.type_demande} 
-              onChange={(e) => handleFilterChange('type_demande', e.target.value)}
-            >
-              <option value="">Tous les types</option>
-              {typesDemande.map(t => (
-                <option key={t} value={t}>{getTypeDemandeLabel(t)}</option>
-              ))}
-            </select>
-          </div>
+       
 
           <div className="filter-group">
             <label>Date début</label>
