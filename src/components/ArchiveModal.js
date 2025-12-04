@@ -3,41 +3,11 @@ import './ArchiveModal.css';
 
 const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
   const [pdfUrl, setPdfUrl] = useState('');
-  const [isUrlValid, setIsUrlValid] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
+  const [uploadedFileName, setUploadedFileName] = useState('');
   const fileInputRef = useRef(null);
-
-  const validateUrl = (url) => {
-    if (!url) return false;
-    
-    try {
-      new URL(url);
-      // Vérifier si c'est un PDF
-      const lowerUrl = url.toLowerCase();
-      const isPdf = lowerUrl.endsWith('.pdf') || 
-                   lowerUrl.includes('.pdf?') || 
-                   lowerUrl.includes('/pdf') ||
-                   lowerUrl.includes('application/pdf');
-      return isPdf;
-    } catch {
-      return false;
-    }
-  };
-
-  const handlePdfUrlChange = (e) => {
-    const url = e.target.value;
-    setPdfUrl(url);
-    setIsUrlValid(validateUrl(url));
-    setErrorMessage('');
-  };
-
-  const handleTestPdfLink = () => {
-    if (pdfUrl && isUrlValid) {
-      window.open(pdfUrl, '_blank');
-    }
-  };
 
   const handleFileSelect = () => {
     if (isUploading) return;
@@ -62,6 +32,7 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
     setIsUploading(true);
     setUploadProgress(0);
     setErrorMessage('');
+    setUploadedFileName(file.name);
 
     const formData = new FormData();
     formData.append('pdfFile', file);
@@ -73,10 +44,10 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
       }
 
       // URL absolue pour l'API
-      const apiUrl = process.env.REACT_APP_API_URL || '';
+      const apiUrl = process.env.REACT_APP_API_URL || window.location.origin;
       const uploadUrl = `${apiUrl}/api/archive/upload-pdf`;
       
-      console.log('📤 Upload vers:', uploadUrl);
+      console.log('📤 Upload vers:', uploadUrl, 'Fichier:', file.name, 'Taille:', file.size);
 
       // Simuler la progression
       const progressInterval = setInterval(() => {
@@ -91,13 +62,12 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
 
       // Configuration de la requête
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 secondes timeout
+      const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes timeout
 
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
-          // NE PAS mettre Content-Type pour FormData, le navigateur le fera automatiquement
         },
         body: formData,
         signal: controller.signal
@@ -107,25 +77,14 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      // Vérifier le type de contenu
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        // Essayer de lire le texte de la réponse pour déboguer
-        const text = await response.text();
-        console.error('❌ Réponse non-JSON reçue:', text.substring(0, 500));
-        
-        if (text.includes('<!doctype') || text.includes('<html')) {
-          throw new Error('Le serveur a retourné une page HTML. Vérifiez l\'URL de l\'API.');
-        }
-        
-        throw new Error(`Réponse invalide du serveur (${response.status}): ${text.substring(0, 100)}`);
-      }
-
+      // Vérifier le statut de la réponse
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || errorData.message || `Erreur ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Erreur serveur:', response.status, errorText);
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
 
+      // Parser la réponse JSON
       const data = await response.json();
       
       if (!data.success) {
@@ -134,14 +93,13 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
 
       // Mettre à jour l'URL avec le PDF uploadé
       setPdfUrl(data.pdfUrl);
-      setIsUrlValid(true);
       
       setTimeout(() => {
         setIsUploading(false);
         setUploadProgress(0);
       }, 500);
 
-      console.log('✅ Upload réussi:', data.pdfUrl);
+      console.log('✅ Upload réussi:', data);
 
     } catch (error) {
       console.error('❌ Erreur upload:', error);
@@ -149,11 +107,9 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
       let message = error.message;
       
       if (error.name === 'AbortError') {
-        message = 'Upload annulé (timeout)';
-      } else if (error.message.includes('NetworkError')) {
-        message = 'Erreur réseau. Vérifiez votre connexion.';
-      } else if (error.message.includes('HTML')) {
-        message = 'Configuration serveur incorrecte. Contactez l\'administrateur.';
+        message = 'Upload annulé (délai dépassé)';
+      } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+        message = 'Erreur réseau. Vérifiez votre connexion et réessayez.';
       }
       
       setErrorMessage(`❌ ${message}`);
@@ -169,28 +125,32 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
 
   const handleSubmit = () => {
     if (!pdfUrl.trim()) {
-      setErrorMessage('❌ Veuillez ajouter le PDF de l\'entretien de départ');
-      return;
-    }
-
-    if (!isUrlValid) {
-      setErrorMessage('❌ Veuillez entrer une URL valide vers un fichier PDF');
+      setErrorMessage('❌ Veuillez d\'abord télécharger le PDF d\'entretien');
       return;
     }
 
     setErrorMessage('');
-    // Envoyer seulement le lien PDF
+    // Envoyer le lien PDF au parent
     onArchive(pdfUrl);
-    setPdfUrl('');
   };
 
   const handleClose = () => {
+    // Réinitialiser tout
     setPdfUrl('');
-    setIsUrlValid(true);
     setIsUploading(false);
     setUploadProgress(0);
     setErrorMessage('');
+    setUploadedFileName('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
     onClose();
+  };
+
+  const handleTestPdfLink = () => {
+    if (pdfUrl) {
+      window.open(pdfUrl, '_blank');
+    }
   };
 
   if (!isOpen || !employee) return null;
@@ -212,7 +172,8 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
             />
             <div className="employee-details">
               <h3>{employee.prenom} {employee.nom}</h3>
-              <p>{employee.poste} - {employee.matricule}</p>
+              <p><strong>Matricule:</strong> {employee.matricule}</p>
+              <p><strong>Poste:</strong> {employee.poste}</p>
               <p className="departure-date">
                 Date de départ: {new Date().toLocaleDateString('fr-FR')}
               </p>
@@ -222,15 +183,26 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
           {/* Message d'erreur */}
           {errorMessage && (
             <div className="error-alert">
-              <p>{errorMessage}</p>
+              <div className="error-content">
+                <span className="error-icon">⚠️</span>
+                <p>{errorMessage}</p>
+              </div>
               <button className="close-error-btn" onClick={() => setErrorMessage('')}>×</button>
             </div>
           )}
 
           {/* Section Upload PDF */}
           <div className="pdf-upload-section">
-            <h4>📤 Télécharger le PDF d'entretien *</h4>
-            <div className={`upload-area ${isUploading ? 'uploading' : ''}`} onClick={handleFileSelect}>
+            <h4>
+              <span className="upload-icon-title">📤</span>
+              Télécharger le PDF d'entretien de départ
+              <span className="required-star">*</span>
+            </h4>
+            
+            <div 
+              className={`upload-area ${isUploading ? 'uploading' : ''} ${pdfUrl ? 'success' : ''}`}
+              onClick={handleFileSelect}
+            >
               {isUploading ? (
                 <div className="upload-progress">
                   <div className="progress-bar">
@@ -241,14 +213,42 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
                   </div>
                   <p className="progress-text">
                     <span className="loading-spinner"></span>
-                    Upload en cours... {uploadProgress}%
+                    Envoi en cours... {uploadProgress}%
                   </p>
+                  {uploadedFileName && (
+                    <p className="file-name">Fichier: {uploadedFileName}</p>
+                  )}
+                </div>
+              ) : pdfUrl ? (
+                <div className="upload-success">
+                  <div className="success-icon">✅</div>
+                  <p className="success-text">PDF téléchargé avec succès !</p>
+                  {uploadedFileName && (
+                    <p className="file-name">{uploadedFileName}</p>
+                  )}
+                  <button 
+                    className="view-pdf-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleTestPdfLink();
+                    }}
+                  >
+                    📄 Voir le PDF
+                  </button>
                 </div>
               ) : (
                 <>
                   <div className="upload-icon">📄</div>
                   <p className="upload-text">Cliquez pour sélectionner un fichier PDF</p>
-                  <p className="upload-hint">Format: PDF • Max: 50MB</p>
+                  <p className="upload-hint">Format: PDF • Maximum: 50MB</p>
+                  <div className="upload-instructions">
+                    <p>📝 <strong>Instructions:</strong></p>
+                    <ul>
+                      <li>Sélectionnez le rapport d'entretien de départ</li>
+                      <li>Assurez-vous que c'est un fichier PDF</li>
+                      <li>Le fichier sera stocké sur notre serveur</li>
+                    </ul>
+                  </div>
                 </>
               )}
               <input
@@ -260,72 +260,22 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
                 disabled={isUploading}
               />
             </div>
-          </div>
-
-          {/* Séparateur OU */}
-          <div className="or-separator">
-            <span>OU</span>
-          </div>
-
-          {/* Section Lien PDF */}
-          <div className="pdf-url-section">
-            <h4>🔗 Entrer un lien existant</h4>
-            <div className="url-input-group">
-              <input
-                type="url"
-                value={pdfUrl}
-                onChange={handlePdfUrlChange}
-                placeholder="https://exemple.com/entretien-depart.pdf"
-                className={`url-input ${!isUrlValid && pdfUrl ? 'error' : ''}`}
-                disabled={isUploading}
-              />
-              {pdfUrl && isUrlValid && (
-                <button 
-                  type="button"
-                  className="test-link-btn"
-                  onClick={handleTestPdfLink}
-                  disabled={isUploading}
-                >
-                  🔗 Tester
-                </button>
-              )}
+            
+            <div className="upload-note">
+              <p>💡 <strong>Note:</strong> Ce document sera joint au dossier de l'employé dans les archives.</p>
             </div>
-            {!isUrlValid && pdfUrl && (
-              <p className="error-message">
-                ❌ Veuillez entrer une URL valide vers un fichier PDF
-              </p>
-            )}
           </div>
-
-          {/* Aperçu du lien PDF */}
-          {pdfUrl && isUrlValid && (
-            <div className="pdf-preview">
-              <h4>✅ PDF Prêt</h4>
-              <div className="pdf-link-preview">
-                <a 
-                  href={pdfUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="pdf-preview-link"
-                >
-                  <span className="pdf-icon">📄</span>
-                  <span className="pdf-url-text">
-                    {pdfUrl.length > 50 ? pdfUrl.substring(0, 50) + '...' : pdfUrl}
-                  </span>
-                </a>
-                <button 
-                  className="preview-test-btn"
-                  onClick={handleTestPdfLink}
-                  disabled={isUploading}
-                >
-                  Ouvrir
-                </button>
-              </div>
-            </div>
-          )}
 
           <div className="warning-message">
-            <p><strong>⚠️ Attention:</strong> Après archivage, l'employé sera déplacé vers la liste des archives. Cette action est irréversible.</p>
+            <div className="warning-icon">⚠️</div>
+            <div className="warning-content">
+              <p><strong>Attention:</strong> Après archivage :</p>
+              <ul>
+                <li>L'employé sera déplacé vers la liste des archives</li>
+                <li>Il ne sera plus visible dans les employés actifs</li>
+                <li>Cette action est <strong>irréversible</strong></li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -333,15 +283,18 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
           <button 
             className="archive-confirm-btn"
             onClick={handleSubmit}
-            disabled={!pdfUrl.trim() || !isUrlValid || isUploading}
+            disabled={!pdfUrl || isUploading}
           >
             {isUploading ? (
               <>
                 <span className="loading-spinner-small"></span>
-                Upload en cours...
+                Traitement en cours...
               </>
             ) : (
-              '💾 Archiver l\'Employé'
+              <>
+                <span className="confirm-icon">💾</span>
+                Archiver l'Employé
+              </>
             )}
           </button>
           <button 
@@ -349,7 +302,8 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
             onClick={handleClose}
             disabled={isUploading}
           >
-            ❌ Annuler
+            <span className="cancel-icon">❌</span>
+            Annuler
           </button>
         </div>
       </div>
