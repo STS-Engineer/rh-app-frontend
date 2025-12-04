@@ -15,6 +15,8 @@ const DemandesRH = () => {
   const [filtersApplied, setFiltersApplied] = useState(false);
   const [timeoutId, setTimeoutId] = useState(null);
   const [lastResponse, setLastResponse] = useState(null);
+  const [selectedDemande, setSelectedDemande] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
 
@@ -39,6 +41,36 @@ const DemandesRH = () => {
     return labels[type] || type;
   };
 
+  const getResponsableStatus = (demande, responsableNum) => {
+    if (responsableNum === 1) {
+      if (demande.approuve_responsable1 === true) return 'approved';
+      if (demande.approuve_responsable1 === false) return 'refused';
+      return 'pending';
+    } else {
+      if (demande.approuve_responsable2 === true) return 'approved';
+      if (demande.approuve_responsable2 === false) return 'refused';
+      return 'pending';
+    }
+  };
+
+  const getResponsableStatusLabel = (status) => {
+    const labels = {
+      'approved': 'Approuvé',
+      'refused': 'Refusé',
+      'pending': 'En attente'
+    };
+    return labels[status] || status;
+  };
+
+  const getResponsableStatusClass = (status) => {
+    const classes = {
+      'approved': 'status-approved',
+      'refused': 'status-refused',
+      'pending': 'status-pending'
+    };
+    return classes[status] || '';
+  };
+
   const fetchDemandes = useCallback(async (force = false) => {
     try {
       setLoading(true);
@@ -54,7 +86,6 @@ const DemandesRH = () => {
 
       const queryParams = new URLSearchParams();
       
-      // Ajouter les filtres seulement s'ils ont une valeur
       if (filters.statut) {
         queryParams.append('statut', filters.statut);
       }
@@ -71,19 +102,12 @@ const DemandesRH = () => {
         queryParams.append('date_fin', filters.date_fin);
       }
 
-      // Ajouter un timestamp pour éviter le cache
       if (force) {
         queryParams.append('_t', Date.now());
       }
 
       const url = `${API_BASE_URL}/api/demandes?${queryParams}`;
       console.log('🔗 URL de la requête:', url);
-      console.log('🔍 Filtres actifs:', {
-        statut: filters.statut || 'tous',
-        type_demande: filters.type_demande || 'tous',
-        date_debut: filters.date_debut || 'toutes',
-        date_fin: filters.date_fin || 'toutes'
-      });
 
       const response = await fetch(url, {
         headers: {
@@ -91,12 +115,6 @@ const DemandesRH = () => {
           'Content-Type': 'application/json'
         },
         cache: 'no-cache'
-      });
-
-      console.log('📡 Réponse HTTP:', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
       });
 
       if (!response.ok) {
@@ -108,9 +126,7 @@ const DemandesRH = () => {
       const data = await response.json();
       console.log('📊 Données reçues:', {
         success: data.success,
-        count: data.demandes?.length || 0,
-        total: data.pagination?.total || 0,
-        hasData: !!data.demandes && Array.isArray(data.demandes)
+        count: data.demandes?.length || 0
       });
       
       setLastResponse(data);
@@ -124,11 +140,7 @@ const DemandesRH = () => {
       }
       
     } catch (error) {
-      console.error('❌ Erreur récupération demandes:', {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      });
+      console.error('❌ Erreur récupération demandes:', error);
       setError(`Erreur de connexion: ${error.message}`);
       setDemandes([]);
     } finally {
@@ -136,13 +148,11 @@ const DemandesRH = () => {
     }
   }, [filters, API_BASE_URL]);
 
-  // Effet initial
   useEffect(() => {
     console.log('🚀 Composant monté - Chargement initial');
     fetchDemandes(true);
   }, []);
 
-  // Effet pour les changements de filtre
   useEffect(() => {
     console.log('🔄 Filtres modifiés:', filters);
     
@@ -150,7 +160,6 @@ const DemandesRH = () => {
       clearTimeout(timeoutId);
     }
     
-    // Vérifier si des filtres sont actifs
     const hasActiveFilters = filters.statut || filters.type_demande || filters.date_debut || filters.date_fin;
     setFiltersApplied(hasActiveFilters);
     
@@ -169,7 +178,7 @@ const DemandesRH = () => {
   }, [filters]);
 
   const handleFilterChange = (key, value) => {
-    console.log(`📝 Modification filtre ${key}: "${value}" (ancienne valeur: "${filters[key]}")`);
+    console.log(`📝 Modification filtre ${key}: "${value}"`);
     setFilters(prev => ({
       ...prev,
       [key]: value
@@ -185,7 +194,6 @@ const DemandesRH = () => {
       date_fin: ''
     });
     setFiltersApplied(false);
-    // Recharger sans filtres
     setTimeout(() => fetchDemandes(true), 100);
   };
 
@@ -208,25 +216,33 @@ const DemandesRH = () => {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     try {
-      return new Date(dateString).toLocaleDateString('fr-FR');
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString;
+      return date.toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
     } catch (e) {
       return dateString;
     }
   };
 
-  const getResponsableName = (responsablePrenom, responsableNom, email) => {
-    if (responsablePrenom && responsableNom) {
-      return `${responsablePrenom} ${responsableNom}`;
+  const formatDateTime = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString;
+      return date.toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return dateString;
     }
-    if (email) {
-      const username = email.split('@')[0];
-      const nameParts = username.split('.');
-      const formattedName = nameParts.map(part => 
-        part.charAt(0).toUpperCase() + part.slice(1)
-      ).join(' ');
-      return formattedName;
-    }
-    return 'Non assigné';
   };
 
   const getTypeIcon = (type) => {
@@ -238,13 +254,74 @@ const DemandesRH = () => {
     return icons[type] || '📄';
   };
 
+  const handleViewDetails = (demande) => {
+    setSelectedDemande(demande);
+    setShowModal(true);
+  };
+
+  const handleApprove = async (demandeId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/demandes/${demandeId}/statut`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          statut: 'approuve'
+        })
+      });
+
+      if (response.ok) {
+        alert('Demande approuvée avec succès!');
+        fetchDemandes(true);
+      } else {
+        throw new Error('Échec de l\'approbation');
+      }
+    } catch (error) {
+      console.error('Erreur approbation:', error);
+      alert('Erreur lors de l\'approbation');
+    }
+  };
+
+  const handleRefuse = async (demandeId) => {
+    const commentaire = prompt('Veuillez saisir un commentaire pour le refus:');
+    if (commentaire === null) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/demandes/${demandeId}/statut`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          statut: 'refuse',
+          commentaire_refus: commentaire
+        })
+      });
+
+      if (response.ok) {
+        alert('Demande refusée avec succès!');
+        fetchDemandes(true);
+      } else {
+        throw new Error('Échec du refus');
+      }
+    } catch (error) {
+      console.error('Erreur refus:', error);
+      alert('Erreur lors du refus');
+    }
+  };
+
   const handleExportExcel = () => {
     if (!demandes || demandes.length === 0) {
       alert('Aucune demande à exporter');
       return;
     }
 
-    const headers = ['ID', 'Titre', 'Type', 'Statut', 'Employé', 'Matricule', 'Date création'];
+    const headers = ['ID', 'Titre', 'Type', 'Statut', 'Employé', 'Matricule', 'Date création', 'Responsable 1', 'Responsable 2'];
     const rows = demandes.map(d => [
       d.id,
       d.titre,
@@ -252,7 +329,9 @@ const DemandesRH = () => {
       getStatutLabel(d.statut),
       `${d.employe_prenom} ${d.employe_nom}`,
       d.employe_matricule || '',
-      formatDate(d.created_at)
+      formatDate(d.created_at),
+      d.mail_responsable1 || 'Non assigné',
+      d.mail_responsable2 || 'Non requis'
     ]);
 
     const csvContent = [headers, ...rows]
@@ -268,6 +347,161 @@ const DemandesRH = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+  };
+
+  const Modal = ({ demande, onClose }) => {
+    if (!demande) return null;
+
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content" onClick={e => e.stopPropagation()}>
+          <div className="modal-header">
+            <h2>📋 Détails de la demande</h2>
+            <button className="modal-close" onClick={onClose}>×</button>
+          </div>
+          
+          <div className="modal-body">
+            <div className="modal-section">
+              <h3>Informations générales</h3>
+              <div className="info-grid">
+                <div className="info-item">
+                  <strong>Titre:</strong> {demande.titre}
+                </div>
+                <div className="info-item">
+                  <strong>Type:</strong> {getTypeDemandeLabel(demande.type_demande)}
+                </div>
+                <div className="info-item">
+                  <strong>Statut:</strong> {getStatutBadge(demande.statut)}
+                </div>
+                <div className="info-item">
+                  <strong>Créé le:</strong> {formatDateTime(demande.created_at)}
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-section">
+              <h3>Informations employé</h3>
+              <div className="employee-details">
+                <div className="employee-avatar-large">
+                  {demande.employe_photo ? (
+                    <img src={demande.employe_photo} alt={`${demande.employe_prenom} ${demande.employe_nom}`} />
+                  ) : (
+                    <div className="avatar-default-large">
+                      {demande.employe_prenom?.[0] || ''}{demande.employe_nom?.[0] || ''}
+                    </div>
+                  )}
+                </div>
+                <div className="employee-info">
+                  <h4>{demande.employe_prenom} {demande.employe_nom}</h4>
+                  <p><strong>Poste:</strong> {demande.employe_poste || 'N/A'}</p>
+                  <p><strong>Matricule:</strong> {demande.employe_matricule || 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-section">
+              <h3>Processus d'approbation</h3>
+              <div className="approval-process">
+                <div className="approval-step">
+                  <div className="step-header">
+                    <span className="step-title">Responsable 1</span>
+                    <span className={`step-status ${getResponsableStatusClass(getResponsableStatus(demande, 1))}`}>
+                      {getResponsableStatusLabel(getResponsableStatus(demande, 1))}
+                    </span>
+                  </div>
+                  <div className="step-details">
+                    <p><strong>Nom:</strong> {demande.responsable1_prenom && demande.responsable1_nom 
+                      ? `${demande.responsable1_prenom} ${demande.responsable1_nom}` 
+                      : 'Non assigné'}</p>
+                    <p><strong>Email:</strong> {demande.mail_responsable1 || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div className="approval-step">
+                  <div className="step-header">
+                    <span className="step-title">Responsable 2</span>
+                    {demande.mail_responsable2 && (
+                      <span className={`step-status ${getResponsableStatusClass(getResponsableStatus(demande, 2))}`}>
+                        {getResponsableStatusLabel(getResponsableStatus(demande, 2))}
+                      </span>
+                    )}
+                  </div>
+                  <div className="step-details">
+                    <p><strong>Nom:</strong> {demande.responsable2_prenom && demande.responsable2_nom 
+                      ? `${demande.responsable2_prenom} ${demande.responsable2_nom}` 
+                      : demande.mail_responsable2 ? 'Assigné' : 'Non requis'}</p>
+                    <p><strong>Email:</strong> {demande.mail_responsable2 || 'Non applicable'}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-section">
+              <h3>Détails de la demande</h3>
+              <div className="details-grid">
+                {demande.date_depart && (
+                  <div className="detail-row">
+                    <span className="detail-label">📅 Date début:</span>
+                    <span className="detail-value">{formatDate(demande.date_depart)}</span>
+                  </div>
+                )}
+                {demande.date_retour && (
+                  <div className="detail-row">
+                    <span className="detail-label">📅 Date retour:</span>
+                    <span className="detail-value">{formatDate(demande.date_retour)}</span>
+                  </div>
+                )}
+                {demande.heure_depart && (
+                  <div className="detail-row">
+                    <span className="detail-label">⏰ Heure départ:</span>
+                    <span className="detail-value">{demande.heure_depart}</span>
+                  </div>
+                )}
+                {demande.heure_retour && (
+                  <div className="detail-row">
+                    <span className="detail-label">⏰ Heure retour:</span>
+                    <span className="detail-value">{demande.heure_retour}</span>
+                  </div>
+                )}
+                {demande.frais_deplacement && (
+                  <div className="detail-row">
+                    <span className="detail-label">💰 Frais déplacement:</span>
+                    <span className="detail-value">{demande.frais_deplacement} DH</span>
+                  </div>
+                )}
+                {demande.type_conge && (
+                  <div className="detail-row">
+                    <span className="detail-label">🎯 Type de congé:</span>
+                    <span className="detail-value">{demande.type_conge}</span>
+                  </div>
+                )}
+                {demande.demi_journee && (
+                  <div className="detail-row">
+                    <span className="detail-label">🕐 Demi-journée:</span>
+                    <span className="detail-value">Oui</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {demande.commentaire_refus && (
+              <div className="modal-section">
+                <h3>💬 Commentaire de refus</h3>
+                <div className="commentaire-box">
+                  <p>{demande.commentaire_refus}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="modal-footer">
+            <button className="btn-close-modal" onClick={onClose}>
+              Fermer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -300,7 +534,7 @@ const DemandesRH = () => {
           <h3>🔍 Filtres de recherche</h3>
           <div className="filters-actions">
             <button className="btn-export" onClick={handleExportExcel} disabled={demandes.length === 0}>
-              📤 Exporter
+              📤 Exporter Excel
             </button>
             <button className="btn-refresh" onClick={retryFetch}>
               🔄 Actualiser
@@ -451,8 +685,8 @@ const DemandesRH = () => {
             </div>
             
             <div className="demandes-grid">
-              {demandes.map(demande => (
-                <div key={demande.id} className="demande-card">
+              {demandes.map((demande, index) => (
+                <div key={demande.id} className="demande-card" style={{ animationDelay: `${index * 0.1}s` }}>
                   <div className="card-header">
                     <div className="demande-type">
                       <span className="type-icon">{getTypeIcon(demande.type_demande)}</span>
@@ -469,46 +703,124 @@ const DemandesRH = () => {
                     <div className="employe-info">
                       <div className="avatar">
                         {demande.employe_photo ? (
-                          <img src={demande.employe_photo} alt="Employé" />
+                          <img 
+                            src={demande.employe_photo} 
+                            alt={`${demande.employe_prenom} ${demande.employe_nom}`}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.parentElement.innerHTML = 
+                                `<div class="avatar-default">${demande.employe_prenom?.[0] || ''}${demande.employe_nom?.[0] || ''}</div>`;
+                            }}
+                          />
                         ) : (
                           <div className="avatar-default">
-                            {demande.employe_prenom?.[0]}{demande.employe_nom?.[0]}
+                            {demande.employe_prenom?.[0] || ''}{demande.employe_nom?.[0] || ''}
                           </div>
                         )}
                       </div>
                       <div className="employe-details">
                         <h4>{demande.employe_prenom} {demande.employe_nom}</h4>
-                        <p>{demande.employe_poste} • {demande.employe_matricule}</p>
+                        <p>{demande.employe_poste} • Matricule: {demande.employe_matricule || 'N/A'}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="approval-status">
+                      <strong>Processus d'approbation :</strong>
+                    </div>
+                    
+                    <div className="responsables-section">
+                      <div className="responsable-card">
+                        <div className="responsable-header">
+                          <div className="responsable-name">
+                            Responsable 1: {demande.responsable1_nom && demande.responsable1_prenom 
+                              ? `${demande.responsable1_prenom} ${demande.responsable1_nom}`
+                              : 'Non assigné'}
+                          </div>
+                          <div className={`responsable-status ${getResponsableStatusClass(getResponsableStatus(demande, 1))}`}>
+                            {getResponsableStatusLabel(getResponsableStatus(demande, 1))}
+                          </div>
+                        </div>
+                        <div className="responsable-email">
+                          {demande.mail_responsable1 || 'Email non disponible'}
+                        </div>
+                      </div>
+                      
+                      <div className="responsable-card">
+                        <div className="responsable-header">
+                          <div className="responsable-name">
+                            Responsable 2: {demande.responsable2_nom && demande.responsable2_prenom 
+                              ? `${demande.responsable2_prenom} ${demande.responsable2_nom}`
+                              : demande.mail_responsable2 ? 'Assigné' : 'Non requis'}
+                          </div>
+                          {demande.mail_responsable2 && (
+                            <div className={`responsable-status ${getResponsableStatusClass(getResponsableStatus(demande, 2))}`}>
+                              {getResponsableStatusLabel(getResponsableStatus(demande, 2))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="responsable-email">
+                          {demande.mail_responsable2 || 'Non applicable'}
+                        </div>
                       </div>
                     </div>
                     
                     <div className="demande-details">
                       {demande.date_depart && (
                         <div className="detail">
-                          <span className="label">📅 Date:</span>
+                          <span className="label">📅 Date début:</span>
                           <span className="value">{formatDate(demande.date_depart)}</span>
                         </div>
                       )}
                       
                       {demande.date_retour && (
                         <div className="detail">
-                          <span className="label">📅 Retour:</span>
+                          <span className="label">📅 Date retour:</span>
                           <span className="value">{formatDate(demande.date_retour)}</span>
                         </div>
                       )}
                       
+                      {demande.heure_depart && (
+                        <div className="detail">
+                          <span className="label">⏰ Heure départ:</span>
+                          <span className="value">{demande.heure_depart}</span>
+                        </div>
+                      )}
+                      
+                      {demande.frais_deplacement && (
+                        <div className="detail">
+                          <span className="label">💰 Frais déplacement:</span>
+                          <span className="value">{demande.frais_deplacement} DH</span>
+                        </div>
+                      )}
+                      
                       <div className="detail">
-                        <span className="label">🔄 Mise à jour:</span>
-                        <span className="value">{formatDate(demande.updated_at)}</span>
+                        <span className="label">📝 Créé le:</span>
+                        <span className="value">{formatDate(demande.created_at)}</span>
                       </div>
                     </div>
                     
                     {demande.commentaire_refus && (
                       <div className="commentaire">
-                        <span className="comment-label">💬 Commentaire:</span>
+                        <div className="comment-label">💬 Commentaire de refus:</div>
                         <p>{demande.commentaire_refus}</p>
                       </div>
                     )}
+                    
+                    <div className="card-actions">
+                      <button className="btn-action btn-view" onClick={() => handleViewDetails(demande)}>
+                        👁️ Voir détails
+                      </button>
+                      {demande.statut === 'en_attente' && (
+                        <>
+                          <button className="btn-action btn-approve" onClick={() => handleApprove(demande.id)}>
+                            ✅ Approuver
+                          </button>
+                          <button className="btn-action btn-refuse" onClick={() => handleRefuse(demande.id)}>
+                            ❌ Refuser
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -516,6 +828,9 @@ const DemandesRH = () => {
           </>
         )}
       </div>
+
+      {/* Modal de détails */}
+      {showModal && <Modal demande={selectedDemande} onClose={() => setShowModal(false)} />}
     </div>
   );
 };
