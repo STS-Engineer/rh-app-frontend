@@ -187,22 +187,7 @@ const Archives = () => {
                 <p className="departure-date">
                   📅 Départ: {new Date(employee.date_depart).toLocaleDateString('fr-FR')}
                 </p>
-                <div className="archive-actions">
-                  {employee.entretien_depart ? (
-                    <div className="entretien-section">
-                      <button 
-                        className="view-entretien-btn"
-                        onClick={(e) => handleViewEntretien(employee, e)}
-                        title="Ouvrir le PDF de l'entretien"
-                      >
-                        📄 Voir l'entretien
-                      </button>
-                     
-                    </div>
-                  ) : (
-                    <span className="no-entretien">Aucun entretien</span>
-                  )}
-                </div>
+               
               </div>
             </div>
           ))}
