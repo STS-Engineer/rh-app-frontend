@@ -286,7 +286,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               <div className="detail-section">
                 <h4>💼 Informations Professionnelles</h4>
                 <DetailRow label="Date d'embauche" value={formatDateForDisplay(formData.date_debut)} />
-                <DetailRow label="Salaire brut" value={`${formData.salaire_brute} €`} />
+                <DetailRow label="Salaire brut" value={`${formData.salaire_brute} DT`} />
                 <DetailRow label="Date de départ" value={formatDateForDisplay(formData.date_depart)} />
               </div>
 
