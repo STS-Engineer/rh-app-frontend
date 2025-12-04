@@ -157,7 +157,7 @@ const Statistics = () => {
             <div className="stat-icon">💰</div>
             <div className="stat-info">
               <h3>Masse Salariale</h3>
-              <p className="stat-number">{stats.totalSalary.toLocaleString()} €</p>
+              <p className="stat-number">{stats.totalSalary.toLocaleString()} DT</p>
               <p className="stat-detail">Mensuelle brute</p>
             </div>
           </div>
@@ -166,7 +166,7 @@ const Statistics = () => {
             <div className="stat-icon">📈</div>
             <div className="stat-info">
               <h3>Salaire Moyen</h3>
-              <p className="stat-number">{stats.averageSalary.toFixed(0)} €</p>
+              <p className="stat-number">{stats.averageSalary.toFixed(0)} DT</p>
               <p className="stat-detail">Par employé</p>
             </div>
           </div>
@@ -230,19 +230,19 @@ const Statistics = () => {
             <div className="salary-stats">
               <div className="salary-item">
                 <span className="salary-label">Salaire Minimum</span>
-                <span className="salary-value">{stats.salaryStats.min.toLocaleString()} €</span>
+                <span className="salary-value">{stats.salaryStats.min.toLocaleString()} DT</span>
               </div>
               <div className="salary-item">
                 <span className="salary-label">Salaire Maximum</span>
-                <span className="salary-value">{stats.salaryStats.max.toLocaleString()} €</span>
+                <span className="salary-value">{stats.salaryStats.max.toLocaleString()} DT</span>
               </div>
               <div className="salary-item">
                 <span className="salary-label">Salaire Médian</span>
-                <span className="salary-value">{stats.salaryStats.median.toLocaleString()} €</span>
+                <span className="salary-value">{stats.salaryStats.median.toLocaleString()} DT</span>
               </div>
               <div className="salary-item">
                 <span className="salary-label">Salaire Moyen</span>
-                <span className="salary-value">{stats.averageSalary.toFixed(0)} €</span>
+                <span className="salary-value">{stats.averageSalary.toFixed(0)} DT</span>
               </div>
             </div>
           </div>
