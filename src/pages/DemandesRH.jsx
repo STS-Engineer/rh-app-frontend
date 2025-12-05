@@ -732,11 +732,7 @@ const DemandesRH = () => {
                     <div className="responsables-section">
                       <div className="responsable-card">
                         <div className="responsable-header">
-                          <div className="responsable-name">
-                            Responsable 1: {demande.responsable1_nom && demande.responsable1_prenom 
-                              ? `${demande.responsable1_prenom} ${demande.responsable1_nom}`
-                              : 'Non assigné'}
-                          </div>
+                          
                           <div className={`responsable-status ${getResponsableStatusClass(getResponsableStatus(demande, 1))}`}>
                             {getResponsableStatusLabel(getResponsableStatus(demande, 1))}
                           </div>
@@ -748,11 +744,7 @@ const DemandesRH = () => {
                       
                       <div className="responsable-card">
                         <div className="responsable-header">
-                          <div className="responsable-name">
-                            Responsable 2: {demande.responsable2_nom && demande.responsable2_prenom 
-                              ? `${demande.responsable2_prenom} ${demande.responsable2_nom}`
-                              : demande.mail_responsable2 ? 'Assigné' : 'Non requis'}
-                          </div>
+                         
                           {demande.mail_responsable2 && (
                             <div className={`responsable-status ${getResponsableStatusClass(getResponsableStatus(demande, 2))}`}>
                               {getResponsableStatusLabel(getResponsableStatus(demande, 2))}
