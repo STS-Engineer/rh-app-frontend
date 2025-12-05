@@ -121,6 +121,8 @@ const Dashboard = () => {
     if (stats.cddCount > 0) types.push(`${stats.cddCount} CDD`);
     if (stats.stageCount > 0) types.push(`${stats.stageCount} Stage`);
     if (stats.freelanceCount > 0) types.push(`${stats.freelanceCount} Freelance`);
+    if (stats.civpCount > 0) types.push(`${stats.civpCount} CIVP`);
+    
     
     return types.length > 0 ? types.join(' • ') : 'Aucun employé';
   };
