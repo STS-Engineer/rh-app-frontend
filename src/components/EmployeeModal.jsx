@@ -442,8 +442,30 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 <h4>💼 Informations Professionnelles</h4>
                 <div className="form-grid">
                   <FormInput label="Poste" name="poste" value={formData.poste} onChange={handleInputChange} required />
-                  <FormInput label="Site/Département" name="site_dep" value={formData.site_dep} onChange={handleInputChange} required />
-                  <FormInput label="Type de contrat" name="type_contrat" value={formData.type_contrat} onChange={handleInputChange} required />
+                  <FormSelect 
+                  label="Site/Département *" 
+                  name="site_dep" 
+                  value={formData.site_dep} 
+                  onChange={handleInputChange}
+                  options={[
+                    'Siège Central',
+                    'Site Nord', 
+                    'Site Sud',
+                    'Site Est',
+                    'Site Ouest',
+                    'Direction RH',
+                    'IT Department'
+                  ]}
+                  required 
+                  />
+                  <FormSelect 
+                  label="Type de Contrat *" 
+                  name="type_contrat" 
+                  value={formData.type_contrat} 
+                  onChange={handleInputChange}
+                  options={['CDI', 'CDD', 'Stage', 'CIVP']}
+                  required 
+                  />
                   <FormInput label="Date d'embauche" name="date_debut" type="date" value={formatDateForInput(formData.date_debut)} onChange={handleInputChange} required />
                   <FormInput label="Salaire brut" name="salaire_brute" type="number" step="0.01" value={formData.salaire_brute} onChange={handleInputChange} required />
                   <FormInput label="Date de départ" name="date_depart" type="date" value={formatDateForInput(formData.date_depart)} onChange={handleInputChange} placeholder="Optionnel" />
