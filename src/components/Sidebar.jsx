@@ -13,7 +13,7 @@ const Sidebar = () => {
     { path: '/fiche-de-paie', label: 'Fiche de Paie', icon: '💰' },// Nouvel item
     { path: '/archives', label: 'Archives', icon: '📁' },
     { path: '/statistics', label: 'Statistiques', icon: '📈' }, 
-    { path: '/settings', label: 'Paramètres', icon: '⚙️' },
+    { path: '/settings', label: 'Demandes Visa', icon: '✈️' },
   ];
 
   const handleLogout = () => {
