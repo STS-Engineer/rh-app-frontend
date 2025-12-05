@@ -417,9 +417,7 @@ const DemandesRH = () => {
                     </span>
                   </div>
                   <div className="step-details">
-                    <p><strong>Nom:</strong> {demande.responsable1_prenom && demande.responsable1_nom 
-                      ? `${demande.responsable1_prenom} ${demande.responsable1_nom}` 
-                      : 'Non assigné'}</p>
+              
                     <p><strong>Email:</strong> {demande.mail_responsable1 || 'N/A'}</p>
                   </div>
                 </div>
@@ -434,9 +432,7 @@ const DemandesRH = () => {
                     )}
                   </div>
                   <div className="step-details">
-                    <p><strong>Nom:</strong> {demande.responsable2_prenom && demande.responsable2_nom 
-                      ? `${demande.responsable2_prenom} ${demande.responsable2_nom}` 
-                      : demande.mail_responsable2 ? 'Assigné' : 'Non requis'}</p>
+                 
                     <p><strong>Email:</strong> {demande.mail_responsable2 || 'Non applicable'}</p>
                   </div>
                 </div>
