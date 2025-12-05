@@ -61,8 +61,29 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     }
   };
 
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleSave = async () => {
     if (saving) return;
+    
+    // Validation des emails
+    if (!formData.adresse_mail || !isValidEmail(formData.adresse_mail)) {
+      alert('❌ Veuillez entrer une adresse email valide pour l\'employé');
+      return;
+    }
+    
+    if (formData.mail_responsable1 && !isValidEmail(formData.mail_responsable1)) {
+      alert('❌ Veuillez entrer une adresse email valide pour le responsable 1');
+      return;
+    }
+    
+    if (formData.mail_responsable2 && !isValidEmail(formData.mail_responsable2)) {
+      alert('❌ Veuillez entrer une adresse email valide pour le responsable 2');
+      return;
+    }
     
     setSaving(true);
     try {
@@ -95,7 +116,8 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       
     } catch (error) {
       console.error('❌ Erreur sauvegarde:', error);
-      alert('❌ Erreur sauvegarde: ' + (error.response?.data?.message || error.message));
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message;
+      alert('❌ Erreur sauvegarde: ' + errorMessage);
     } finally {
       setSaving(false);
     }
@@ -107,7 +129,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       
       console.log('📁 Archivage employé avec PDF URL:', pdfUrl);
       
-      // Utiliser l'API directement avec la bonne URL
       const token = localStorage.getItem('token');
       if (!token) {
         throw new Error('Non authentifié. Veuillez vous reconnecter.');
@@ -152,12 +173,10 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
 
       console.log('✅ Archivage réussi:', data);
       
-      // Mettre à jour l'état local
       if (data.employee) {
         setFormData(data.employee);
       }
       
-      // Appeler la fonction parent
       onArchive(data.employee || { id: employee.id, statut: 'archive' });
       
       setShowArchiveModal(false);
@@ -285,23 +304,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const documentUrl = getDocumentUrl(formData.dossier_rh);
   const hasDepartureDate = formData.date_depart && formData.date_depart.trim() !== '';
   const currentPhotoUrl = photoPreview || getPhotoUrl();
-  const FormSelect = ({ label, name, value, onChange, options = [], required }) => (
-    <div className="form-input-group">
-      <label>{label}:{required && ' *'}</label>
-      <select 
-        name={name}
-        value={value || ''}
-        onChange={onChange}
-        className="form-input"
-        required={required}
-      >
-        <option value="">-- Sélectionner --</option>
-        {options.map((opt, index) => (
-          <option key={index} value={opt}>{opt}</option>
-        ))}
-      </select>
-    </div>
-  );
 
   return (
     <div className="employee-modal-overlay" onClick={handleClose}>
@@ -328,6 +330,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               <p className="employee-poste">{formData.poste}</p>
               <p className="employee-departement">{formData.site_dep}</p>
               <p className="employee-contrat">{formData.type_contrat}</p>
+              <p className="employee-email">📧 {formData.adresse_mail || 'Email non renseigné'}</p>
               
               {/* Indicateur d'archivage */}
               {formData.statut === 'archive' && (
@@ -380,6 +383,13 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 <DetailRow label="Date d'embauche" value={formatDateForDisplay(formData.date_debut)} />
                 <DetailRow label="Salaire brut" value={`${formData.salaire_brute} DT`} />
                 <DetailRow label="Date de départ" value={formatDateForDisplay(formData.date_depart)} />
+              </div>
+
+              <div className="detail-section">
+                <h4>📧 Coordonnées Email</h4>
+                <DetailRow label="Email employé" value={formData.adresse_mail || 'Non renseigné'} />
+                <DetailRow label="Email Responsable 1" value={formData.mail_responsable1 || 'Non renseigné'} />
+                <DetailRow label="Email Responsable 2" value={formData.mail_responsable2 || 'Non renseigné'} />
               </div>
 
               <div className="detail-section">
@@ -460,32 +470,63 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 <div className="form-grid">
                   <FormInput label="Poste" name="poste" value={formData.poste} onChange={handleInputChange} required />
                   <FormSelect 
-                  label="Site/Département *" 
-                  name="site_dep" 
-                  value={formData.site_dep} 
-                  onChange={handleInputChange}
-                  options={[
-                    'Siège Central',
-                    'Site Nord', 
-                    'Site Sud',
-                    'Site Est',
-                    'Site Ouest',
-                    'Direction RH',
-                    'IT Department'
-                  ]}
-                  required 
+                    label="Site/Département" 
+                    name="site_dep" 
+                    value={formData.site_dep} 
+                    onChange={handleInputChange}
+                    options={[
+                      'Siège Central',
+                      'Site Nord', 
+                      'Site Sud',
+                      'Site Est',
+                      'Site Ouest',
+                      'Direction RH',
+                      'IT Department'
+                    ]}
+                    required 
                   />
                   <FormSelect 
-                  label="Type de Contrat *" 
-                  name="type_contrat" 
-                  value={formData.type_contrat} 
-                  onChange={handleInputChange}
-                  options={['CDI', 'CDD', 'Stage', 'CIVP']}
-                  required 
+                    label="Type de Contrat" 
+                    name="type_contrat" 
+                    value={formData.type_contrat} 
+                    onChange={handleInputChange}
+                    options={['CDI', 'CDD', 'Stage', 'CIVP']}
+                    required 
                   />
                   <FormInput label="Date d'embauche" name="date_debut" type="date" value={formatDateForInput(formData.date_debut)} onChange={handleInputChange} required />
                   <FormInput label="Salaire brut" name="salaire_brute" type="number" step="0.01" value={formData.salaire_brute} onChange={handleInputChange} required />
                   <FormInput label="Date de départ" name="date_depart" type="date" value={formatDateForInput(formData.date_depart)} onChange={handleInputChange} placeholder="Optionnel" />
+                </div>
+              </div>
+
+              <div className="form-section">
+                <h4>📧 Coordonnées Email</h4>
+                <div className="form-grid">
+                  <FormInput 
+                    label="Email employé *" 
+                    name="adresse_mail" 
+                    type="email"
+                    value={formData.adresse_mail} 
+                    onChange={handleInputChange} 
+                    required 
+                    placeholder="exemple@entreprise.com"
+                  />
+                  <FormInput 
+                    label="Email Responsable 1" 
+                    name="mail_responsable1" 
+                    type="email"
+                    value={formData.mail_responsable1} 
+                    onChange={handleInputChange} 
+                    placeholder="responsable1@entreprise.com"
+                  />
+                  <FormInput 
+                    label="Email Responsable 2" 
+                    name="mail_responsable2" 
+                    type="email"
+                    value={formData.mail_responsable2} 
+                    onChange={handleInputChange} 
+                    placeholder="responsable2@entreprise.com"
+                  />
                 </div>
               </div>
 
@@ -601,6 +642,24 @@ const FormInput = ({ label, name, type = 'text', value, onChange, placeholder, r
       placeholder={placeholder}
       required={required}
     />
+  </div>
+);
+
+const FormSelect = ({ label, name, value, onChange, options = [], required }) => (
+  <div className="form-input-group">
+    <label>{label}:{required && ' *'}</label>
+    <select 
+      name={name}
+      value={value || ''}
+      onChange={onChange}
+      className="form-input"
+      required={required}
+    >
+      <option value="">-- Sélectionner --</option>
+      {options.map((opt, index) => (
+        <option key={index} value={opt}>{opt}</option>
+      ))}
+    </select>
   </div>
 );
 
