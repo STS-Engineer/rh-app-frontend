@@ -17,7 +17,7 @@ const Dashboard = () => {
     stageCount: 0,
     freelanceCount: 0,
     archivesCount: 0,
-    cvpcount:0
+    civpcount:0
   });
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -61,6 +61,7 @@ const Dashboard = () => {
       // Calculs des salaires et types de contrat
       const totalSalary = employees.reduce((sum, emp) => sum + parseFloat(emp.salaire_brute || 0), 0);
       const cdiCount = employees.filter(emp => emp.type_contrat === 'CDI').length;
+      const cdiCount = employees.filter(emp => emp.type_contrat === 'CIVP').length;
       const cddCount = employees.filter(emp => emp.type_contrat === 'CDD').length;
       const stageCount = employees.filter(emp => emp.type_contrat === 'Stage').length;
       const freelanceCount = employees.filter(emp => emp.type_contrat === 'Freelance').length;
@@ -74,7 +75,8 @@ const Dashboard = () => {
         cddCount: cddCount,
         stageCount: stageCount,
         freelanceCount: freelanceCount,
-        archivesCount: archivesCount
+        archivesCount: archivesCount,
+        civpCount: civpCount,
       });
 
     } catch (error) {
@@ -338,7 +340,7 @@ const Dashboard = () => {
             </div>
              <div className="summary-item">
               <span className="summary-label">Contrats CIVP:</span>
-              <span className="summary-value">{stats.cvpCount}</span>
+              <span className="summary-value">{stats.civpCount}</span>
             </div>
             <div className="summary-item">
               <span className="summary-label">À renouveler:</span>
