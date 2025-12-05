@@ -15,7 +15,10 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     site_dep: 'Siège Central',
     type_contrat: 'CDI',
     date_debut: '',
-    salaire_brute: ''
+    salaire_brute: '',
+    adresse_mail: '',
+    mail_responsable1: '',
+    mail_responsable2: ''
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
@@ -53,16 +56,38 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     }));
   };
 
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (saving || uploading) return;
+
+    // Validation des emails
+    if (!formData.adresse_mail || !isValidEmail(formData.adresse_mail)) {
+      alert('❌ Veuillez entrer une adresse email valide pour l\'employé');
+      return;
+    }
+    
+    if (formData.mail_responsable1 && !isValidEmail(formData.mail_responsable1)) {
+      alert('❌ Veuillez entrer une adresse email valide pour le responsable 1');
+      return;
+    }
+    
+    if (formData.mail_responsable2 && !isValidEmail(formData.mail_responsable2)) {
+      alert('❌ Veuillez entrer une adresse email valide pour le responsable 2');
+      return;
+    }
 
     setSaving(true);
     try {
       console.log('💾 Création nouvel employé');
       
       // Validation des champs requis
-      if (!formData.matricule || !formData.nom || !formData.prenom || !formData.cin) {
+      if (!formData.matricule || !formData.nom || !formData.prenom || 
+          !formData.cin || !formData.adresse_mail) {
         alert('❌ Veuillez remplir tous les champs obligatoires');
         setSaving(false);
         return;
@@ -89,10 +114,12 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
         photoUrl = photoService.generateDefaultAvatar(formData.nom, formData.prenom);
       }
 
-      // 2. Créer l'employé avec l'URL de la photo
+      // 2. Créer l'employé avec l'URL de la photo et les emails
       const employeeData = {
         ...formData,
-        photo: photoUrl
+        photo: photoUrl,
+        mail_responsable1: formData.mail_responsable1 || null,
+        mail_responsable2: formData.mail_responsable2 || null
       };
 
       const response = await employeesAPI.create(employeeData);
@@ -106,7 +133,8 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       
     } catch (error) {
       console.error('❌ Erreur lors de la création:', error);
-      alert('❌ Erreur lors de la création: ' + (error.response?.data?.message || error.message));
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message;
+      alert('❌ Erreur lors de la création: ' + errorMessage);
     } finally {
       setSaving(false);
     }
@@ -124,7 +152,10 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       site_dep: 'Siège Central',
       type_contrat: 'CDI',
       date_debut: '',
-      salaire_brute: ''
+      salaire_brute: '',
+      adresse_mail: '',
+      mail_responsable1: '',
+      mail_responsable2: ''
     });
     setSelectedFile(null);
     setPhotoPreview('');
@@ -205,6 +236,15 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 onChange={handleInputChange} 
                 required 
               />
+              <FormInput 
+                label="Email employé *" 
+                name="adresse_mail" 
+                type="email"
+                value={formData.adresse_mail} 
+                onChange={handleInputChange} 
+                required 
+                placeholder="exemple@entreprise.com"
+              />
             </div>
 
             <div className="form-column">
@@ -236,6 +276,14 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 value={formData.poste} 
                 onChange={handleInputChange} 
                 required 
+              />
+              <FormInput 
+                label="Email Responsable 1" 
+                name="mail_responsable1" 
+                type="email"
+                value={formData.mail_responsable1} 
+                onChange={handleInputChange} 
+                placeholder="responsable1@entreprise.com"
               />
             </div>
 
@@ -282,6 +330,14 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 value={formData.salaire_brute} 
                 onChange={handleInputChange} 
                 required 
+              />
+              <FormInput 
+                label="Email Responsable 2" 
+                name="mail_responsable2" 
+                type="email"
+                value={formData.mail_responsable2} 
+                onChange={handleInputChange} 
+                placeholder="responsable2@entreprise.com"
               />
             </div>
           </div>
