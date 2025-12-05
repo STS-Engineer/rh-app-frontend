@@ -351,21 +351,9 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
                       <span className="requirement-icon">✓</span>
                       <span className="requirement-text">Format PDF uniquement</span>
                     </div>
-                    <div className="requirement">
-                      <span className="requirement-icon">✓</span>
-                      <span className="requirement-text">Maximum 50 Mo</span>
-                    </div>
-                    <div className="requirement">
-                      <span className="requirement-icon">✓</span>
-                      <span className="requirement-text">Stockage sécurisé</span>
-                    </div>
+                   
                   </div>
-                  <div className="upload-note">
-                    <span className="note-icon">💡</span>
-                    <span className="note-text">
-                      Le fichier sera stocké sur notre serveur et associé au dossier de l'employé
-                    </span>
-                  </div>
+                 
                 </>
               )}
               <input
@@ -378,48 +366,11 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
               />
             </div>
             
-            <div className="upload-instructions">
-              <div className="instructions-header">
-                <span className="instructions-icon">📝</span>
-                <span className="instructions-title">Instructions</span>
-              </div>
-              <ul className="instructions-list">
-                <li>Assurez-vous que le document contient toutes les informations nécessaires</li>
-                <li>Vérifiez que le PDF est lisible et complet</li>
-                <li>Nommez clairement le fichier (ex: "entretien-NOM-PRENOM.pdf")</li>
-                <li>Le document sera archivé avec le dossier RH complet</li>
-              </ul>
-            </div>
+           
           </div>
 
-          {/* Avertissement important */}
-          <div className="warning-message">
-            <div className="warning-header">
-              <span className="warning-icon">⚠️</span>
-              <h5 className="warning-title">Attention - Action irréversible</h5>
-            </div>
-            <div className="warning-content">
-              <p>En cliquant sur "Archiver l'Employé", vous confirmez que :</p>
-              <ul className="warning-list">
-                <li>
-                  <span className="list-icon">➡️</span>
-                  L'employé sera immédiatement déplacé vers les archives
-                </li>
-                <li>
-                  <span className="list-icon">👁️</span>
-                  Il ne sera plus visible dans la liste des employés actifs
-                </li>
-                <li>
-                  <span className="list-icon">📁</span>
-                  Son dossier RH complet sera archivé avec le PDF joint
-                </li>
-                <li>
-                  <span className="list-icon">⛔</span>
-                  Cette action ne peut pas être annulée
-                </li>
-              </ul>
-            </div>
-          </div>
+         
+          
         </div>
 
         <div className="archive-modal-footer">
