@@ -16,7 +16,8 @@ const Dashboard = () => {
     cddCount: 0,
     stageCount: 0,
     freelanceCount: 0,
-    archivesCount: 0
+    archivesCount: 0,
+    cvpcount:0
   });
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -334,6 +335,10 @@ const Dashboard = () => {
             <div className="summary-item">
               <span className="summary-label">Contrats CDD:</span>
               <span className="summary-value">{stats.cddCount}</span>
+            </div>
+             <div className="summary-item">
+              <span className="summary-label">Contrats CIVP:</span>
+              <span className="summary-value">{stats.cvpCount}</span>
             </div>
             <div className="summary-item">
               <span className="summary-label">À renouveler:</span>
