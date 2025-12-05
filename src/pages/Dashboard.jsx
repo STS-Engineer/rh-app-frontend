@@ -61,7 +61,7 @@ const Dashboard = () => {
       // Calculs des salaires et types de contrat
       const totalSalary = employees.reduce((sum, emp) => sum + parseFloat(emp.salaire_brute || 0), 0);
       const cdiCount = employees.filter(emp => emp.type_contrat === 'CDI').length;
-      const cdiCount = employees.filter(emp => emp.type_contrat === 'CIVP').length;
+      const civpCount = employees.filter(emp => emp.type_contrat === 'CIVP').length;
       const cddCount = employees.filter(emp => emp.type_contrat === 'CDD').length;
       const stageCount = employees.filter(emp => emp.type_contrat === 'Stage').length;
       const freelanceCount = employees.filter(emp => emp.type_contrat === 'Freelance').length;
