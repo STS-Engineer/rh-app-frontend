@@ -285,6 +285,23 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const documentUrl = getDocumentUrl(formData.dossier_rh);
   const hasDepartureDate = formData.date_depart && formData.date_depart.trim() !== '';
   const currentPhotoUrl = photoPreview || getPhotoUrl();
+  const FormSelect = ({ label, name, value, onChange, options = [], required }) => (
+    <div className="form-input-group">
+      <label>{label}:{required && ' *'}</label>
+      <select 
+        name={name}
+        value={value || ''}
+        onChange={onChange}
+        className="form-input"
+        required={required}
+      >
+        <option value="">-- Sélectionner --</option>
+        {options.map((opt, index) => (
+          <option key={index} value={opt}>{opt}</option>
+        ))}
+      </select>
+    </div>
+  );
 
   return (
     <div className="employee-modal-overlay" onClick={handleClose}>
