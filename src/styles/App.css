@@ -58,3 +58,8 @@ input, textarea, select {
     margin-left: 0;
   }
 }
+html {
+  transform: scale(0.8);
+  transform-origin: top left;
+  width: 125%; /* Compense le zoom pour éviter un décalage */
+}
