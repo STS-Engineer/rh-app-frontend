@@ -54,7 +54,8 @@ export const authAPI = {
   
   // Mot de passe oublié - envoi direct d'un nouveau mot de passe
   sendNewPassword: (email) => api.post('/auth/send-new-password', { email }),
-  
+  changePassword: (currentPassword, newPassword) => 
+  api.post('/auth/change-password', { currentPassword, newPassword }),
   logout: () => {
     localStorage.removeItem('token');
     window.location.href = '/';
