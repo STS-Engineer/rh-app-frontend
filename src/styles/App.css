@@ -9,6 +9,12 @@ body {
   background-color: #f8f9fa;
   color: #333;
   line-height: 1.6;
+
+  /* 👉 Ajout pour zoom 75% */
+  zoom: 0.75;
+  -ms-zoom: 0.75;       /* Edge ancien */
+  -webkit-transform: scale(0.75); 
+  -webkit-transform-origin: top left;
 }
 
 .App {
