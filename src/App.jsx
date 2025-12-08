@@ -7,7 +7,7 @@ import Archives from './pages/Archives';
 import Statistics from './pages/Statistics';
 import DemandesRH from './pages/DemandesRH'; 
 import FicheDePaie from './pages/FicheDePaie';
-import ChangePassword from './pages/ChangePassword'; // Nouveau composant
+import ChangePassword from './pages/ChangePassword';
 import './styles/App.css';
 
 // Composant de protection de route
@@ -27,7 +27,6 @@ const CheckPasswordStatus = ({ children }) => {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          // Décoder le token JWT pour vérifier si le mot de passe est temporaire
           const payload = JSON.parse(atob(token.split('.')[1]));
           setIsTemporary(payload.passwordIsTemporary === true);
         } catch (e) {
@@ -41,9 +40,8 @@ const CheckPasswordStatus = ({ children }) => {
     };
 
     checkPasswordStatus();
-  }, [location.pathname]); // Re-vérifier quand la route change
+  }, [location.pathname]);
 
-  // Si on est en train de charger, afficher un loader
   if (loading) {
     return (
       <div className="loading-screen">
@@ -53,8 +51,6 @@ const CheckPasswordStatus = ({ children }) => {
     );
   }
 
-  // Si le mot de passe est temporaire ET qu'on n'est pas déjà sur la page de changement
-  // Rediriger vers la page de changement de mot de passe
   if (isTemporary && location.pathname !== '/change-password') {
     return <Navigate to="/change-password" state={{ from: location.pathname }} />;
   }
@@ -98,7 +94,6 @@ function App() {
     <Router>
       <div className="App">
         <Routes>
-          {/* Route publique - Login avec redirection si déjà connecté */}
           <Route 
             path="/" 
             element={
@@ -108,7 +103,6 @@ function App() {
             } 
           />
           
-          {/* Route pour changer le mot de passe (accessible seulement si connecté) */}
           <Route 
             path="/change-password" 
             element={
@@ -118,7 +112,6 @@ function App() {
             } 
           />
           
-          {/* Routes sécurisées (nécessitent un mot de passe non temporaire) */}
           <Route 
             path="/dashboard" 
             element={
@@ -173,7 +166,6 @@ function App() {
             } 
           />
           
-          {/* Route de fallback */}
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </div>
