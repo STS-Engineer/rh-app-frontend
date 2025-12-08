@@ -32,6 +32,9 @@ const ChangePassword = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('🔄 Début du changement de mot de passe...');
+    console.log('Données:', { currentPassword, newPassword, confirmPassword });
+    
     // Validation
     if (newPassword.length < 6) {
       setError('Le nouveau mot de passe doit contenir au moins 6 caractères');
@@ -48,7 +51,21 @@ const ChangePassword = () => {
     setMessage('');
     
     try {
-      const response = await authAPI.changePassword(currentPassword, newPassword);
+      const isTemporary = isTemporaryPassword();
+      console.log('Mot de passe temporaire?', isTemporary);
+      
+      // Si le mot de passe est temporaire, on n'envoie pas currentPassword
+      const dataToSend = isTemporary ? { newPassword } : { currentPassword, newPassword };
+      
+      console.log('Données envoyées au serveur:', dataToSend);
+      console.log('Token présent:', !!localStorage.getItem('token'));
+      
+      const response = await authAPI.changePassword(
+        isTemporary ? '' : currentPassword, 
+        newPassword
+      );
+      
+      console.log('Réponse du serveur:', response.data);
       
       if (response.data.success) {
         setMessage('✅ Mot de passe changé avec succès !');
@@ -56,6 +73,7 @@ const ChangePassword = () => {
         // Mettre à jour le token si disponible dans la réponse
         if (response.data.token) {
           localStorage.setItem('token', response.data.token);
+          console.log('Token mis à jour');
         }
         
         // Rediriger après 2 secondes
@@ -66,10 +84,17 @@ const ChangePassword = () => {
         setError(response.data.message || 'Erreur lors du changement de mot de passe');
       }
     } catch (error) {
+      console.error('Erreur complète:', error);
+      console.error('Réponse d\'erreur:', error.response?.data);
+      
       if (error.response?.status === 401) {
         setError('Mot de passe actuel incorrect');
+      } else if (error.response?.status === 400) {
+        setError(error.response.data.message || 'Données invalides');
       } else if (error.response?.data?.message) {
         setError(error.response.data.message);
+      } else if (error.message) {
+        setError(error.message);
       } else {
         setError('Erreur de connexion au serveur');
       }
@@ -116,6 +141,7 @@ const ChangePassword = () => {
                 required={!isTemporary}
                 placeholder="Votre mot de passe actuel"
                 disabled={loading}
+                autoComplete="current-password"
               />
             </div>
           )}
@@ -131,6 +157,7 @@ const ChangePassword = () => {
               placeholder="Minimum 6 caractères"
               minLength="6"
               disabled={loading}
+              autoComplete="new-password"
             />
             <div className="password-hint">
               <small>Utilisez au moins 6 caractères. Pour plus de sécurité, combinez lettres, chiffres et caractères spéciaux.</small>
@@ -148,6 +175,7 @@ const ChangePassword = () => {
               placeholder="Répétez le mot de passe"
               minLength="6"
               disabled={loading}
+              autoComplete="new-password"
             />
           </div>
 
