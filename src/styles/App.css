@@ -9,6 +9,12 @@ body {
   background-color: #f8f9fa;
   color: #333;
   line-height: 1.6;
+
+  /* ✅ Zoom global appliqué ici */
+  transform: scale(0.8);
+  transform-origin: top left;
+  width: 125%;           /* Compense le scale */
+  overflow-x: hidden;    /* Évite la barre de scroll horizontale */
 }
 
 .App {
@@ -57,9 +63,4 @@ input, textarea, select {
   .team-content {
     margin-left: 0;
   }
-}
-html {
-  transform: scale(0.8);
-  transform-origin: top left;
-  width: 125%; /* Compense le zoom pour éviter un décalage */
 }
