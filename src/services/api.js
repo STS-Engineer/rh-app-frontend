@@ -170,6 +170,21 @@ export const archiveAPI = {
 };
 
 // =========================
+// Fonctions utilitaires (exportées individuellement)
+// =========================
+
+// Récupérer les employés archivés
+export const getArchivedEmployees = () => api.get('/employees/archives');
+
+// Rechercher des employés avec statut
+export const searchEmployeesWithStatus = (searchTerm, statut = 'actif') =>
+  api.get(
+    `/employees/search?q=${encodeURIComponent(searchTerm)}&statut=${encodeURIComponent(
+      statut
+    )}`
+  );
+
+// =========================
 // API Utilitaires
 // =========================
 
