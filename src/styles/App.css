@@ -10,7 +10,7 @@ body {
   color: #333;
   line-height: 1.6;
 
-  /* ✅ Zoom global appliqué ici */
+  /* ✅ Zoom global sur toute l'application */
   transform: scale(0.8);
   transform-origin: top left;
   width: 125%;           /* Compense le scale */
