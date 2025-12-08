@@ -136,11 +136,6 @@ export const dossierRhAPI = {
   }
 };
 
-
-
-// Dans services/api.js - Ajouter
-export const changePassword = (currentPassword, newPassword) => 
-  api.post('/auth/change-password', { currentPassword, newPassword });
 // =========================
 // API Fiche de Paie
 // =========================
