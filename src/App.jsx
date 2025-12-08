@@ -18,63 +18,66 @@ function App() {
   return (
     <Router>
       <div className="App">
-        <Routes>
-          {/* Route publique - Login */}
-          <Route path="/" element={<Login />} />
-          
-          {/* Routes privées */}
-          <Route 
-            path="/dashboard" 
-            element={
-              <PrivateRoute>
-                <Dashboard />
-              </PrivateRoute>
-            } 
-          />
-          <Route 
-            path="/fiche-de-paie" 
-            element={
-              <PrivateRoute>
-                <FicheDePaie />
-              </PrivateRoute>
-            } 
-          />
-          <Route 
-            path="/team" 
-            element={
-              <PrivateRoute>
-                <Team />
-              </PrivateRoute>
-            } 
-          />
-          <Route 
-            path="/demandes-rh"  // Nouvelle route pour les demandes RH
-            element={
-              <PrivateRoute>
-                <DemandesRH />
-              </PrivateRoute>
-            } 
-          />
-          <Route 
-            path="/archives" 
-            element={
-              <PrivateRoute>
-                <Archives />
-              </PrivateRoute>
-            } 
-          />
-          <Route 
-            path="/statistics" 
-            element={
-              <PrivateRoute>
-                <Statistics />
-              </PrivateRoute>
-            } 
-          />
-          
-          {/* Route de fallback - Redirection vers le dashboard */}
-          <Route path="*" element={<Navigate to="/dashboard" />} />
-        </Routes>
+        {/* ✅ Tout ce qui est rendu dans l'app sera zoomé à 80% */}
+        <div className="zoom-80">
+          <Routes>
+            {/* Route publique - Login */}
+            <Route path="/" element={<Login />} />
+            
+            {/* Routes privées */}
+            <Route 
+              path="/dashboard" 
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/fiche-de-paie" 
+              element={
+                <PrivateRoute>
+                  <FicheDePaie />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/team" 
+              element={
+                <PrivateRoute>
+                  <Team />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/demandes-rh"
+              element={
+                <PrivateRoute>
+                  <DemandesRH />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/archives" 
+              element={
+                <PrivateRoute>
+                  <Archives />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/statistics" 
+              element={
+                <PrivateRoute>
+                  <Statistics />
+                </PrivateRoute>
+              } 
+            />
+            
+            {/* Route de fallback */}
+            <Route path="*" element={<Navigate to="/dashboard" />} />
+          </Routes>
+        </div>
       </div>
     </Router>
   );
