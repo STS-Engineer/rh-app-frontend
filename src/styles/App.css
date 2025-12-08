@@ -4,17 +4,17 @@
   box-sizing: border-box;
 }
 
-/* ✅ Zoom global de toute la page (sidebar compris) */
+/* ❌ PLUS DE ZOOM ICI
 html {
-  zoom: 0.8;        /* équivaut à 80% */
+  zoom: 0.8;
 }
 
-/* Option : garder le zoom normal sur mobile */
 @media (max-width: 768px) {
   html {
     zoom: 1;
   }
 }
+*/
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -25,6 +25,15 @@ body {
 
 .App {
   min-height: 100vh;
+}
+
+/* ✅ Wrapper qui applique le zoom à toute l'app (sidebar compris) */
+.zoom-80 {
+  transform: scale(0.8);
+  transform-origin: top left;
+  width: 125%;         /* compense le scale 0.8 */
+  /* optionnel : éviter éventuel scroll horizontal */
+  overflow-x: hidden;
 }
 
 /* Styles globaux */
@@ -68,5 +77,11 @@ input, textarea, select {
   .dashboard-content,
   .team-content {
     margin-left: 0;
+  }
+
+  /* Optionnel : remettre à l'échelle normale sur mobile */
+  .zoom-80 {
+    transform: scale(1);
+    width: 100%;
   }
 }
