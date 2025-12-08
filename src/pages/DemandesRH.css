@@ -1148,7 +1148,7 @@
 
 /* Contenu principal avec scroll */
 .demandes-content {
-  max-height: calc(100vh - 350px);
+  max-height: calc(250vh - 450px);
   overflow-y: auto;
   padding-right: 10px;
 }
