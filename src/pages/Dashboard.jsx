@@ -161,12 +161,12 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="stat-trend">
-              <span className="trend-up">↗️</span>
+              <span className="trend-up"></span>
             </div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">📊</div>
+            <div className="stat-icon"></div>
             <div className="stat-info">
               <h3>{t('newThisMonth')}</h3>
               <p className="stat-number">{stats.newThisMonth}</p>
@@ -203,7 +203,7 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="stat-trend">
-              <span className="trend-up">💸</span>
+              <span className="trend-up"></span>
             </div>
           </div>
 
@@ -217,7 +217,7 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="stat-trend">
-              <span className="trend-neutral">📊</span>
+              <span className="trend-neutral"></span>
             </div>
           </div>
         </div>
