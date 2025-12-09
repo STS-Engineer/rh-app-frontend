@@ -1,13 +1,27 @@
 import React, { useState, useRef } from 'react';
 import './ArchiveModal.css';
 
-const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
+const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) => {
   const [pdfUrl, setPdfUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState('');
   const fileInputRef = useRef(null);
+
+  const rawDate =
+    departureDate ||              
+    employee?.date_depart ||   
+    null;
+
+  // Convertir proprement au bon format
+  let finalDepartureDate = null;
+  if (rawDate) {
+    const d = new Date(rawDate);
+    if (!isNaN(d.getTime())) {
+      finalDepartureDate = d;
+    }
+  }
 
   const handleFileSelect = () => {
     if (isUploading) return;
@@ -227,12 +241,15 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive }) => {
               </div>
               <div className="departure-date">
                 <span className="date-icon">📅</span>
-                Date de départ: {new Date().toLocaleDateString('fr-FR', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
+                Date de départ:&nbsp;
+                {finalDepartureDate
+                  ? finalDepartureDate.toLocaleDateString("fr-FR", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric"
+                    })
+                  : "Non définie"}
               </div>
             </div>
           </div>
