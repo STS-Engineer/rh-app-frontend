@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import './FicheDePaie.css';
 import Sidebar from '../components/Sidebar';
+import { useLanguage } from '../contexts/LanguageContext';
+
 const FicheDePaie = () => {
+  const { t } = useLanguage();
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [results, setResults] = useState(null);
@@ -14,14 +17,14 @@ const FicheDePaie = () => {
       setError(null);
       setResults(null);
     } else {
-      setError('Veuillez sélectionner un fichier PDF valide');
+      setError(t('invalidPDF'));
       setSelectedFile(null);
     }
   };
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      setError('Veuillez sélectionner un fichier PDF');
+      setError(t('selectPDF'));
       return;
     }
 
@@ -44,7 +47,7 @@ const FicheDePaie = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Erreur lors du traitement');
+        throw new Error(errorData.error || t('processingError'));
       }
 
       const data = await response.json();
@@ -55,8 +58,8 @@ const FicheDePaie = () => {
       if (fileInput) fileInput.value = '';
 
     } catch (err) {
-      console.error('Erreur upload:', err);
-      setError(err.message || 'Erreur lors du traitement du fichier');
+      console.error(t('uploadError'), err);
+      setError(err.message || t('fileProcessingError'));
     } finally {
       setUploading(false);
     }
@@ -66,9 +69,9 @@ const FicheDePaie = () => {
     <div className="fiche-paie-container">
       <Sidebar />
       <div className="fiche-paie-header">
-        <h1>📄 Fiche de Paie</h1>
+        <h1>📄 {t('payslip')}</h1>
         <p className="subtitle">
-          Envoi automatique des fiches de paie aux employés
+          {t('autoSendPayslips')}
         </p>
       </div>
 
@@ -76,10 +79,9 @@ const FicheDePaie = () => {
         <div className="upload-card">
           <div className="upload-icon">📤</div>
           
-          <h3>Importer un fichier PDF</h3>
+          <h3>{t('importPDF')}</h3>
           <p className="upload-description">
-            Le PDF doit contenir une fiche de paie par page.<br/>
-            Chaque fiche doit avoir le matricule de l'employé (MATR.).
+            {t('pdfDescription')}
           </p>
 
           <div className="file-input-wrapper">
@@ -103,7 +105,7 @@ const FicheDePaie = () => {
               ) : (
                 <>
                   <span className="upload-icon-text">📁</span>
-                  <span>Choisir un fichier PDF</span>
+                  <span>{t('choosePDF')}</span>
                 </>
               )}
             </label>
@@ -117,21 +119,21 @@ const FicheDePaie = () => {
             {uploading ? (
               <>
                 <span className="spinner"></span>
-                Traitement en cours...
+                {t('processingInProgress')}
               </>
             ) : (
               <>
                 <span>🚀</span>
-                Traiter et envoyer
+                {t('processAndSend')}
               </>
             )}
           </button>
 
           {uploading && (
             <div className="progress-info">
-              <p>⏳ Extraction des matricules et envoi des emails...</p>
+              <p>⏳ {t('extractingMatricules')}</p>
               <p className="progress-note">
-                Cela peut prendre plusieurs minutes selon le nombre de pages
+                {t('mayTakeSeveralMinutes')}
               </p>
             </div>
           )}
@@ -141,7 +143,7 @@ const FicheDePaie = () => {
           <div className="alert alert-error">
             <span className="alert-icon">❌</span>
             <div>
-              <strong>Erreur</strong>
+              <strong>{t('error')}</strong>
               <p>{error}</p>
             </div>
           </div>
@@ -152,26 +154,26 @@ const FicheDePaie = () => {
             <div className="alert alert-success">
               <span className="alert-icon">✅</span>
               <div>
-                <strong>Traitement terminé</strong>
+                <strong>{t('processingComplete')}</strong>
                 <p>
-                  {results.success} fiche(s) envoyée(s) sur {results.total} page(s)
+                  {results.success} {t('sheetsSent')} {results.total} {t('pages')}
                 </p>
               </div>
             </div>
 
             {results.errors && results.errors.length > 0 && (
               <div className="errors-list">
-                <h4>⚠️ Détails des erreurs ({results.errors.length})</h4>
+                <h4>⚠️ {t('errorDetails')} ({results.errors.length})</h4>
                 <div className="errors-table">
                   {results.errors.map((err, index) => (
                     <div key={index} className="error-item">
-                      <div className="error-page">Page {err.page}</div>
+                      <div className="error-page">{t('page')} {err.page}</div>
                       <div className="error-details">
                         {err.matricule && (
-                          <div><strong>Matricule:</strong> {err.matricule}</div>
+                          <div><strong>{t('employeeMatricule')}:</strong> {err.matricule}</div>
                         )}
                         {err.employe && (
-                          <div><strong>Employé:</strong> {err.employe}</div>
+                          <div><strong>{t('employee')}:</strong> {err.employe}</div>
                         )}
                         <div className="error-message">{err.error}</div>
                       </div>
@@ -183,8 +185,6 @@ const FicheDePaie = () => {
           </div>
         )}
       </div>
-
-      
     </div>
   );
 };
