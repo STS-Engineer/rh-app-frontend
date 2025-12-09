@@ -6,7 +6,7 @@ import './Sidebar.css';
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useLanguage();
+  const { t, language, getAvailableLanguages } = useLanguage();
 
   const menuItems = [
     { path: '/dashboard', label: t('dashboard'), icon: '📊' },
@@ -15,7 +15,7 @@ const Sidebar = () => {
     { path: '/fiche-de-paie', label: t('payslip'), icon: '💰' },
     { path: '/archives', label: t('archives'), icon: '📁' },
     { path: '/statistics', label: t('statistics'), icon: '📈' }, 
-    { path: '/settings', label: t('settings'), icon: '⚙️' }, // Nouvel item
+    { path: '/settings', label: t('settings'), icon: '⚙️' },
     { path: '/visa', label: t('visa'), icon: '✈️' },
   ];
 
@@ -24,11 +24,17 @@ const Sidebar = () => {
     navigate('/');
   };
 
+  const getCurrentLanguageFlag = () => {
+    const languages = getAvailableLanguages();
+    const currentLang = languages.find(l => l.code === language);
+    return currentLang ? currentLang.flag : '🌐';
+  };
+
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h2>🏢 RH Manager</h2>
-        <p className="sidebar-subtitle">Gestion des ressources humaines</p>
+        <h2>🏢 {t('appTitle')}</h2>
+        <p className="sidebar-subtitle">{t('appSubtitle')}</p>
       </div>
       
       <nav className="sidebar-nav">
@@ -46,9 +52,9 @@ const Sidebar = () => {
 
       <div className="sidebar-footer">
         <div className="language-indicator">
-          <span className="language-icon">🌐</span>
+          <span className="language-icon">{getCurrentLanguageFlag()}</span>
           <span className="language-text">
-            {t('language') === 'language' ? 'Langue' : t('language')}
+            {t('language')}: {language.toUpperCase()}
           </span>
         </div>
         <button className="logout-btn" onClick={handleLogout}>
@@ -57,7 +63,6 @@ const Sidebar = () => {
       </div>
     </div>
   );
-  
 };
 
 export default Sidebar;
