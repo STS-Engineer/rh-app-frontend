@@ -105,41 +105,7 @@ const Settings = () => {
 
           
 
-          {/* Section À propos */}
-          <div className="settings-card">
-            <div className="settings-card-header">
-              <div className="settings-icon">ℹ️</div>
-              <h3>À propos</h3>
-            </div>
-            
-            <div className="about-section">
-              <div className="app-info">
-                <div className="app-logo-large">🏢</div>
-                <div className="app-details">
-                  <h4>RH Manager</h4>
-                  <p>Version 1.0.0</p>
-                  <p className="app-description">
-                    Application de gestion des ressources humaines
-                  </p>
-                </div>
-              </div>
-              
-              <div className="about-links">
-                <a href="#" className="about-link">
-                  📖 Guide d'utilisation
-                </a>
-                <a href="#" className="about-link">
-                  📞 Support technique
-                </a>
-                <a href="#" className="about-link">
-                  📝 Conditions d'utilisation
-                </a>
-                <a href="#" className="about-link">
-                  🔒 Politique de confidentialité
-                </a>
-              </div>
-            </div>
-          </div>
+         
         </div>
 
         {/* Actions */}
