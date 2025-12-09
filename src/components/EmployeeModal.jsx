@@ -3,9 +3,11 @@ import { employeesAPI } from '../services/api';
 import { photoService } from '../services/photoService';
 import ArchiveModal from './ArchiveModal';
 import DossierRHModal from './DossierRHModal';
+import { useLanguage } from '../contexts/LanguageContext';
 import './EmployeeModal.css';
 
 const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
+  const { t } = useLanguage();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const [saving, setSaving] = useState(false);
@@ -23,31 +25,23 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   }, [employee]);
 
   const handleInputChange = (e) => {
-    const { name, value, type } = e.target;
-    
-    if (type === 'date') {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
-    }
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        alert('❌ Veuillez sélectionner une image');
+        alert('❌ ' + t('selectImage'));
         return;
       }
       
       if (file.size > 5 * 1024 * 1024) {
-        alert('❌ La taille ne doit pas dépasser 5MB');
+        alert('❌ ' + t('fileSizeExceeded'));
         return;
       }
       
@@ -71,53 +65,53 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     
     // Validation des emails
     if (!formData.adresse_mail || !isValidEmail(formData.adresse_mail)) {
-      alert('❌ Veuillez entrer une adresse email valide pour l\'employé');
+      alert('❌ ' + t('validEmployeeEmail'));
       return;
     }
     
     if (formData.mail_responsable1 && !isValidEmail(formData.mail_responsable1)) {
-      alert('❌ Veuillez entrer une adresse email valide pour le responsable 1');
+      alert('❌ ' + t('validSupervisor1Email'));
       return;
     }
     
     if (formData.mail_responsable2 && !isValidEmail(formData.mail_responsable2)) {
-      alert('❌ Veuillez entrer une adresse email valide pour le responsable 2');
+      alert('❌ ' + t('validSupervisor2Email'));
       return;
     }
     
     setSaving(true);
     try {
-      console.log('💾 Sauvegarde des modifications');
+      console.log('💾 ' + t('savingChanges'));
       
       let updatedData = { ...formData };
       
       // Si nouvelle photo sélectionnée
       if (selectedFile) {
         try {
-          console.log('📤 Upload nouvelle photo...');
+          console.log('📤 ' + t('uploadingNewPhoto'));
           const uploadResult = await photoService.uploadEmployeePhoto(selectedFile);
           updatedData.photo = uploadResult.photoUrl;
-          console.log('✅ Nouvelle photo uploadée:', updatedData.photo);
+          console.log('✅ ' + t('newPhotoUploaded'), updatedData.photo);
         } catch (uploadError) {
-          console.error('❌ Erreur upload photo:', uploadError);
-          alert('⚠️ Erreur upload photo. Ancienne photo conservée.');
+          console.error('❌ ' + t('photoUploadError'), uploadError);
+          alert('⚠️ ' + t('photoUploadErrorAlert'));
         }
       }
       
       const response = await employeesAPI.update(employee.id, updatedData);
-      console.log('✅ Employé mis à jour:', response.data);
+      console.log('✅ ' + t('employeeUpdated'), response.data);
       
       onUpdate(response.data);
       setIsEditing(false);
       setSelectedFile(null);
       setPhotoPreview('');
       
-      alert('✅ Modifications sauvegardées avec succès!');
+      alert('✅ ' + t('changesSaved'));
       
     } catch (error) {
-      console.error('❌ Erreur sauvegarde:', error);
+      console.error('❌ ' + t('saveError'), error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message;
-      alert('❌ Erreur sauvegarde: ' + errorMessage);
+      alert('❌ ' + t('saveError') + ': ' + errorMessage);
     } finally {
       setSaving(false);
     }
@@ -127,17 +121,17 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     try {
       setSaving(true);
       
-      console.log('📁 Archivage employé avec PDF URL:', pdfUrl);
+      console.log('📁 ' + t('archivingEmployee'), pdfUrl);
       
       const token = localStorage.getItem('token');
       if (!token) {
-        throw new Error('Non authentifié. Veuillez vous reconnecter.');
+        throw new Error(t('notAuthenticated'));
       }
       
       const backendUrl = 'https://backend-rh.azurewebsites.net';
       const archiveUrl = `${backendUrl}/api/employees/${employee.id}/archive`;
       
-      console.log('📤 Requête vers:', archiveUrl);
+      console.log('📤 ' + t('requestTo'), archiveUrl);
       
       const response = await fetch(archiveUrl, {
         method: 'PUT',
@@ -147,7 +141,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
         },
         body: JSON.stringify({
           pdf_url: pdfUrl,
-          entretien_depart: 'Entretien de départ archivé'
+          entretien_depart: t('archivedDepartureInterview')
         })
       });
 
@@ -158,20 +152,20 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
         data = await response.json();
       } else {
         const text = await response.text();
-        console.error('❌ Réponse non-JSON:', text.substring(0, 200));
+        console.error('❌ ' + t('nonJSONResponse'), text.substring(0, 200));
         try {
           data = JSON.parse(text);
         } catch {
-          throw new Error(`Erreur serveur (${response.status}): ${text.substring(0, 100)}`);
+          throw new Error(`${t('serverError')} (${response.status}): ${text.substring(0, 100)}`);
         }
       }
 
       if (!response.ok) {
-        console.error('❌ Erreur réponse:', data);
-        throw new Error(data.error || data.message || `Erreur ${response.status}`);
+        console.error('❌ ' + t('responseError'), data);
+        throw new Error(data.error || data.message || `${t('error')} ${response.status}`);
       }
 
-      console.log('✅ Archivage réussi:', data);
+      console.log('✅ ' + t('archiveSuccess'), data);
       
       if (data.employee) {
         setFormData(data.employee);
@@ -182,20 +176,20 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       setShowArchiveModal(false);
       onClose();
       
-      alert('✅ Employé archivé avec succès! Le PDF a été joint au dossier.');
+      alert('✅ ' + t('employeeArchived'));
       
     } catch (error) {
-      console.error('❌ Erreur lors de l\'archivage:', error);
+      console.error('❌ ' + t('archiveError'), error);
       
       let errorMessage = error.message;
       
       if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-        errorMessage = 'Erreur réseau. Vérifiez votre connexion.';
+        errorMessage = t('networkError');
       } else if (error.message.includes('Unexpected token')) {
-        errorMessage = 'Erreur serveur. Contactez l\'administrateur.';
+        errorMessage = t('serverErrorContactAdmin');
       }
       
-      alert(`❌ Erreur lors de l'archivage: ${errorMessage}`);
+      alert(`❌ ${t('archiveError')}: ${errorMessage}`);
     } finally {
       setSaving(false);
     }
@@ -208,8 +202,8 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   };
 
   const formatDateForDisplay = (dateString) => {
-    if (!dateString) return 'Non renseignée';
-    return new Date(dateString).toLocaleDateString('fr-FR');
+    if (!dateString) return t('notSpecified');
+    return new Date(dateString).toLocaleDateString();
   };
 
   const getDefaultAvatar = () => {
@@ -250,7 +244,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   };
 
   const getDocumentDisplayName = (url) => {
-    if (!url) return 'Document PDF';
+    if (!url) return t('documentPDF');
     
     try {
       const urlObj = new URL(url);
@@ -261,9 +255,9 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
         return decodeURIComponent(filename);
       }
       
-      return `Document - ${urlObj.hostname}`;
+      return `${t('document')} - ${urlObj.hostname}`;
     } catch {
-      return 'Document PDF';
+      return t('documentPDF');
     }
   };
 
@@ -271,12 +265,12 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     e.preventDefault();
     
     if (!url) {
-      alert('❌ Aucun document disponible');
+      alert('❌ ' + t('noDocumentAvailable'));
       return;
     }
 
     if (!isPdfUrl(url)) {
-      if (confirm('⚠️ Ce lien ne semble pas être un PDF. Voulez-vous quand même l\'ouvrir?')) {
+      if (confirm('⚠️ ' + t('notPDFConfirm'))) {
         window.open(url, '_blank');
       }
       return;
@@ -309,7 +303,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     <div className="employee-modal-overlay" onClick={handleClose}>
       <div className="employee-modal-content" onClick={e => e.stopPropagation()}>
         <div className="employee-modal-header">
-          <h2>👤 Détails de l'Employé</h2>
+          <h2>👤 {t('employeeDetails')}</h2>
           <button className="close-btn" onClick={handleClose}>×</button>
         </div>
 
@@ -326,20 +320,20 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
             />
             <div className="employee-basic-info">
               <h3>{formData.prenom} {formData.nom}</h3>
-              <p className="employee-matricule">Matricule: {formData.matricule}</p>
+              <p className="employee-matricule">{t('employeeID')}: {formData.matricule}</p>
               <p className="employee-poste">{formData.poste}</p>
               <p className="employee-departement">{formData.site_dep}</p>
               <p className="employee-contrat">{formData.type_contrat}</p>
-              <p className="employee-email">📧 {formData.adresse_mail || 'Email non renseigné'}</p>
+              <p className="employee-email">📧 {formData.adresse_mail || t('emailNotSpecified')}</p>
               
               {/* Indicateur d'archivage */}
               {formData.statut === 'archive' && (
                 <div className="archive-badge">
                   <span className="badge-icon">📁</span>
-                  <span className="badge-text">Archivé</span>
+                  <span className="badge-text">{t('archived')}</span>
                   {formData.date_depart && (
                     <span className="archive-date">
-                      Depuis: {formatDateForDisplay(formData.date_depart)}
+                      {t('since')}: {formatDateForDisplay(formData.date_depart)}
                     </span>
                   )}
                 </div>
@@ -356,11 +350,11 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     className="file-input"
                   />
                   <label htmlFor="change-photo" className="change-photo-btn">
-                    📷 Changer la photo
+                    📷 {t('changePhoto')}
                   </label>
                   {selectedFile && (
                     <span className="photo-change-notice">
-                      Nouvelle photo sélectionnée
+                      {t('newPhotoSelected')}
                     </span>
                   )}
                 </div>
@@ -372,30 +366,30 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
             // Mode visualisation
             <div className="employee-details-grid">
               <div className="detail-section">
-                <h4>📝 Informations Personnelles</h4>
-                <DetailRow label="CIN" value={formData.cin} />
-                <DetailRow label="Passeport" value={formData.passeport || 'Non renseigné'} />
-                <DetailRow label="Date de naissance" value={formatDateForDisplay(formData.date_naissance)} />
+                <h4>📝 {t('personalInfo')}</h4>
+                <DetailRow label={t('idNumber')} value={formData.cin} />
+                <DetailRow label={t('passport')} value={formData.passeport || t('notSpecified')} />
+                <DetailRow label={t('birthDate')} value={formatDateForDisplay(formData.date_naissance)} />
               </div>
 
               <div className="detail-section">
-                <h4>💼 Informations Professionnelles</h4>
-                <DetailRow label="Date d'embauche" value={formatDateForDisplay(formData.date_debut)} />
-                <DetailRow label="Salaire brut" value={`${formData.salaire_brute} DT`} />
-                <DetailRow label="Date de départ" value={formatDateForDisplay(formData.date_depart)} />
+                <h4>💼 {t('professionalInfo')}</h4>
+                <DetailRow label={t('hireDate')} value={formatDateForDisplay(formData.date_debut)} />
+                <DetailRow label={t('grossSalary')} value={`${formData.salaire_brute} DT`} />
+                <DetailRow label={t('departureDate')} value={formatDateForDisplay(formData.date_depart)} />
               </div>
 
               <div className="detail-section">
-                <h4>📧 Coordonnées Email</h4>
-                <DetailRow label="Email employé" value={formData.adresse_mail || 'Non renseigné'} />
-                <DetailRow label="Email Responsable 1" value={formData.mail_responsable1 || 'Non renseigné'} />
-                <DetailRow label="Email Responsable 2" value={formData.mail_responsable2 || 'Non renseigné'} />
+                <h4>📧 {t('emailContacts')}</h4>
+                <DetailRow label={t('employeeEmail')} value={formData.adresse_mail || t('notSpecified')} />
+                <DetailRow label={t('supervisor1Email')} value={formData.mail_responsable1 || t('notSpecified')} />
+                <DetailRow label={t('supervisor2Email')} value={formData.mail_responsable2 || t('notSpecified')} />
               </div>
 
               <div className="detail-section">
-                <h4>📎 Documents</h4>
+                <h4>📎 {t('documents')}</h4>
                 <div className="document-row">
-                  <strong>Dossier RH:</strong>
+                  <strong>{t('hrFile')}:</strong>
                   <span>
                     {documentUrl ? (
                       <div className="document-container">
@@ -412,7 +406,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                         </div>
                       </div>
                     ) : (
-                      <span className="no-document">Aucun document</span>
+                      <span className="no-document">{t('noDocument')}</span>
                     )}
                   </span>
                 </div>
@@ -420,7 +414,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 {/* Document d'archive PDF */}
                 {formData.pdf_archive_url && (
                   <div className="document-row">
-                    <strong>Entretien de départ:</strong>
+                    <strong>{t('departureInterview')}:</strong>
                     <span>
                       <div className="document-container">
                         <a 
@@ -429,7 +423,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                           className="document-link archive-link"
                           title={formData.pdf_archive_url}
                         >
-                          📁 PDF d'entretien
+                          📁 {t('interviewPDF')}
                         </a>
                         <div className="document-preview">
                           <small>🔗 {truncateUrl(formData.pdf_archive_url, 40)}</small>
@@ -445,7 +439,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     className="add-dossier-btn"
                     onClick={() => setShowDossierModal(true)}
                   >
-                    📁 Ajouter/Mettre à jour le dossier RH
+                    📁 {t('addUpdateDossier')}
                   </button>
                 </div>
               </div>
@@ -454,15 +448,15 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
             // Mode édition
             <div className="edit-form">
               <div className="form-section">
-                <h4>📝 Informations Personnelles</h4>
+                <h4>📝 {t('personalInfo')}</h4>
                 <div className="form-grid">
-                  <FormInput label="Matricule" name="matricule" value={formData.matricule} onChange={handleInputChange} required />
-                  <FormInput label="Nom" name="nom" value={formData.nom} onChange={handleInputChange} required />
-                  <FormInput label="Prénom" name="prenom" value={formData.prenom} onChange={handleInputChange} required />
-                  <FormInput label="CIN" name="cin" value={formData.cin} onChange={handleInputChange} required />
-                  <FormInput label="Passeport" name="passeport" value={formData.passeport} onChange={handleInputChange} placeholder="Optionnel" />
+                  <FormInput label={t('employeeID')} name="matricule" value={formData.matricule} onChange={handleInputChange} required />
+                  <FormInput label={t('lastName')} name="nom" value={formData.nom} onChange={handleInputChange} required />
+                  <FormInput label={t('firstName')} name="prenom" value={formData.prenom} onChange={handleInputChange} required />
+                  <FormInput label={t('idNumber')} name="cin" value={formData.cin} onChange={handleInputChange} required />
+                  <FormInput label={t('passport')} name="passeport" value={formData.passeport} onChange={handleInputChange} placeholder={t('optional')} />
                   <FormInput 
-                    label="Date de naissance" 
+                    label={t('birthDate')} 
                     name="date_naissance" 
                     type="date" 
                     value={formatDateForInput(formData.date_naissance)} 
@@ -473,35 +467,35 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               </div>
 
               <div className="form-section">
-                <h4>💼 Informations Professionnelles</h4>
+                <h4>💼 {t('professionalInfo')}</h4>
                 <div className="form-grid">
-                  <FormInput label="Poste" name="poste" value={formData.poste} onChange={handleInputChange} required />
+                  <FormInput label={t('position')} name="poste" value={formData.poste} onChange={handleInputChange} required />
                   <FormSelect 
-                    label="Site/Département" 
+                    label={t('department')} 
                     name="site_dep" 
                     value={formData.site_dep} 
                     onChange={handleInputChange}
                     options={[
-                      'Siège Central',
-                      'Site Nord', 
-                      'Site Sud',
-                      'Site Est',
-                      'Site Ouest',
-                      'Direction RH',
-                      'IT Department'
+                      t('headquarters'),
+                      t('northSite'), 
+                      t('southSite'),
+                      t('eastSite'),
+                      t('westSite'),
+                      t('hrDepartment'),
+                      t('itDepartment')
                     ]}
                     required 
                   />
                   <FormSelect 
-                    label="Type de Contrat" 
+                    label={t('contractType')} 
                     name="type_contrat" 
                     value={formData.type_contrat} 
                     onChange={handleInputChange}
-                    options={['CDI', 'CDD', 'Stage', 'CIVP']}
+                    options={['CDI', 'CDD', t('internship'), 'CIVP']}
                     required 
                   />
                   <FormInput 
-                    label="Date d'embauche" 
+                    label={t('hireDate')} 
                     name="date_debut" 
                     type="date" 
                     value={formatDateForInput(formData.date_debut)} 
@@ -509,7 +503,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     required 
                   />
                   <FormInput 
-                    label="Salaire brut" 
+                    label={t('grossSalary')} 
                     name="salaire_brute" 
                     type="number" 
                     step="0.01" 
@@ -517,15 +511,14 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     onChange={handleInputChange} 
                     required 
                   />
-                  {/* ⚠️ On enlève la date de départ d'ici */}
                 </div>
               </div>
 
               <div className="form-section">
-                <h4>📧 Coordonnées Email</h4>
+                <h4>📧 {t('emailContacts')}</h4>
                 <div className="form-grid">
                   <FormInput 
-                    label="Email employé *" 
+                    label={`${t('employeeEmail')} *`} 
                     name="adresse_mail" 
                     type="email"
                     value={formData.adresse_mail} 
@@ -534,7 +527,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     placeholder="exemple@entreprise.com"
                   />
                   <FormInput 
-                    label="Email Responsable 1" 
+                    label={t('supervisor1Email')} 
                     name="mail_responsable1" 
                     type="email"
                     value={formData.mail_responsable1} 
@@ -542,7 +535,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     placeholder="responsable1@entreprise.com"
                   />
                   <FormInput 
-                    label="Email Responsable 2" 
+                    label={t('supervisor2Email')} 
                     name="mail_responsable2" 
                     type="email"
                     value={formData.mail_responsable2} 
@@ -553,33 +546,34 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               </div>
 
               {/* Section Date de départ + Archiver côte à côte */}
-            <div className="archive-section">
-              <div className="form-grid">
-                <FormInput
-                  label="Date de départ"
-                  name="date_depart"
-                  type="date"
-                  value={formatDateForInput(formData.date_depart)}
-                  onChange={handleInputChange}
-                  placeholder="Optionnel"
-                />
+              <div className="archive-section">
+                <div className="form-grid">
+                  <FormInput
+                    label={t('departureDate')}
+                    name="date_depart"
+                    type="date"
+                    value={formatDateForInput(formData.date_depart)}
+                    onChange={handleInputChange}
+                    placeholder={t('optional')}
+                  />
 
-                <div className="archive-row">
-                  <button 
-                    type="button"
-                    className={`archive-btn ${!hasDepartureDate ? 'archive-btn-disabled' : ''}`}
-                    onClick={() => hasDepartureDate && setShowArchiveModal(true)}
-                    disabled={!hasDepartureDate}
-                  >
-                    📁 Archiver l'employé
-                  </button>
+                  <div className="archive-row">
+                    <button 
+                      type="button"
+                      className={`archive-btn ${!hasDepartureDate ? 'archive-btn-disabled' : ''}`}
+                      onClick={() => hasDepartureDate && setShowArchiveModal(true)}
+                      disabled={!hasDepartureDate}
+                      title={!hasDepartureDate ? t('addDepartureDateFirst') : t('archiveEmployee')}
+                    >
+                      📁 {t('archiveEmployee')}
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <p className="archive-hint">
-                Ajouter une date de départ pour pouvoir archiver l'employé avec son entretien de départ.
-              </p>
-            </div>
+                <p className="archive-hint">
+                  {t('archiveHint')}
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -588,7 +582,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
           {!isEditing ? (
             <div className="view-actions">
               <button className="edit-btn" onClick={() => setIsEditing(true)}>
-                ✏️ Modifier les informations
+                ✏️ {t('editInfo')}
               </button>
             </div>
           ) : (
@@ -598,7 +592,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 onClick={handleSave}
                 disabled={saving}
               >
-                {saving ? '⏳ Sauvegarde...' : '💾 Sauvegarder'}
+                {saving ? `⏳ ${t('saving')}` : `💾 ${t('save')}`}
               </button>
               <button 
                 className="cancel-btn" 
@@ -610,7 +604,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 }}
                 disabled={saving}
               >
-                ❌ Annuler
+                ❌ {t('cancel')}
               </button>
             </div>
           )}
@@ -672,7 +666,7 @@ const FormSelect = ({ label, name, value, onChange, options = [], required }) =>
       className="form-input"
       required={required}
     >
-      <option value="">-- Sélectionner --</option>
+      <option value="">-- {t('select')} --</option>
       {options.map((opt, index) => (
         <option key={index} value={opt}>{opt}</option>
       ))}
