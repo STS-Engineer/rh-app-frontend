@@ -92,14 +92,7 @@ const Settings = () => {
                 </button>
               </div>
               
-              <div className="current-language-info">
-                <p>
-                  <strong>Langue actuelle :</strong> {getLanguageLabel(language)}
-                </p>
-                <p className="info-note">
-                  ⓘ Le changement prend effet immédiatement sur toute l'application
-                </p>
-              </div>
+              
             </div>
           </div>
 
@@ -108,15 +101,7 @@ const Settings = () => {
          
         </div>
 
-        {/* Actions */}
-        <div className="settings-actions">
-          <button className="save-btn">
-            💾 Enregistrer les modifications
-          </button>
-          <button className="reset-btn">
-            🔄 Restaurer les paramètres par défaut
-          </button>
-        </div>
+       
       </div>
     </div>
   );
