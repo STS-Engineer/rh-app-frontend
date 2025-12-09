@@ -175,7 +175,7 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="stat-trend">
-              {stats.newThisMonth > 0 ? <span className="trend-up">📈</span> : <span className="trend-neutral">➡️</span>}
+              {stats.newThisMonth > 0 ? <span className="trend-up"></span> : <span className="trend-neutral">➡️</span>}
             </div>
           </div>
 
@@ -189,7 +189,7 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="stat-trend">
-              {stats.contractsToRenew > 0 ? <span className="trend-warning">⚠️</span> : <span className="trend-ok">✅</span>}
+              {stats.contractsToRenew > 0 ? <span className="trend-warning">⚠️</span> : <span className="trend-ok"></span>}
             </div>
           </div>
 
@@ -203,7 +203,7 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="stat-trend">
-              <span className="trend-up">💸</span>
+              <span className="trend-up"></span>
             </div>
           </div>
 
@@ -217,7 +217,7 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="stat-trend">
-              <span className="trend-neutral">📊</span>
+              <span className="trend-neutral"></span>
             </div>
           </div>
         </div>
