@@ -1,8 +1,10 @@
-.settings-container {
-  display: flex;
-  min-height: 100vh;
-  background-color: #f5f7fa;
+.settings-content {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+  margin-left: 250px; /* largeur du sidebar */
 }
+
 
 .settings-content {
   flex: 1;
