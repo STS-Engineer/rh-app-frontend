@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from '../components/Sidebar';
 import { employeesAPI } from '../services/api';
 import { exportToPDF, exportToExcel, exportEmployeesToExcel } from '../services/exportService';
+import { useLanguage } from '../contexts/LanguageContext';
 import './Statistics.css';
 
 const Statistics = () => {
+  const { t } = useLanguage();
   const [stats, setStats] = useState({
     totalEmployees: 0,
     byDepartment: {},
@@ -30,7 +32,6 @@ const Statistics = () => {
       const employeesData = response.data;
       setEmployees(employeesData);
 
-      // Calcul des statistiques
       const currentMonth = new Date().getMonth();
       const currentYear = new Date().getFullYear();
 
@@ -41,16 +42,10 @@ const Statistics = () => {
       const recentHiresList = [];
 
       employeesData.forEach(emp => {
-        // Par département
         byDepartment[emp.site_dep] = (byDepartment[emp.site_dep] || 0) + 1;
-        
-        // Par type de contrat
         byContract[emp.type_contrat] = (byContract[emp.type_contrat] || 0) + 1;
-        
-        // Salaire total
         totalSalary += parseFloat(emp.salaire_brute || 0);
         
-        // Embauchés ce mois-ci
         const empDate = new Date(emp.date_debut);
         if (empDate.getMonth() === currentMonth && empDate.getFullYear() === currentYear) {
           recentHires++;
@@ -60,7 +55,6 @@ const Statistics = () => {
 
       const averageSalary = employeesData.length > 0 ? totalSalary / employeesData.length : 0;
 
-      // Statistiques salariales
       const salaries = employeesData.map(emp => parseFloat(emp.salaire_brute || 0)).sort((a, b) => a - b);
       const salaryStats = {
         min: salaries[0] || 0,
@@ -80,7 +74,7 @@ const Statistics = () => {
       });
 
     } catch (error) {
-      console.error('Erreur lors du chargement des statistiques:', error);
+      console.error(t('errorLoadingStats'), error);
     } finally {
       setLoading(false);
     }
@@ -95,7 +89,7 @@ const Statistics = () => {
     try {
       await exportToPDF('statistics-content', `statistiques-rh-${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
-      console.error('Erreur export PDF:', error);
+      console.error(t('exportError'), error);
     } finally {
       setExporting(false);
     }
@@ -106,7 +100,7 @@ const Statistics = () => {
     try {
       exportToExcel(stats, `statistiques-rh-${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch (error) {
-      console.error('Erreur export Excel:', error);
+      console.error(t('exportError'), error);
     } finally {
       setExporting(false);
     }
@@ -117,7 +111,7 @@ const Statistics = () => {
     try {
       exportEmployeesToExcel(employees, `liste-employes-${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch (error) {
-      console.error('Erreur export employés Excel:', error);
+      console.error(t('exportError'), error);
     } finally {
       setExporting(false);
     }
@@ -128,7 +122,7 @@ const Statistics = () => {
       <div className="statistics-container">
         <Sidebar />
         <div className="statistics-content">
-          <div className="loading">Chargement des statistiques...</div>
+          <div className="loading">{t('loadingStatistics')}</div>
         </div>
       </div>
     );
@@ -139,52 +133,51 @@ const Statistics = () => {
       <Sidebar />
       <div className="statistics-content" id="statistics-content">
         <header className="statistics-header">
-          <h1>📊 Tableau de Bord Statistiques</h1>
-          <p>Analyse détaillée de vos ressources humaines - {new Date().toLocaleDateString('fr-FR')}</p>
+          <h1>📊 {t('statisticsDashboard')}</h1>
+          <p>{t('hrAnalysis')} - {new Date().toLocaleDateString()}</p>
         </header>
 
         <div className="stats-overview">
           <div className="stat-card primary">
             <div className="stat-icon">👥</div>
             <div className="stat-info">
-              <h3>Effectif Total</h3>
+              <h3>{t('totalEmployees')}</h3>
               <p className="stat-number">{stats.totalEmployees}</p>
-              <p className="stat-detail">{stats.recentHires} nouveaux ce mois</p>
+              <p className="stat-detail">{stats.recentHires} {t('newThisMonth')}</p>
             </div>
           </div>
 
           <div className="stat-card success">
             <div className="stat-icon">💰</div>
             <div className="stat-info">
-              <h3>Masse Salariale</h3>
+              <h3>{t('totalSalary')}</h3>
               <p className="stat-number">{stats.totalSalary.toLocaleString()} DT</p>
-              <p className="stat-detail">Mensuelle brute</p>
+              <p className="stat-detail">{t('monthlyGross')}</p>
             </div>
           </div>
 
           <div className="stat-card warning">
             <div className="stat-icon">📈</div>
             <div className="stat-info">
-              <h3>Salaire Moyen</h3>
+              <h3>{t('averageSalary')}</h3>
               <p className="stat-number">{stats.averageSalary.toFixed(0)} DT</p>
-              <p className="stat-detail">Par employé</p>
+              <p className="stat-detail">{t('perEmployee')}</p>
             </div>
           </div>
 
           <div className="stat-card info">
             <div className="stat-icon">🏢</div>
             <div className="stat-info">
-              <h3>Départements</h3>
+              <h3>{t('departments')}</h3>
               <p className="stat-number">{Object.keys(stats.byDepartment).length}</p>
-              <p className="stat-detail">Sites actifs</p>
+              <p className="stat-detail">{t('activeSites')}</p>
             </div>
           </div>
         </div>
 
         <div className="charts-grid">
-          {/* Répartition par département */}
           <div className="chart-card">
-            <h3>📋 Répartition par Département</h3>
+            <h3>📋 {t('departmentDistribution')}</h3>
             <div className="chart-content">
               {Object.entries(stats.byDepartment).map(([dept, count]) => (
                 <div key={dept} className="chart-item">
@@ -203,9 +196,8 @@ const Statistics = () => {
             </div>
           </div>
 
-          {/* Répartition par type de contrat */}
           <div className="chart-card">
-            <h3>📄 Types de Contrat</h3>
+            <h3>📄 {t('contractTypes')}</h3>
             <div className="chart-content">
               {Object.entries(stats.byContract).map(([contract, count]) => (
                 <div key={contract} className="chart-item">
@@ -224,32 +216,30 @@ const Statistics = () => {
             </div>
           </div>
 
-          {/* Statistiques salariales */}
           <div className="chart-card">
-            <h3>💵 Analyse des Salaires</h3>
+            <h3>💵 {t('salaryAnalysis')}</h3>
             <div className="salary-stats">
               <div className="salary-item">
-                <span className="salary-label">Salaire Minimum</span>
+                <span className="salary-label">{t('minimumSalary')}</span>
                 <span className="salary-value">{stats.salaryStats.min.toLocaleString()} DT</span>
               </div>
               <div className="salary-item">
-                <span className="salary-label">Salaire Maximum</span>
+                <span className="salary-label">{t('maximumSalary')}</span>
                 <span className="salary-value">{stats.salaryStats.max.toLocaleString()} DT</span>
               </div>
               <div className="salary-item">
-                <span className="salary-label">Salaire Médian</span>
+                <span className="salary-label">{t('medianSalary')}</span>
                 <span className="salary-value">{stats.salaryStats.median.toLocaleString()} DT</span>
               </div>
               <div className="salary-item">
-                <span className="salary-label">Salaire Moyen</span>
+                <span className="salary-label">{t('averageSalary')}</span>
                 <span className="salary-value">{stats.averageSalary.toFixed(0)} DT</span>
               </div>
             </div>
           </div>
 
-          {/* Dernières embauches */}
           <div className="chart-card">
-            <h3>🆕 Dernières Embauches</h3>
+            <h3>🆕 {t('recentHires')}</h3>
             <div className="recent-hires">
               {stats.recentHiresList
                 .sort((a, b) => new Date(b.date_debut) - new Date(a.date_debut))
@@ -261,41 +251,41 @@ const Statistics = () => {
                       <span>{emp.poste} - {emp.site_dep}</span>
                     </div>
                     <div className="hire-date">
-                      {new Date(emp.date_debut).toLocaleDateString('fr-FR')}
+                      {new Date(emp.date_debut).toLocaleDateString()}
                     </div>
                   </div>
                 ))
               }
               {stats.recentHiresList.length === 0 && (
-                <p className="no-data">Aucune embauche ce mois-ci</p>
+                <p className="no-data">{t('noHiresThisMonth')}</p>
               )}
             </div>
           </div>
         </div>
 
         <div className="export-section">
-          <h3>📤 Exporter les Données</h3>
+          <h3>📤 {t('exportData')}</h3>
           <div className="export-buttons">
             <button 
               className="export-btn pdf"
               onClick={handleExportPDF}
               disabled={exporting}
             >
-              {exporting ? '⏳' : '📄'} Exporter en PDF
+              {exporting ? '⏳' : '📄'} {t('exportDataPDF')}
             </button>
             <button 
               className="export-btn excel"
               onClick={handleExportExcel}
               disabled={exporting}
             >
-              {exporting ? '⏳' : '📊'} Exporter Statistiques Excel
+              {exporting ? '⏳' : '📊'} {t('exportStatisticsExcel')}
             </button>
             <button 
               className="export-btn excel"
               onClick={handleExportEmployeesExcel}
               disabled={exporting}
             >
-              {exporting ? '⏳' : '👥'} Exporter Liste Employés Excel
+              {exporting ? '⏳' : '👥'} {t('exportEmployeesExcel')}
             </button>
           </div>
         </div>
