@@ -1,47 +1,27 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import './ArchiveModal.css';
 
-const ArchiveModal = ({ 
-  employee, 
-  isOpen, 
-  onClose, 
-  onArchive, 
-  departureDate: initialDepartureDate 
-}) => {
+const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) => {
   const [pdfUrl, setPdfUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState('');
-  const [departureDate, setDepartureDate] = useState('');
-  const [customDate, setCustomDate] = useState('');
-  
   const fileInputRef = useRef(null);
-  const dateInputRef = useRef(null);
 
-  // Initialiser la date de départ
-  useEffect(() => {
-    if (initialDepartureDate) {
-      const date = new Date(initialDepartureDate);
-      if (!isNaN(date.getTime())) {
-        const formattedDate = date.toISOString().split('T')[0];
-        setDepartureDate(formattedDate);
-        setCustomDate(formattedDate);
-      }
-    } else if (employee?.date_depart) {
-      const date = new Date(employee.date_depart);
-      if (!isNaN(date.getTime())) {
-        const formattedDate = date.toISOString().split('T')[0];
-        setDepartureDate(formattedDate);
-        setCustomDate(formattedDate);
-      }
-    } else {
-      // Date par défaut : aujourd'hui
-      const today = new Date().toISOString().split('T')[0];
-      setDepartureDate(today);
-      setCustomDate(today);
+  const rawDate =
+    departureDate ||              
+    employee?.date_depart ||   
+    null;
+
+  // Convertir proprement au bon format
+  let finalDepartureDate = null;
+  if (rawDate) {
+    const d = new Date(rawDate);
+    if (!isNaN(d.getTime())) {
+      finalDepartureDate = d;
     }
-  }, [initialDepartureDate, employee]);
+  }
 
   const handleFileSelect = () => {
     if (isUploading) return;
@@ -58,7 +38,7 @@ const ArchiveModal = ({
       return;
     }
 
-    if (file.size > 50 * 1024 * 1024) {
+    if (file.size > 50 * 1024 * 1024) { // 50MB max
       setErrorMessage('❌ Le fichier est trop volumineux (max 50MB)');
       return;
     }
@@ -77,6 +57,9 @@ const ArchiveModal = ({
         throw new Error('Non authentifié. Veuillez vous reconnecter.');
       }
 
+      // IMPORTANT: URL CORRECTE DU BACKEND
+      // Votre backend est sur 'backend-rh.azurewebsites.net'
+      // PAS sur 'avo-hr-managment.azurewebsites.net' (c'est le frontend)
       const backendUrl = 'https://backend-rh.azurewebsites.net';
       const uploadUrl = `${backendUrl}/api/archive/upload-pdf`;
       
@@ -94,10 +77,12 @@ const ArchiveModal = ({
         });
       }, 200);
 
+      // Configuration de la requête
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
+          // NE PAS mettre 'Content-Type' pour FormData, le navigateur le fait automatiquement
         },
         body: formData
       });
@@ -105,18 +90,24 @@ const ArchiveModal = ({
       clearInterval(progressInterval);
       setUploadProgress(100);
 
+      console.log('📥 Réponse reçue - Status:', response.status);
+
+      // Vérifier le type de contenu
       const contentType = response.headers.get('content-type');
-      
+      console.log('📋 Content-Type:', contentType);
+
       if (!contentType || !contentType.includes('application/json')) {
+        // Essayer de lire le texte pour déboguer
         const text = await response.text();
-        console.error('❌ Réponse non-JSON reçue:', text.substring(0, 500));
+        console.error('❌ Réponse non-JSON reçue (premiers 500 caractères):', text.substring(0, 500));
         
         if (response.ok) {
+          // Essayer de parser quand même
           try {
             const data = JSON.parse(text);
             if (data.pdfUrl) {
               setPdfUrl(data.pdfUrl);
-              console.log('✅ Upload réussi:', data.pdfUrl);
+              console.log('✅ Upload réussi (JSON parsé):', data.pdfUrl);
             } else {
               throw new Error('Réponse JSON invalide');
             }
@@ -127,6 +118,7 @@ const ArchiveModal = ({
           throw new Error(`Erreur serveur (${response.status}): ${text.substring(0, 200)}`);
         }
       } else {
+        // C'est du JSON, parser normalement
         const data = await response.json();
         
         if (!response.ok) {
@@ -137,6 +129,7 @@ const ArchiveModal = ({
           throw new Error(data.error || 'Échec de l\'upload');
         }
 
+        // Mettre à jour l'URL avec le PDF uploadé
         setPdfUrl(data.pdfUrl);
         console.log('✅ Upload réussi:', data.pdfUrl);
       }
@@ -163,35 +156,10 @@ const ArchiveModal = ({
       setIsUploading(false);
       setUploadProgress(0);
       
+      // Réinitialiser le champ fichier
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
-    }
-  };
-
-  const handleDateChange = (e) => {
-    const newDate = e.target.value;
-    setCustomDate(newDate);
-    setDepartureDate(newDate);
-  };
-
-  const handleTodayClick = () => {
-    const today = new Date().toISOString().split('T')[0];
-    setCustomDate(today);
-    setDepartureDate(today);
-  };
-
-  const handleOriginalDateClick = () => {
-    if (initialDepartureDate) {
-      const date = new Date(initialDepartureDate);
-      const formattedDate = date.toISOString().split('T')[0];
-      setCustomDate(formattedDate);
-      setDepartureDate(formattedDate);
-    } else if (employee?.date_depart) {
-      const date = new Date(employee.date_depart);
-      const formattedDate = date.toISOString().split('T')[0];
-      setCustomDate(formattedDate);
-      setDepartureDate(formattedDate);
     }
   };
 
@@ -201,34 +169,21 @@ const ArchiveModal = ({
       return;
     }
 
-    if (!departureDate) {
-      setErrorMessage('❌ Veuillez sélectionner une date de départ');
-      return;
-    }
-
     setErrorMessage('');
-    
-    // Envoyer le lien PDF et la date de départ au parent
-    onArchive(pdfUrl, departureDate);
+    // Envoyer le lien PDF au parent
+    onArchive(pdfUrl);
   };
 
   const handleClose = () => {
+    // Réinitialiser tout
     setPdfUrl('');
     setIsUploading(false);
     setUploadProgress(0);
     setErrorMessage('');
     setUploadedFileName('');
-    setDepartureDate('');
-    setCustomDate('');
-    
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-    
-    if (dateInputRef.current) {
-      dateInputRef.current.value = '';
-    }
-    
     onClose();
   };
 
@@ -236,17 +191,6 @@ const ArchiveModal = ({
     if (pdfUrl) {
       window.open(pdfUrl, '_blank');
     }
-  };
-
-  const formatDisplayDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
   };
 
   if (!isOpen || !employee) return null;
@@ -295,64 +239,18 @@ const ArchiveModal = ({
                   <span className="info-value">{employee.site_dep || 'Non spécifié'}</span>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Section Date de Départ */}
-          <div className="date-section">
-            <div className="section-header">
-              <h4>
-                <span className="section-icon">📅</span>
-                Date de Départ
-                <span className="required-indicator">* Obligatoire</span>
-              </h4>
-              <p className="section-description">
-                Sélectionnez la date effective de départ de l'employé
-              </p>
-            </div>
-            
-            <div className="date-selection-container">
-              <div className="date-input-group">
-                <label htmlFor="departureDate">Date de départ:</label>
-                <input
-                  type="date"
-                  id="departureDate"
-                  ref={dateInputRef}
-                  value={customDate}
-                  onChange={handleDateChange}
-                  className="date-input"
-                  required
-                />
+              <div className="departure-date">
+                <span className="date-icon">📅</span>
+                Date de départ:&nbsp;
+                {finalDepartureDate
+                  ? finalDepartureDate.toLocaleDateString("fr-FR", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric"
+                    })
+                  : "Non définie"}
               </div>
-              
-              <div className="date-quick-actions">
-                <button 
-                  type="button"
-                  className="date-action-btn today-btn"
-                  onClick={handleTodayClick}
-                >
-                  <span className="btn-icon">📅</span>
-                  Aujourd'hui
-                </button>
-                
-                {(initialDepartureDate || employee?.date_depart) && (
-                  <button 
-                    type="button"
-                    className="date-action-btn original-btn"
-                    onClick={handleOriginalDateClick}
-                  >
-                    <span className="btn-icon">↩️</span>
-                    Date originale
-                  </button>
-                )}
-              </div>
-              
-              {departureDate && (
-                <div className="date-preview">
-                  <span className="preview-label">Date sélectionnée:</span>
-                  <span className="preview-value">{formatDisplayDate(departureDate)}</span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -470,11 +368,9 @@ const ArchiveModal = ({
                       <span className="requirement-icon">✓</span>
                       <span className="requirement-text">Format PDF uniquement</span>
                     </div>
-                    <div className="requirement">
-                      <span className="requirement-icon">✓</span>
-                      <span className="requirement-text">Max 50MB</span>
-                    </div>
+                   
                   </div>
+                 
                 </>
               )}
               <input
@@ -486,7 +382,12 @@ const ArchiveModal = ({
                 disabled={isUploading}
               />
             </div>
+            
+           
           </div>
+
+         
+          
         </div>
 
         <div className="archive-modal-footer">
@@ -494,8 +395,8 @@ const ArchiveModal = ({
             <button 
               className="archive-confirm-btn"
               onClick={handleSubmit}
-              disabled={!pdfUrl || !departureDate || isUploading}
-              title={!pdfUrl ? "Téléchargez d'abord le PDF" : !departureDate ? "Sélectionnez une date de départ" : "Archiver l'employé"}
+              disabled={!pdfUrl || isUploading}
+              title={!pdfUrl ? "Téléchargez d'abord le PDF" : "Archiver l'employé"}
             >
               {isUploading ? (
                 <>
@@ -524,7 +425,7 @@ const ArchiveModal = ({
           <div className="footer-note">
             <span className="note-icon">ℹ️</span>
             <span className="note-text">
-              L'employé sera archivé avec la date sélectionnée et deviendra inaccessible depuis la liste active
+              L'archivage prendra effet immédiatement après confirmation
             </span>
           </div>
         </div>
