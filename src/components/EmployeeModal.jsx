@@ -16,6 +16,47 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
 
+  // Déplacer les composants internes à l'intérieur du composant principal
+  const DetailRow = ({ label, value }) => (
+    <div className="detail-row">
+      <strong>{label}:</strong>
+      <span>{value}</span>
+    </div>
+  );
+
+  const FormInput = ({ label, name, type = 'text', value, onChange, placeholder, required }) => (
+    <div className="form-input-group">
+      <label>{label}:{required && ' *'}</label>
+      <input
+        type={type}
+        name={name}
+        value={value || ''}
+        onChange={onChange}
+        className="form-input"
+        placeholder={placeholder}
+        required={required}
+      />
+    </div>
+  );
+
+  const FormSelect = ({ label, name, value, onChange, options = [], required }) => (
+    <div className="form-input-group">
+      <label>{label}:{required && ' *'}</label>
+      <select 
+        name={name}
+        value={value || ''}
+        onChange={onChange}
+        className="form-input"
+        required={required}
+      >
+        <option value="">-- {t('select')} --</option>
+        {options.map((opt, index) => (
+          <option key={index} value={opt}>{opt}</option>
+        ))}
+      </select>
+    </div>
+  );
+
   useEffect(() => {
     if (employee) {
       setFormData(employee);
@@ -633,45 +674,5 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     </div>
   );
 };
-
-const DetailRow = ({ label, value }) => (
-  <div className="detail-row">
-    <strong>{label}:</strong>
-    <span>{value}</span>
-  </div>
-);
-
-const FormInput = ({ label, name, type = 'text', value, onChange, placeholder, required }) => (
-  <div className="form-input-group">
-    <label>{label}:{required && ' *'}</label>
-    <input
-      type={type}
-      name={name}
-      value={value || ''}
-      onChange={onChange}
-      className="form-input"
-      placeholder={placeholder}
-      required={required}
-    />
-  </div>
-);
-
-const FormSelect = ({ label, name, value, onChange, options = [], required }) => (
-  <div className="form-input-group">
-    <label>{label}:{required && ' *'}</label>
-    <select 
-      name={name}
-      value={value || ''}
-      onChange={onChange}
-      className="form-input"
-      required={required}
-    >
-      <option value="">-- {t('select')} --</option>
-      {options.map((opt, index) => (
-        <option key={index} value={opt}>{opt}</option>
-      ))}
-    </select>
-  </div>
-);
 
 export default EmployeeModal;
