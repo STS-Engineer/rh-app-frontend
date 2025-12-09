@@ -461,7 +461,14 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                   <FormInput label="Prénom" name="prenom" value={formData.prenom} onChange={handleInputChange} required />
                   <FormInput label="CIN" name="cin" value={formData.cin} onChange={handleInputChange} required />
                   <FormInput label="Passeport" name="passeport" value={formData.passeport} onChange={handleInputChange} placeholder="Optionnel" />
-                  <FormInput label="Date de naissance" name="date_naissance" type="date" value={formatDateForInput(formData.date_naissance)} onChange={handleInputChange} required />
+                  <FormInput 
+                    label="Date de naissance" 
+                    name="date_naissance" 
+                    type="date" 
+                    value={formatDateForInput(formData.date_naissance)} 
+                    onChange={handleInputChange} 
+                    required 
+                  />
                 </div>
               </div>
 
@@ -493,9 +500,24 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     options={['CDI', 'CDD', 'Stage', 'CIVP']}
                     required 
                   />
-                  <FormInput label="Date d'embauche" name="date_debut" type="date" value={formatDateForInput(formData.date_debut)} onChange={handleInputChange} required />
-                  <FormInput label="Salaire brut" name="salaire_brute" type="number" step="0.01" value={formData.salaire_brute} onChange={handleInputChange} required />
-                  <FormInput label="Date de départ" name="date_depart" type="date" value={formatDateForInput(formData.date_depart)} onChange={handleInputChange} placeholder="Optionnel" />
+                  <FormInput 
+                    label="Date d'embauche" 
+                    name="date_debut" 
+                    type="date" 
+                    value={formatDateForInput(formData.date_debut)} 
+                    onChange={handleInputChange} 
+                    required 
+                  />
+                  <FormInput 
+                    label="Salaire brut" 
+                    name="salaire_brute" 
+                    type="number" 
+                    step="0.01" 
+                    value={formData.salaire_brute} 
+                    onChange={handleInputChange} 
+                    required 
+                  />
+                  {/* ⚠️ On enlève la date de départ d'ici */}
                 </div>
               </div>
 
@@ -530,21 +552,34 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 </div>
               </div>
 
-              {/* Bouton d'archivage conditionnel */}
-              {!hasDepartureDate && (
-                <div className="archive-section">
+              {/* Section Date de départ + Archiver côte à côte */}
+            <div className="archive-section">
+              <div className="form-grid">
+                <FormInput
+                  label="Date de départ"
+                  name="date_depart"
+                  type="date"
+                  value={formatDateForInput(formData.date_depart)}
+                  onChange={handleInputChange}
+                  placeholder="Optionnel"
+                />
+
+                <div className="archive-row">
                   <button 
                     type="button"
-                    className="archive-btn"
-                    onClick={() => setShowArchiveModal(true)}
+                    className={`archive-btn ${!hasDepartureDate ? 'archive-btn-disabled' : ''}`}
+                    onClick={() => hasDepartureDate && setShowArchiveModal(true)}
+                    disabled={!hasDepartureDate}
                   >
                     📁 Archiver l'employé
                   </button>
-                  <p className="archive-hint">
-                    Ajouter une date de départ et archiver l'employé avec son entretien de départ
-                  </p>
                 </div>
-              )}
+              </div>
+
+              <p className="archive-hint">
+                Ajouter une date de départ pour pouvoir archiver l'employé avec son entretien de départ.
+              </p>
+            </div>
             </div>
           )}
         </div>
@@ -555,25 +590,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               <button className="edit-btn" onClick={() => setIsEditing(true)}>
                 ✏️ Modifier les informations
               </button>
-              
-              {/* Bouton d'archivage dans le mode visualisation */}
-              {!formData.date_depart && formData.statut !== 'archive' && (
-                <button 
-                  className="archive-action-btn"
-                  onClick={() => {
-                    // D'abord mettre une date de départ
-                    const today = new Date().toISOString().split('T')[0];
-                    setFormData(prev => ({
-                      ...prev,
-                      date_depart: today
-                    }));
-                    // Puis ouvrir le modal d'archivage
-                    setTimeout(() => setShowArchiveModal(true), 100);
-                  }}
-                >
-                  📁 Archiver l'employé
-                </button>
-              )}
             </div>
           ) : (
             <div className="edit-actions">
@@ -607,6 +623,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
         isOpen={showArchiveModal}
         onClose={() => setShowArchiveModal(false)}
         onArchive={handleArchive}
+        departureDate={formData.date_depart}
       />
 
       {/* Modal dossier RH */}
