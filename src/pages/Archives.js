@@ -186,14 +186,7 @@ const Archives = () => {
                 <p className="departure-date">
                   📅 {t('departure')}: {new Date(employee.date_depart).toLocaleDateString()}
                 </p>
-                {employee.entretien_depart && (
-                  <button 
-                    className="view-interview-btn"
-                    onClick={(e) => handleViewEntretien(employee, e)}
-                  >
-                    📄 {t('viewInterview')}
-                  </button>
-                )}
+               
               </div>
             </div>
           ))}
