@@ -186,9 +186,7 @@ const Archives = () => {
                 <p className="departure-date">
                   📅 {t('departure')}: {new Date(employee.date_depart).toLocaleDateString()}
                 </p>
-                {employee.entretien_depart && (
-                  
-                )}
+               
               </div>
             </div>
           ))}
