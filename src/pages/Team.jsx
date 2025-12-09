@@ -4,9 +4,11 @@ import EmployeeCard from '../components/EmployeeCard';
 import EmployeeModal from '../components/EmployeeModal';
 import AddEmployeeModal from '../components/AddEmployeeModal';
 import { employeesAPI } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 import './Team.css';
 
 const Team = () => {
+  const { t } = useLanguage();
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
@@ -40,8 +42,8 @@ const Team = () => {
       setEmployees(response.data);
       setFilteredEmployees(response.data);
     } catch (error) {
-      console.error('Erreur lors du chargement des employés:', error);
-      alert('Erreur lors du chargement des employés');
+      console.error(t('errorLoadingEmployees'), error);
+      alert(t('errorLoadingEmployeesAlert'));
     } finally {
       setLoading(false);
     }
@@ -53,30 +55,21 @@ const Team = () => {
   };
 
   const handleEmployeeUpdate = (updatedEmployee) => {
-    console.log('🔄 Mise à jour de l\'employé dans la liste:', updatedEmployee);
-    
     setEmployees(prev => prev.map(emp => 
       emp.id === updatedEmployee.id ? updatedEmployee : emp
     ));
-    
     setSelectedEmployee(updatedEmployee);
-    loadEmployees(); // Recharger pour s'assurer des données à jour
+    loadEmployees();
   };
 
   const handleEmployeeArchive = (archivedEmployee) => {
-    console.log('📁 Employé archivé:', archivedEmployee);
-    
-    // Retirer l'employé archivé de la liste des actifs
     setEmployees(prev => prev.filter(emp => emp.id !== archivedEmployee.id));
     setFilteredEmployees(prev => prev.filter(emp => emp.id !== archivedEmployee.id));
-    
     setIsModalOpen(false);
     setSelectedEmployee(null);
   };
 
   const handleEmployeeAdd = (newEmployee) => {
-    console.log('➕ Nouvel employé ajouté:', newEmployee);
-    
     setEmployees(prev => [...prev, newEmployee]);
     setFilteredEmployees(prev => [...prev, newEmployee]);
     setIsAddModalOpen(false);
@@ -96,7 +89,7 @@ const Team = () => {
       <div className="team-container">
         <Sidebar />
         <div className="team-content">
-          <div className="loading">Chargement des employés...</div>
+          <div className="loading">{t('loadingEmployees')}</div>
         </div>
       </div>
     );
@@ -107,15 +100,15 @@ const Team = () => {
       <Sidebar />
       <div className="team-content">
         <header className="team-header">
-          <h1>👥 Gestion de l'Équipe</h1>
-          <p>Consultez et gérez les informations de vos employés actifs</p>
+          <h1>👥 {t('team')}</h1>
+          <p>{t('consultEmployees')}</p>
         </header>
 
         <div className="search-section">
           <div className="search-bar">
             <input
               type="text"
-              placeholder="Rechercher par nom, prénom, poste ou matricule..."
+              placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="search-input"
@@ -123,17 +116,17 @@ const Team = () => {
             <span className="search-icon">🔍</span>
           </div>
           <div className="employees-count">
-            {filteredEmployees.length} employé(s) trouvé(s)
+            {filteredEmployees.length} {t('employeesFound')}
           </div>
           <div className="action-buttons">
             <button className="refresh-btn" onClick={loadEmployees}>
-              🔄 Actualiser
+              🔄 {t('refresh')}
             </button>
             <button 
               className="add-employee-btn"
               onClick={() => setIsAddModalOpen(true)}
             >
-              ➕ Ajouter Employé
+              ➕ {t('addEmployee')}
             </button>
           </div>
         </div>
@@ -151,13 +144,13 @@ const Team = () => {
         {filteredEmployees.length === 0 && !loading && (
           <div className="no-results">
             <div className="no-results-icon">👥</div>
-            <h3>Aucun employé trouvé</h3>
-            <p>{searchTerm ? 'Aucun résultat pour votre recherche' : 'Aucun employé actif dans le système'}</p>
+            <h3>{t('noResults')}</h3>
+            <p>{searchTerm ? t('noResultsForSearch') : t('noActiveEmployees')}</p>
             <button 
               className="add-first-btn"
               onClick={() => setIsAddModalOpen(true)}
             >
-              ➕ Ajouter le premier employé
+              ➕ {t('addFirstEmployee')}
             </button>
           </div>
         )}
