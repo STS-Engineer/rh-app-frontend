@@ -1,19 +1,22 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageContext';
 import './Sidebar.css';
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
 
   const menuItems = [
-    { path: '/dashboard', label: 'Tableau de Bord', icon: '📊' },
-    { path: '/team', label: 'Équipe', icon: '👥' },
-    { path: '/demandes-rh', label: 'Demandes RH', icon: '📋' }, 
-    { path: '/fiche-de-paie', label: 'Fiche de Paie', icon: '💰' },// Nouvel item
-    { path: '/archives', label: 'Archives', icon: '📁' },
-    { path: '/statistics', label: 'Statistiques', icon: '📈' }, 
-    { path: '/settings', label: 'Demandes Visa', icon: '✈️' },
+    { path: '/dashboard', label: t('dashboard'), icon: '📊' },
+    { path: '/team', label: t('team'), icon: '👥' },
+    { path: '/demandes-rh', label: t('demands'), icon: '📋' }, 
+    { path: '/fiche-de-paie', label: t('payslip'), icon: '💰' },
+    { path: '/archives', label: t('archives'), icon: '📁' },
+    { path: '/statistics', label: t('statistics'), icon: '📈' }, 
+    { path: '/settings', label: t('settings'), icon: '⚙️' }, // Nouvel item
+    { path: '/visa', label: t('visa'), icon: '✈️' },
   ];
 
   const handleLogout = () => {
@@ -42,9 +45,14 @@ const Sidebar = () => {
       </nav>
 
       <div className="sidebar-footer">
-        
+        <div className="language-indicator">
+          <span className="language-icon">🌐</span>
+          <span className="language-text">
+            {t('language') === 'language' ? 'Langue' : t('language')}
+          </span>
+        </div>
         <button className="logout-btn" onClick={handleLogout}>
-          🚪 Déconnexion
+          🚪 {t('logout')}
         </button>
       </div>
     </div>
