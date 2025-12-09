@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { employeesAPI } from '../services/api';
 import { photoService } from '../services/photoService';
+import { useLanguage } from '../contexts/LanguageContext';
 import './AddEmployeeModal.css';
 
 const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     matricule: '',
     nom: '',
@@ -12,7 +14,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     passeport: '',
     date_naissance: '',
     poste: '',
-    site_dep: 'Siège Central',
+    site_dep: t('headquarters'),
     type_contrat: 'CDI',
     date_debut: '',
     salaire_brute: '',
@@ -29,12 +31,12 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        alert('❌ Veuillez sélectionner une image (jpg, png, gif)');
+        alert('❌ ' + t('selectImage'));
         return;
       }
       
       if (file.size > 5 * 1024 * 1024) {
-        alert('❌ La taille de l\'image ne doit pas dépasser 5MB');
+        alert('❌ ' + t('fileSizeExceeded'));
         return;
       }
       
@@ -65,56 +67,48 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     e.preventDefault();
     if (saving || uploading) return;
 
-    // Validation des emails
     if (!formData.adresse_mail || !isValidEmail(formData.adresse_mail)) {
-      alert('❌ Veuillez entrer une adresse email valide pour l\'employé');
+      alert('❌ ' + t('validEmployeeEmail'));
       return;
     }
     
     if (formData.mail_responsable1 && !isValidEmail(formData.mail_responsable1)) {
-      alert('❌ Veuillez entrer une adresse email valide pour le responsable 1');
+      alert('❌ ' + t('validSupervisor1Email'));
       return;
     }
     
     if (formData.mail_responsable2 && !isValidEmail(formData.mail_responsable2)) {
-      alert('❌ Veuillez entrer une adresse email valide pour le responsable 2');
+      alert('❌ ' + t('validSupervisor2Email'));
       return;
     }
 
     setSaving(true);
     try {
-      console.log('💾 Création nouvel employé');
-      
-      // Validation des champs requis
       if (!formData.matricule || !formData.nom || !formData.prenom || 
           !formData.cin || !formData.adresse_mail) {
-        alert('❌ Veuillez remplir tous les champs obligatoires');
+        alert('❌ ' + t('fillRequiredFields'));
         setSaving(false);
         return;
       }
 
       let photoUrl = '';
       
-      // 1. Upload de la photo si sélectionnée
       if (selectedFile) {
         setUploading(true);
         try {
           const uploadResult = await photoService.uploadEmployeePhoto(selectedFile);
           photoUrl = uploadResult.photoUrl;
-          console.log('✅ Photo uploadée:', photoUrl);
         } catch (uploadError) {
-          console.error('❌ Erreur upload photo:', uploadError);
-          alert('⚠️ Erreur lors de l\'upload de la photo. Utilisation d\'un avatar par défaut.');
+          console.error('❌ ' + t('photoUploadError'), uploadError);
+          alert('⚠️ ' + t('photoUploadErrorAlert'));
           photoUrl = photoService.generateDefaultAvatar(formData.nom, formData.prenom);
         } finally {
           setUploading(false);
         }
       } else {
-        // Pas de photo, utiliser avatar par défaut
         photoUrl = photoService.generateDefaultAvatar(formData.nom, formData.prenom);
       }
 
-      // 2. Créer l'employé avec l'URL de la photo et les emails
       const employeeData = {
         ...formData,
         photo: photoUrl,
@@ -123,18 +117,16 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       };
 
       const response = await employeesAPI.create(employeeData);
-      console.log('✅ Nouvel employé créé:', response.data);
       
       onAdd(response.data);
-      alert('✅ Employé créé avec succès!');
+      alert('✅ ' + t('employeeCreated'));
       
-      // Reset du formulaire
       handleClose();
       
     } catch (error) {
-      console.error('❌ Erreur lors de la création:', error);
+      console.error('❌ ' + t('creationError'), error);
       const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message;
-      alert('❌ Erreur lors de la création: ' + errorMessage);
+      alert('❌ ' + t('creationError') + ': ' + errorMessage);
     } finally {
       setSaving(false);
     }
@@ -149,7 +141,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       passeport: '',
       date_naissance: '',
       poste: '',
-      site_dep: 'Siège Central',
+      site_dep: t('headquarters'),
       type_contrat: 'CDI',
       date_debut: '',
       salaire_brute: '',
@@ -168,16 +160,15 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     <div className="add-modal-overlay" onClick={handleClose}>
       <div className="add-modal-content" onClick={e => e.stopPropagation()}>
         <div className="add-modal-header">
-          <h2>➕ Ajouter un Nouvel Employé</h2>
+          <h2>➕ {t('addNewEmployee')}</h2>
           <button className="close-btn" onClick={handleClose}>×</button>
         </div>
 
         <form onSubmit={handleSubmit} className="add-employee-form">
           <div className="form-grid">
             <div className="form-column">
-              {/* Section photo */}
               <div className="photo-upload-section">
-                <label>📷 Photo de l'employé</label>
+                <label>📷 {t('employeePhoto')}</label>
                 <div className="photo-upload-area">
                   {photoPreview ? (
                     <div className="photo-preview">
@@ -190,15 +181,15 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                           setPhotoPreview('');
                         }}
                       >
-                        ✕ Supprimer
+                        ✕ {t('removePhoto')}
                       </button>
                     </div>
                   ) : (
                     <div className="photo-placeholder">
                       <div className="upload-instructions">
                         <span className="upload-icon">📷</span>
-                        <p>Cliquez pour sélectionner une photo</p>
-                        <small>JPG, PNG, GIF (max 5MB)</small>
+                        <p>{t('clickToSelectPhoto')}</p>
+                        <small>{t('photoRequirements')}</small>
                       </div>
                       <input
                         type="file"
@@ -208,7 +199,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                         className="file-input"
                       />
                       <label htmlFor="photo-upload" className="upload-label">
-                        📤 Choisir une photo
+                        📤 {t('choosePhoto')}
                       </label>
                     </div>
                   )}
@@ -216,28 +207,28 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
               </div>
 
               <FormInput 
-                label="Matricule *" 
+                label={`${t('employeeID')} *`} 
                 name="matricule" 
                 value={formData.matricule} 
                 onChange={handleInputChange} 
                 required 
               />
               <FormInput 
-                label="Nom *" 
+                label={`${t('lastName')} *`} 
                 name="nom" 
                 value={formData.nom} 
                 onChange={handleInputChange} 
                 required 
               />
               <FormInput 
-                label="Prénom *" 
+                label={`${t('firstName')} *`} 
                 name="prenom" 
                 value={formData.prenom} 
                 onChange={handleInputChange} 
                 required 
               />
               <FormInput 
-                label="Email employé *" 
+                label={`${t('employeeEmail')} *`} 
                 name="adresse_mail" 
                 type="email"
                 value={formData.adresse_mail} 
@@ -249,21 +240,21 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
 
             <div className="form-column">
               <FormInput 
-                label="CIN *" 
+                label={`${t('idNumber')} *`} 
                 name="cin" 
                 value={formData.cin} 
                 onChange={handleInputChange} 
                 required 
               />
               <FormInput 
-                label="Passeport" 
+                label={t('passport')} 
                 name="passeport" 
                 value={formData.passeport} 
                 onChange={handleInputChange} 
-                placeholder="Optionnel" 
+                placeholder={t('optional')} 
               />
               <FormInput 
-                label="Date de Naissance *" 
+                label={`${t('birthDate')} *`} 
                 name="date_naissance" 
                 type="date" 
                 value={formData.date_naissance} 
@@ -271,14 +262,14 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 required 
               />
               <FormInput 
-                label="Poste *" 
+                label={`${t('position')} *`} 
                 name="poste" 
                 value={formData.poste} 
                 onChange={handleInputChange} 
                 required 
               />
               <FormInput 
-                label="Email Responsable 1" 
+                label={t('supervisor1Email')} 
                 name="mail_responsable1" 
                 type="email"
                 value={formData.mail_responsable1} 
@@ -289,33 +280,33 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
 
             <div className="form-column">
               <FormSelect 
-                label="Site/Département *" 
+                label={`${t('department')} *`} 
                 name="site_dep" 
                 value={formData.site_dep} 
                 onChange={handleInputChange}
                 options={[
-                  'Siège Central',
-                  'Site Nord', 
-                  'Site Sud',
-                  'Site Est',
-                  'Site Ouest',
-                  'Direction RH',
-                  'IT Department'
+                  t('headquarters'),
+                  t('northSite'), 
+                  t('southSite'),
+                  t('eastSite'),
+                  t('westSite'),
+                  t('hrDepartment'),
+                  t('itDepartment')
                 ]}
                 required 
               />
               
               <FormSelect 
-                label="Type de Contrat *" 
+                label={`${t('contractType')} *`} 
                 name="type_contrat" 
                 value={formData.type_contrat} 
                 onChange={handleInputChange}
-                options={['CDI', 'CDD', 'Stage', 'CIVP']}
+                options={['CDI', 'CDD', t('internship'), 'CIVP']}
                 required 
               />
               
               <FormInput 
-                label="Date Début *" 
+                label={`${t('startDate')} *`} 
                 name="date_debut" 
                 type="date" 
                 value={formData.date_debut} 
@@ -323,7 +314,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 required 
               />
               <FormInput 
-                label="Salaire Brut *" 
+                label={`${t('grossSalary')} *`} 
                 name="salaire_brute" 
                 type="number" 
                 step="0.01" 
@@ -332,7 +323,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 required 
               />
               <FormInput 
-                label="Email Responsable 2" 
+                label={t('supervisor2Email')} 
                 name="mail_responsable2" 
                 type="email"
                 value={formData.mail_responsable2} 
@@ -348,9 +339,9 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
               className="save-btn"
               disabled={saving || uploading}
             >
-              {uploading ? '📤 Upload photo...' : 
-               saving ? '⏳ Création...' : 
-               '💾 Créer Employé'}
+              {uploading ? `📤 ${t('uploadingPhoto')}` : 
+               saving ? `⏳ ${t('creating')}` : 
+               `💾 ${t('createEmployee')}`}
             </button>
             <button 
               type="button" 
@@ -358,7 +349,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
               onClick={handleClose}
               disabled={saving || uploading}
             >
-              ❌ Annuler
+              ❌ {t('cancel')}
             </button>
           </div>
         </form>
