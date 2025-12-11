@@ -105,118 +105,12 @@ const Settings = () => {
             </div>
           </div>
 
-          <div className="settings-card">
-            <div className="settings-card-header">
-              <div className="settings-icon">🔔</div>
-              <h3>{t('notifications')}</h3>
-            </div>
-            
-            <div className="notifications-section">
-              <p className="section-description">
-                {t('configureNotifications')}
-              </p>
-              
-              <div className="notification-options">
-                <div className="notification-option">
-                  <div className="notification-info">
-                    <div className="notification-title">{t('emailNotifications')}</div>
-                    <div className="notification-description">
-                      {t('receiveAlertsByEmail')}
-                    </div>
-                  </div>
-                  <label className="switch">
-                    <input 
-                      type="checkbox" 
-                      checked={notifications.email}
-                      onChange={() => handleNotificationChange('email')}
-                    />
-                    <span className="slider"></span>
-                  </label>
-                </div>
-                
-                <div className="notification-option">
-                  <div className="notification-info">
-                    <div className="notification-title">{t('pushNotifications')}</div>
-                    <div className="notification-description">
-                      {t('realTimeAlerts')}
-                    </div>
-                  </div>
-                  <label className="switch">
-                    <input 
-                      type="checkbox" 
-                      checked={notifications.push}
-                      onChange={() => handleNotificationChange('push')}
-                    />
-                    <span className="slider"></span>
-                  </label>
-                </div>
-                
-                <div className="notification-option">
-                  <div className="notification-info">
-                    <div className="notification-title">{t('weeklyReport')}</div>
-                    <div className="notification-description">
-                      {t('weeklySummaryEmail')}
-                    </div>
-                  </div>
-                  <label className="switch">
-                    <input 
-                      type="checkbox" 
-                      checked={notifications.weeklyReport}
-                      onChange={() => handleNotificationChange('weeklyReport')}
-                    />
-                    <span className="slider"></span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
+        
 
-          <div className="settings-card">
-            <div className="settings-card-header">
-              <div className="settings-icon">ℹ️</div>
-              <h3>{t('about')}</h3>
-            </div>
-            
-            <div className="about-section">
-              <div className="about-option">
-                <button className="about-btn">
-                  <span className="btn-icon">📖</span>
-                  {t('userGuide')}
-                </button>
-              </div>
-              
-              <div className="about-option">
-                <button className="about-btn">
-                  <span className="btn-icon">🔧</span>
-                  {t('technicalSupport')}
-                </button>
-              </div>
-              
-              <div className="about-option">
-                <button className="about-btn">
-                  <span className="btn-icon">📝</span>
-                  {t('termsOfUse')}
-                </button>
-              </div>
-              
-              <div className="about-option">
-                <button className="about-btn">
-                  <span className="btn-icon">🔒</span>
-                  {t('privacyPolicy')}
-                </button>
-              </div>
-            </div>
-          </div>
+         
         </div>
 
-        <div className="settings-footer">
-          <button className="save-changes-btn">
-            💾 {t('saveChanges')}
-          </button>
-          <button className="restore-defaults-btn">
-            ↩️ {t('restoreDefaults')}
-          </button>
-        </div>
+       
       </div>
     </div>
   );
