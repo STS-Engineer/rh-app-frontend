@@ -52,7 +52,7 @@ const Sidebar = () => {
 
       <div className="sidebar-footer">
         <div className="language-indicator">
-          <span className="language-icon">{getCurrentLanguageFlag()}</span>
+        
           <span className="language-text">
             {t('language')}: {language.toUpperCase()}
           </span>
