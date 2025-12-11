@@ -410,6 +410,8 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 <h4>📝 {t('personalInfo')}</h4>
                 <DetailRow label={t('idNumber')} value={formData.cin} />
                 <DetailRow label={t('passport')} value={formData.passeport || t('notSpecified')} />
+                <DetailRow label={t('passportIssueDate')} value={formatDateForDisplay(formData.date_emission_passport)} />
+                <DetailRow  label={t('passportExpiryDate')}   value={formatDateForDisplay(formData.date_expiration_passport)} />
                 <DetailRow label={t('birthDate')} value={formatDateForDisplay(formData.date_naissance)} />
               </div>
 
@@ -496,6 +498,22 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                   <FormInput label={t('firstName')} name="prenom" value={formData.prenom} onChange={handleInputChange} required />
                   <FormInput label={t('idNumber')} name="cin" value={formData.cin} onChange={handleInputChange} required />
                   <FormInput label={t('passport')} name="passeport" value={formData.passeport} onChange={handleInputChange} placeholder={t('optional')} />
+                  <FormInput 
+                    label={t('passportIssueDate')} 
+                    name="date_emission_passport" 
+                    type="date" 
+                    value={formatDateForInput(formData.date_emission_passport)} 
+                    onChange={handleInputChange} 
+                    placeholder={t('optional')} 
+                  />
+                  <FormInput 
+                    label={t('passportExpiryDate')} 
+                    name="date_expiration_passport" 
+                    type="date" 
+                    value={formatDateForInput(formData.date_expiration_passport)} 
+                    onChange={handleInputChange} 
+                    placeholder={t('optional')} 
+                  />
                   <FormInput 
                     label={t('birthDate')} 
                     name="date_naissance" 
