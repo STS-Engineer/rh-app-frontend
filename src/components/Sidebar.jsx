@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Sidebar.css';
@@ -6,7 +6,8 @@ import './Sidebar.css';
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { t, language, getAvailableLanguages } = useLanguage();
+  const { t, language, getAvailableLanguages, changeLanguage } = useLanguage();
+  const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
 
   const menuItems = [
     { path: '/dashboard', label: t('dashboard'), icon: '📊' },
@@ -24,11 +25,17 @@ const Sidebar = () => {
     navigate('/');
   };
 
-  const getCurrentLanguageFlag = () => {
-    const languages = getAvailableLanguages();
-    const currentLang = languages.find(l => l.code === language);
-    return currentLang ? currentLang.flag : '🌐';
+  const handleLanguageSelect = (langCode) => {
+    changeLanguage(langCode);
+    setIsLanguageDropdownOpen(false);
   };
+
+  const getCurrentLanguageInfo = () => {
+    const languages = getAvailableLanguages();
+    return languages.find(l => l.code === language) || languages[0];
+  };
+
+  const currentLang = getCurrentLanguageInfo();
 
   return (
     <div className="sidebar">
@@ -51,12 +58,38 @@ const Sidebar = () => {
       </nav>
 
       <div className="sidebar-footer">
-        <div className="language-indicator">
-          <span className="language-icon">{getCurrentLanguageFlag()}</span>
-         
+        {/* Sélecteur de langue amélioré */}
+        <div className="language-selector-container">
+          <div className="language-current" onClick={() => setIsLanguageDropdownOpen(!isLanguageDropdownOpen)}>
+            <span className="language-flag">{currentLang.flag}</span>
+            <span className="language-name">{currentLang.name}</span>
+            <span className="language-chevron">
+              {isLanguageDropdownOpen ? '▲' : '▼'}
+            </span>
+          </div>
+          
+          {isLanguageDropdownOpen && (
+            <div className="language-dropdown">
+              {getAvailableLanguages().map((lang) => (
+                <div
+                  key={lang.code}
+                  className={`language-option ${language === lang.code ? 'selected' : ''}`}
+                  onClick={() => handleLanguageSelect(lang.code)}
+                >
+                  <span className="language-option-flag">{lang.flag}</span>
+                  <span className="language-option-name">{lang.name}</span>
+                  {language === lang.code && (
+                    <span className="language-check">✓</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+
         <button className="logout-btn" onClick={handleLogout}>
-          🚪 {t('logout')}
+          <span className="logout-icon">🚪</span>
+          {t('logout')}
         </button>
       </div>
     </div>
