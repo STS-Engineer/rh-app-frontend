@@ -1289,7 +1289,8 @@ export const LanguageProvider = ({ children }) => {
       moscovium: 'Moscovium',
       livermorium: 'Livermorium',
       tennessine: 'Tennesse',
-      oganesson: 'Oganesson'
+      oganesson: 'Oganesson',
+      employee_ID: "matricule d'employé"
     },
     en: {
       // Navigation
