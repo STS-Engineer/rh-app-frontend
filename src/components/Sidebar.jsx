@@ -53,9 +53,7 @@ const Sidebar = () => {
       <div className="sidebar-footer">
         <div className="language-indicator">
           <span className="language-icon">{getCurrentLanguageFlag()}</span>
-          <span className="language-text">
-            {t('language')}: {language.toUpperCase()}
-          </span>
+         
         </div>
         <button className="logout-btn" onClick={handleLogout}>
           🚪 {t('logout')}
