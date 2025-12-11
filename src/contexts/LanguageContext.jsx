@@ -84,6 +84,8 @@ export const LanguageProvider = ({ children }) => {
       noDocument: 'Aucun document',
       requiredField: 'Ce champ est requis',
       optional: 'Optionnel',
+      passportIssueDate: "Date d'émission du passeport",
+      passportExpiryDate: "Date d'expiration du passeport",
       
       // Add Employee Modal
       addNewEmployee: 'Ajouter un Nouvel Employé',
@@ -1330,6 +1332,8 @@ export const LanguageProvider = ({ children }) => {
       noDocument: 'No document',
       requiredField: 'This field is required',
       optional: 'Optional',
+      passportIssueDate: "Passport Issue Date",
+      passportExpiryDate: "Passport Expiry Date",
       
       // Add Employee Modal
       addNewEmployee: 'Add New Employee',
@@ -1712,6 +1716,8 @@ export const LanguageProvider = ({ children }) => {
       noDocument: '无文件',
       requiredField: '此字段为必填项',
       optional: '可选',
+      passportIssueDate: "护照签发日期",
+      passportExpiryDate: "护照到期日期",
       
       // Add Employee Modal
       addNewEmployee: '添加新员工',
