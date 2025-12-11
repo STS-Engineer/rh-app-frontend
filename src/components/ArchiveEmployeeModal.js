@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import './ArchiveEmployeeModal.css';
 
 const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
+  const { t } = useLanguage();
   const [pdfLoading, setPdfLoading] = useState(false);
   
   if (!isOpen || !employee) return null;
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'Non renseignée';
-    return new Date(dateString).toLocaleDateString('fr-FR');
+    if (!dateString) return t('notSpecified');
+    return new Date(dateString).toLocaleDateString();
   };
 
   const formatDateTime = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR', {
+    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString({
       hour: '2-digit',
       minute: '2-digit'
     });
@@ -50,7 +52,7 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
   };
 
   const getDocumentName = (url) => {
-    if (!url) return 'Document PDF';
+    if (!url) return t('documentPDF');
     
     try {
       const urlObj = new URL(url);
@@ -58,7 +60,6 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
       const filename = pathname.split('/').pop();
       
       if (filename && filename.includes('.pdf')) {
-        // Retirer le timestamp et les numéros de génération
         let cleanName = filename
           .replace(/^archive-/, '')
           .replace(/-\d+-\d+\.pdf$/, '.pdf')
@@ -68,9 +69,9 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
         return decodeURIComponent(cleanName);
       }
       
-      return `Document - ${urlObj.hostname}`;
+      return `${t('document')} - ${urlObj.hostname}`;
     } catch {
-      return 'Document PDF';
+      return t('documentPDF');
     }
   };
 
@@ -83,27 +84,24 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
   const handleViewEntretien = async (e) => {
     e.preventDefault();
     
-    // Priorité : pdf_archive_url (nouveau système) puis entretien_depart (ancien système)
     const pdfUrl = employee.pdf_archive_url || employee.entretien_depart;
     
     if (!pdfUrl) {
-      alert('❌ Aucun document d\'entretien de départ disponible');
+      alert('❌ ' + t('noDocumentAvailable'));
       return;
     }
 
     if (!isValidUrl(pdfUrl)) {
-      alert('❌ Le lien vers l\'entretien n\'est pas une URL valide');
+      alert('❌ ' + t('invalidURL'));
       return;
     }
 
     setPdfLoading(true);
     
     try {
-      // Ouvrir le PDF dans un nouvel onglet
       const newWindow = window.open(pdfUrl, '_blank');
       
       if (!newWindow || newWindow.closed) {
-        // Fallback pour les bloqueurs de popup
         const link = document.createElement('a');
         link.href = pdfUrl;
         link.target = '_blank';
@@ -114,8 +112,8 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
       }
       
     } catch (error) {
-      console.error('Erreur ouverture PDF:', error);
-      alert('❌ Impossible d\'ouvrir le document. Le lien peut être invalide.');
+      console.error(t('pdfOpenError'), error);
+      alert('❌ ' + t('cannotOpenDocument'));
     } finally {
       setPdfLoading(false);
     }
@@ -125,12 +123,12 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
     e.preventDefault();
     
     if (!employee.dossier_rh) {
-      alert('❌ Aucun dossier RH disponible');
+      alert('❌ ' + t('noHRDossierAvailable'));
       return;
     }
 
     if (!isValidUrl(employee.dossier_rh)) {
-      alert('❌ Le lien vers le dossier RH n\'est pas une URL valide');
+      alert('❌ ' + t('invalidURL'));
       return;
     }
 
@@ -150,21 +148,18 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
   const getDocumentPreview = (url) => {
     if (!url) return null;
     
-    // Vérifier si c'est un PDF stocké sur notre serveur
     if (url.includes('/api/archive-pdfs/') || url.includes('/api/pdfs/')) {
-      return '📄 Document stocké sur le serveur';
+      return '📄 ' + t('documentStoredOnServer');
     }
     
-    // Vérifier si c'est un lien externe
     try {
       const urlObj = new URL(url);
-      return `🔗 Lien externe: ${urlObj.hostname}`;
+      return `🔗 ${t('externalLink')}: ${urlObj.hostname}`;
     } catch {
-      return '📄 Document PDF';
+      return '📄 ' + t('documentPDF');
     }
   };
 
-  // Vérifier si on a des documents
   const hasArchivePdf = !!employee.pdf_archive_url;
   const hasEntretienDep = !!employee.entretien_depart;
   const hasDossierRH = !!employee.dossier_rh;
@@ -176,18 +171,17 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
           <div className="header-content">
             <h2>
               <span className="header-icon">📁</span>
-              Détails de l'Employé Archivé
+              {t('archiveDetails')}
             </h2>
             <div className="archive-badge">
               <span className="badge-icon">📋</span>
-              <span className="badge-text">ARCHIVÉ</span>
+              <span className="badge-text">{t('archived').toUpperCase()}</span>
             </div>
           </div>
-          <button className="close-btn" onClick={onClose} title="Fermer">×</button>
+          <button className="close-btn" onClick={onClose} title={t('close')}>×</button>
         </div>
 
         <div className="archive-employee-modal-body">
-          {/* En-tête employé */}
           <div className="employee-header">
             <img 
               src={getPhotoUrl()} 
@@ -201,52 +195,51 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
               <h3>{employee.prenom} {employee.nom}</h3>
               <div className="info-grid">
                 <div className="info-item">
-                  <span className="info-label">Matricule</span>
+                  <span className="info-label">{t('employeeID')}</span>
                   <span className="info-value">{employee.matricule}</span>
                 </div>
                 <div className="info-item">
-                  <span className="info-label">Poste</span>
+                  <span className="info-label">{t('position')}</span>
                   <span className="info-value">{employee.poste}</span>
                 </div>
                 <div className="info-item">
-                  <span className="info-label">Département</span>
+                  <span className="info-label">{t('department')}</span>
                   <span className="info-value">{employee.site_dep}</span>
                 </div>
                 <div className="info-item">
-                  <span className="info-label">Contrat</span>
+                  <span className="info-label">{t('contractType')}</span>
                   <span className="info-value">{employee.type_contrat}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Informations principales */}
           <div className="employee-details-grid">
             <div className="detail-section">
               <h4>
                 <span className="section-icon">📝</span>
-                Informations Personnelles
+                {t('personalInfo')}
               </h4>
-              <DetailRow label="CIN" value={employee.cin} />
-              <DetailRow label="Passeport" value={employee.passeport || 'Non renseigné'} />
-              <DetailRow label="Date de naissance" value={formatDate(employee.date_naissance)} />
+              <DetailRow label={t('idNumber')} value={employee.cin} />
+              <DetailRow label={t('passport')} value={employee.passeport || t('notSpecified')} />
+              <DetailRow label={t('birthDate')} value={formatDate(employee.date_naissance)} />
             </div>
 
             <div className="detail-section">
               <h4>
                 <span className="section-icon">💼</span>
-                Carrière
+                {t('career')}
               </h4>
-              <DetailRow label="Date d'embauche" value={formatDate(employee.date_debut)} />
-              <DetailRow label="Salaire brut" value={`${employee.salaire_brute || 0} DT`} />
+              <DetailRow label={t('hireDate')} value={formatDate(employee.date_debut)} />
+              <DetailRow label={t('grossSalary')} value={`${employee.salaire_brute || 0} DT`} />
               <DetailRow 
-                label="Date de départ" 
+                label={t('departureDate')} 
                 value={
                   <span className="departure-date">
                     {formatDate(employee.date_depart)}
                     {employee.date_depart && (
                       <span className="departure-days">
-                        ({Math.floor((new Date() - new Date(employee.date_depart)) / (1000 * 60 * 60 * 24))} jours)
+                        ({Math.floor((new Date() - new Date(employee.date_depart)) / (1000 * 60 * 60 * 24))} {t('days')})
                       </span>
                     )}
                   </span>
@@ -254,26 +247,24 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
               />
             </div>
 
-            {/* Section Documents - MODIFIÉE */}
             <div className="detail-section documents-section">
               <h4>
                 <span className="section-icon">📎</span>
-                Documents d'Archive
+                {t('archiveDocuments')}
               </h4>
               
-              {/* Document d'archive principal (nouveau système) */}
               {hasArchivePdf && (
                 <div className="document-card main-document">
                   <div className="document-header">
                     <span className="document-icon">📁</span>
                     <div className="document-info">
-                      <h5 className="document-title">Entretien de départ</h5>
-                      <p className="document-subtitle">Document principal d'archive</p>
+                      <h5 className="document-title">{t('departureInterview')}</h5>
+                      <p className="document-subtitle">{t('mainArchiveDocument')}</p>
                     </div>
                   </div>
                   <div className="document-details">
                     <div className="document-url">
-                      <span className="url-label">URL:</span>
+                      <span className="url-label">{t('url')}:</span>
                       <span className="url-value" title={employee.pdf_archive_url}>
                         {truncateUrl(employee.pdf_archive_url, 60)}
                       </span>
@@ -290,31 +281,30 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
                     {pdfLoading ? (
                       <>
                         <span className="loading-spinner"></span>
-                        Ouverture...
+                        {t('opening')}...
                       </>
                     ) : (
                       <>
                         <span className="btn-icon">👁️</span>
-                        Ouvrir le PDF
+                        {t('openPDF')}
                       </>
                     )}
                   </button>
                 </div>
               )}
 
-              {/* Ancien système entretien_depart */}
               {!hasArchivePdf && hasEntretienDep && (
                 <div className="document-card legacy-document">
                   <div className="document-header">
                     <span className="document-icon">📄</span>
                     <div className="document-info">
-                      <h5 className="document-title">Entretien de départ (ancien)</h5>
-                      <p className="document-subtitle">Ancien format de document</p>
+                      <h5 className="document-title">{t('departureInterview')} ({t('legacy')})</h5>
+                      <p className="document-subtitle">{t('legacyFormat')}</p>
                     </div>
                   </div>
                   <div className="document-details">
                     <div className="document-url">
-                      <span className="url-label">Lien:</span>
+                      <span className="url-label">{t('link')}:</span>
                       <span className="url-value" title={employee.entretien_depart}>
                         {truncateUrl(employee.entretien_depart, 60)}
                       </span>
@@ -326,19 +316,18 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
                     disabled={pdfLoading}
                   >
                     <span className="btn-icon">🔗</span>
-                    Ouvrir le lien
+                    {t('openLink')}
                   </button>
                 </div>
               )}
 
-              {/* Dossier RH */}
               {hasDossierRH && (
                 <div className="document-card dossier-card">
                   <div className="document-header">
                     <span className="document-icon">📋</span>
                     <div className="document-info">
-                      <h5 className="document-title">Dossier RH complet</h5>
-                      <p className="document-subtitle">Dossier ressources humaines</p>
+                      <h5 className="document-title">{t('completeHRFile')}</h5>
+                      <p className="document-subtitle">{t('hrDossier')}</p>
                     </div>
                   </div>
                   <button
@@ -346,46 +335,44 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
                     onClick={handleViewDossierRH}
                   >
                     <span className="btn-icon">📋</span>
-                    Consulter le dossier
+                    {t('consultDossier')}
                   </button>
                 </div>
               )}
 
-              {/* Aucun document */}
               {!hasArchivePdf && !hasEntretienDep && !hasDossierRH && (
                 <div className="no-documents">
                   <div className="no-docs-icon">📭</div>
-                  <p className="no-docs-text">Aucun document d'archive disponible</p>
+                  <p className="no-docs-text">{t('noDocumentsAvailable')}</p>
                   <p className="no-docs-subtext">
-                    L'employé a été archivé sans document d'entretien de départ
+                    {t('archivedWithoutDocument')}
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Informations d'archivage */}
             <div className="detail-section archive-info">
               <h4>
                 <span className="section-icon">⏱️</span>
-                Informations d'Archivage
+                {t('archiveInfo')}
               </h4>
               <DetailRow 
-                label="Statut" 
+                label={t('status')} 
                 value={
                   <span className={`status-badge ${employee.statut || 'archive'}`}>
-                    {employee.statut === 'archive' ? 'ARCHIVÉ' : employee.statut?.toUpperCase() || 'ARCHIVÉ'}
+                    {employee.statut === 'archive' ? t('archived').toUpperCase() : employee.statut?.toUpperCase() || t('archived').toUpperCase()}
                   </span>
                 } 
               />
               {employee.updated_at && (
                 <DetailRow 
-                  label="Dernière mise à jour" 
+                  label={t('lastUpdate')} 
                   value={formatDateTime(employee.updated_at)} 
                 />
               )}
               {employee.created_at && (
                 <DetailRow 
-                  label="Date de création" 
+                  label={t('creationDate')} 
                   value={formatDate(employee.created_at)} 
                 />
               )}
@@ -398,23 +385,23 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
             <button 
               className="print-btn"
               onClick={() => window.print()}
-              title="Imprimer les détails"
+              title={t('printDetails')}
             >
               <span className="btn-icon">🖨️</span>
-              Imprimer
+              {t('print')}
             </button>
             <button 
               className="close-modal-btn"
               onClick={onClose}
             >
               <span className="btn-icon">←</span>
-              Retour à la liste
+              {t('backToList')}
             </button>
           </div>
           <div className="footer-note">
             <span className="note-icon">ℹ️</span>
             <span className="note-text">
-              Les documents d'archive sont conservés pour une durée de 5 ans minimum
+              {t('documentsKept')}
             </span>
           </div>
         </div>
