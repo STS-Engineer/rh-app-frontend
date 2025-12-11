@@ -264,7 +264,33 @@ export const LanguageProvider = ({ children }) => {
       privacyPolicy: 'Politique de confidentialité',
       saveChanges: 'Enregistrer les modifications',
       restoreDefaults: 'Restaurer les paramètres par défaut',
+
+      // ArchiveEmployeeModal
+      archiveDetails: 'Détails de l\'Employé Archivé',
+      career: 'Carrière',
+      documentStoredOnServer: 'Document stocké sur le serveur',
+      externalLink: 'Lien externe',
+      pdfOpenError: 'Erreur ouverture PDF',
+      cannotOpenDocument: 'Impossible d\'ouvrir le document. Le lien peut être invalide.',
+      noHRDossierAvailable: 'Aucun dossier RH disponible',
+      invalidURL: 'Le lien n\'est pas une URL valide',
+      link: 'Lien',
+      opening: 'Ouverture',
+      openPDF: 'Ouvrir le PDF',
+      legacy: 'ancien',
+      openLink: 'Ouvrir le lien',
+      hrDossier: 'Dossier ressources humaines',
+      consultDossier: 'Consulter le dossier',
+      days: 'jours',
+      url: 'URL',
       
+      // Settings
+      languageChangedTo: 'Langue changée en',
+      defaultLanguage: 'Langue par défaut',
+      englishLanguage: 'English language',
+      chineseLanguage: 'Chinese language',
+      currentLanguage: 'Langue actuelle',
+      changeEffectiveImmediately: 'Le changement prend effet immédiatement sur toute l\'application',
       // Common
       loading: 'Chargement...',
       yes: 'Oui',
@@ -1304,8 +1330,34 @@ export const LanguageProvider = ({ children }) => {
       next30Days: 'In the next 30 days',
       monthlyGross: 'Monthly gross salary total',
       formerEmployees: 'Former employees',
+
+        // ArchiveEmployeeModal
+      archiveDetails: 'Archived Employee Details',
+      career: 'Career',
+      documentStoredOnServer: 'Document stored on server',
+      externalLink: 'External link',
+      pdfOpenError: 'PDF opening error',
+      cannotOpenDocument: 'Cannot open document. Link may be invalid.',
+      noHRDossierAvailable: 'No HR dossier available',
+      invalidURL: 'Link is not a valid URL',
+      link: 'Link',
+      opening: 'Opening',
+      openPDF: 'Open PDF',
+      legacy: 'legacy',
+      openLink: 'Open link',
+      hrDossier: 'HR dossier',
+      consultDossier: 'Consult dossier',
+      days: 'days',
+      url: 'URL',
       
-      // Team
+      // Settings
+      languageChangedTo: 'Language changed to',
+      defaultLanguage: 'Default language',
+      englishLanguage: 'English language',
+      chineseLanguage: 'Chinese language',
+      currentLanguage: 'Current language',
+      changeEffectiveImmediately: 'Change takes effect immediately throughout the application',
+          // Team
       employeeManagement: 'Team Management',
       consultEmployees: 'View and manage your active employees information',
       searchPlaceholder: 'Search by name, first name, position or employee ID...',
@@ -1799,8 +1851,35 @@ export const LanguageProvider = ({ children }) => {
       exportStatisticsExcel: '导出统计Excel',
       exportEmployeesExcel: '导出员工Excel',
       noHiresThisMonth: '本月无招聘',
+
+
+            // ArchiveEmployeeModal
+      archiveDetails: '归档员工详情',
+      career: '职业',
+      documentStoredOnServer: '服务器上存储的文档',
+      externalLink: '外部链接',
+      pdfOpenError: 'PDF打开错误',
+      cannotOpenDocument: '无法打开文档。链接可能无效。',
+      noHRDossierAvailable: '无人力资源档案可用',
+      invalidURL: '链接不是有效的URL',
+      link: '链接',
+      opening: '打开中',
+      openPDF: '打开PDF',
+      legacy: '旧版',
+      openLink: '打开链接',
+      hrDossier: '人力资源档案',
+      consultDossier: '查阅档案',
+      days: '天',
+      url: '网址',
       
-      // Demandes RH
+      // Settings
+      languageChangedTo: '语言已更改为',
+      defaultLanguage: '默认语言',
+      englishLanguage: '英语',
+      chineseLanguage: '中文',
+      currentLanguage: '当前语言',
+      changeEffectiveImmediately: '更改将在整个应用中立即生效',
+          // Demandes RH
       hrRequests: '人力资源请求咨询',
       requestTracking: '员工请求的查看和跟踪',
       searchFilters: '搜索过滤器',
