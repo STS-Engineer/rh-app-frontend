@@ -195,7 +195,7 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
               <h3>{employee.prenom} {employee.nom}</h3>
               <div className="info-grid">
                 <div className="info-item">
-                  <span className="info-label">{t('employeeID')}</span>
+                  <span className="info-label">{t('employee_ID')}</span>
                   <span className="info-value">{employee.matricule}</span>
                 </div>
                 <div className="info-item">
