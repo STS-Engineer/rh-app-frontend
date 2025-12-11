@@ -12,6 +12,8 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     prenom: '',
     cin: '',
     passeport: '',
+    date_emission_passport: '',     
+    date_expiration_passport: '',  
     date_naissance: '',
     poste: '',
     site_dep: t('headquarters'),
@@ -139,6 +141,8 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       prenom: '',
       cin: '',
       passeport: '',
+      date_emission_passport: '',    
+      date_expiration_passport: '', 
       date_naissance: '',
       poste: '',
       site_dep: t('headquarters'),
@@ -253,6 +257,24 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 onChange={handleInputChange} 
                 placeholder={t('optional')} 
               />
+              <FormInput 
+                label={t('passportIssueDate')} 
+                name="date_emission_passport" 
+                type="date" 
+                value={formData.date_emission_passport} 
+                onChange={handleInputChange} 
+                placeholder={t('optional')} 
+              />
+              <FormInput 
+                label={t('passportExpiryDate')} 
+                name="date_expiration_passport" 
+                type="date" 
+                value={formData.date_expiration_passport} 
+                onChange={handleInputChange} 
+                placeholder={t('optional')} 
+              />         
+
+                         
               <FormInput 
                 label={`${t('birthDate')} *`} 
                 name="date_naissance" 
