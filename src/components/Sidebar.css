@@ -376,3 +376,8 @@
 .sidebar-footer {
   animation: slideUp 0.4s ease-out;
 }
+.header-logo {
+  width: 215px;
+  max-width: 40vw; /* s'adapte aux petits écrans */
+  height: auto;
+}
