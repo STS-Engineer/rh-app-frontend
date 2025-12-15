@@ -20,9 +20,7 @@
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, 
-    var(--primary-blue) 0%,
-    var(--primary-blue-dark) 100%),
+  background: 
     url('background.jpg') no-repeat center center/cover;
   padding: 20px;
   font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
