@@ -640,7 +640,7 @@
 
 
 .header-logo {
-  width: 100px;
+  width: 200px;
   max-width: 40vw; /* s'adapte aux petits écrans */
   height: auto;
 }
