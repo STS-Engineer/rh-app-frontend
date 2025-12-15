@@ -637,3 +637,10 @@
 .form-group input[type="text"] + .password-toggle .eye-open {
   display: block;
 }
+
+
+.header-logo {
+  width: 100px;
+  max-width: 40vw; /* s'adapte aux petits écrans */
+  height: auto;
+}
