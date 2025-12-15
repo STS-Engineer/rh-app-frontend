@@ -19,7 +19,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 131vh;
+  min-height: 133vh;
   background: 
     url('backgroundd.jpg') no-repeat center center/cover;
   padding: 20px;
@@ -640,7 +640,7 @@
 
 
 .header-logo {
-  width: 320px;
-  max-width: 50vw; /* s'adapte aux petits écrans */
+  width: 325px;
+  max-width: 52vw; /* s'adapte aux petits écrans */
   height: auto;
 }
