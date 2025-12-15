@@ -188,9 +188,7 @@ const Login = () => {
               </div>
             </form>
             
-            <div className="forgot-password-info">
-              <p><small>⚠️ {t('temporaryPasswordNote')}</small></p>
-            </div>
+            
           </div>
         )}
 
