@@ -2,6 +2,8 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Sidebar.css';
+import logo from './logo_sts.png';
+import logoo from './logo_sts2.png';
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -33,7 +35,7 @@ const Sidebar = () => {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h2>🏢 {t('appTitle')}</h2>
+        <img src={logoo} alt="Logo" className="header-logo" />
         <p className="sidebar-subtitle">{t('appSubtitle')}</p>
       </div>
       
