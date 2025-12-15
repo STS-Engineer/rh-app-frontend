@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Login.css';
+import logoo from './logo_sts.png';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -81,7 +82,7 @@ const Login = () => {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h1>🏢 {t('appTitle')}</h1>
+           <img src={logoo} alt="Logo" className="header-logo" />
           <p>{t('loginToYourAccount')}</p>
         </div>
 
