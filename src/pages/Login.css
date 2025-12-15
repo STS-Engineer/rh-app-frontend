@@ -19,7 +19,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 175vh;
+  min-height: 150vh;
   background: 
     url('backgroundd.jpg') no-repeat center center/cover;
   padding: 20px;
