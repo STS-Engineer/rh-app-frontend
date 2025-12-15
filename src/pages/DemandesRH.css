@@ -20,7 +20,7 @@
   background: linear-gradient(135deg, 
     rgba(248, 249, 250, 0.98) 0%,
     rgba(240, 242, 245, 0.98) 100%);
-  min-height: 100vh;
+  min-height: 200vh;
   font-family: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   margin-left: 280px;
   transition: all 0.3s ease;
