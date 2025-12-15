@@ -426,7 +426,7 @@
 /* Grille des demandes */
 .demandes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(680px, 1fr));
   gap: 30px;
 }
 
