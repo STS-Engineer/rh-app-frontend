@@ -36,7 +36,7 @@ const Sidebar = () => {
     <div className="sidebar">
       <div className="sidebar-header">
         <img src={logo} alt="Logo" className="header-logo" />
-        <p className="sidebar-subtitle">{t('appSubtitle')}</p>
+    
       </div>
       
       <nav className="sidebar-nav">
