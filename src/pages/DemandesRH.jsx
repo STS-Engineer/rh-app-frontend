@@ -537,28 +537,28 @@ const DemandesRH = () => {
 
       <div className="stats-section">
         <div className="stat-card total">
-          <div className="stat-icon"><span className="fi fi-br"></span></div>
+          <div className="stat-icon"><span className="fi fi-rr-rectangle-list"></span></div>
           <div className="stat-content">
             <div className="stat-number">{demandes.length}</div>
             <div className="stat-label">{t('totalRequests')}</div>
           </div>
         </div>
         <div className="stat-card pending">
-          <div className="stat-icon">⏳</div>
+          <div className="stat-icon"><span className="fi fi-rr-hourglass-end"></span></div>
           <div className="stat-content">
             <div className="stat-number">{demandes.filter(d => d.statut === 'en_attente').length}</div>
             <div className="stat-label">{t('pending')}</div>
           </div>
         </div>
         <div className="stat-card approved">
-          <div className="stat-icon">✅</div>
+          <div className="stat-icon"><span className="fi fi-rs-badge-check"></span></div>
           <div className="stat-content">
             <div className="stat-number">{demandes.filter(d => d.statut === 'approuve').length}</div>
             <div className="stat-label">{t('approved')}</div>
           </div>
         </div>
         <div className="stat-card refused">
-          <div className="stat-icon">❌</div>
+          <div className="stat-icon"><span className="fi fi-bs-shield-xmar"></span></div>
           <div className="stat-content">
             <div className="stat-number">{demandes.filter(d => d.statut === 'refuse').length}</div>
             <div className="stat-label">{t('refused')}</div>
