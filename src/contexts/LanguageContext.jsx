@@ -60,7 +60,7 @@ export const LanguageProvider = ({ children }) => {
       // Team
       employeeManagement: 'Gestion de l\'Équipe',
       consultEmployees: 'Consulter et gérez les informations de vos employés actifs',
-      searchPlaceholder: 'Rechercher par nom, prénom, poste ou matricule...',
+      searchPlaceholder: 'Rechercher par nom, prénom ou matricule',
       employeesFound: 'employés trouvés',
       refresh: 'Actualiser',
       addEmployee: 'Ajouter Employé',
