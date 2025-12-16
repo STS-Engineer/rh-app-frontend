@@ -213,16 +213,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                   )}
                 </div>
                 
-                <div className="upload-instructions">
-                  <div className="instructions-title">
-                    <span>ℹ️</span> {t('instructions')}
-                  </div>
-                  <ul className="instructions-list">
-                    <li>{t('photoMaxSize')}</li>
-                    <li>{t('supportedFormats')}</li>
-                    <li>{t('recommendedDimensions')}</li>
-                  </ul>
-                </div>
+             
               </div>
             </div>
 
