@@ -164,15 +164,22 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) =>
   };
 
   const handleSubmit = () => {
-    if (!pdfUrl.trim()) {
-      setErrorMessage('❌ Veuillez d\'abord télécharger le PDF d\'entretien');
-      return;
-    }
+  if (!pdfUrl.trim()) {
+    setErrorMessage('❌ Veuillez d\'abord télécharger le PDF d\'entretien');
+    return;
+  }
 
-    setErrorMessage('');
-    // Envoyer le lien PDF au parent
-    onArchive(pdfUrl);
+  // Ajouter la date de départ de l'employé
+  const archiveData = {
+    pdf_url: pdfUrl,
+    entretien_depart: 'Entretien de départ archivé',
+    date_depart: departureDate  // <-- Envoyer la date de départ
   };
+
+  setErrorMessage('');
+  // Envoyer toutes les données au parent
+  onArchive(pdfUrl, archiveData); // <-- Modifier pour envoyer plus de données
+};
 
   const handleClose = () => {
     // Réinitialiser tout
