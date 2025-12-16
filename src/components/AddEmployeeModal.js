@@ -307,15 +307,15 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 value={formData.site_dep} 
                 onChange={handleInputChange}
                 options={[
-                  t('Commerce'),
-                  t('Finance'), 
-                  t('Chiffrage'),
-                  t('Digitale'),
-                  t('General'),
-                  t('Logistique Germany'),
-                  t('Logistique Groupe'),
-                  t('Achat'),
-                  t('Qualité')
+                      t('Commerce'),
+                      t('Finance'),
+                      t('Chiffrage'),
+                      t('Digitale'),
+                      t('Général'),
+                      t('Logistique Germany'),
+                      t('Logistique Groupe'),
+                      t('Achat'),
+                      t('Qualité')
                 ]}
                 required 
               />
