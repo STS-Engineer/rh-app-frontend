@@ -158,11 +158,11 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     }
   };
 
-  const handleArchive = async (pdfUrl, archiveData) => {
+ const handleArchive = async (pdfUrl, archiveData) => {
   try {
     setSaving(true);
     
-    console.log('📁 ' + t('archivingEmployee'), pdfUrl, 'Date:', archiveData?.date_depart);
+    console.log('📁 ' + t('archivingEmployee'), pdfUrl, 'Date brute:', archiveData?.date_depart);
     
     const token = localStorage.getItem('token');
     if (!token) {
@@ -174,75 +174,96 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     
     console.log('📤 ' + t('requestTo'), archiveUrl);
     
-    // Préparer les données d'archivage
+    // Préparer les données d'archivage - formater la date
+    let dateDepart = archiveData?.date_depart || formData.date_depart;
+    
+    // Si la date est au format Date object ou ISO, la formater en YYYY-MM-DD
+    if (dateDepart) {
+      const dateObj = new Date(dateDepart);
+      if (!isNaN(dateObj.getTime())) {
+        dateDepart = dateObj.toISOString().split('T')[0];
+        console.log('📅 Date formatée pour envoi:', dateDepart);
+      }
+    }
+    
     const requestData = {
       pdf_url: pdfUrl,
       entretien_depart: t('archivedDepartureInterview'),
-      date_depart: archiveData?.date_depart || formData.date_depart // <-- Inclure la date
+      date_depart: dateDepart
     };
     
-    console.log('📋 Données d\'archivage:', requestData);
+    console.log('📋 Données d\'archivage envoyées:', requestData);
     
     const response = await fetch(archiveUrl, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
-      body: JSON.stringify(requestData) // <-- Envoyer toutes les données
+      body: JSON.stringify(requestData)
     });
 
-
-
-      const contentType = response.headers.get('content-type');
-      let data;
-
-      if (contentType && contentType.includes('application/json')) {
-        data = await response.json();
-      } else {
-        const text = await response.text();
-        console.error('❌ ' + t('nonJSONResponse'), text.substring(0, 200));
-        try {
-          data = JSON.parse(text);
-        } catch {
-          throw new Error(`${t('serverError')} (${response.status}): ${text.substring(0, 100)}`);
-        }
-      }
-
-      if (!response.ok) {
-        console.error('❌ ' + t('responseError'), data);
-        throw new Error(data.error || data.message || `${t('error')} ${response.status}`);
-      }
-
-      console.log('✅ ' + t('archiveSuccess'), data);
-      
-      if (data.employee) {
-        setFormData(data.employee);
-      }
-      
-      onArchive(data.employee || { id: employee.id, statut: 'archive' });
-      
-      setShowArchiveModal(false);
-      onClose();
-      
-      alert('✅ ' + t('employeeArchived'));
-      
-    } catch (error) {
-      console.error('❌ ' + t('archiveError'), error);
-      
-      let errorMessage = error.message;
-      
-      if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-        errorMessage = t('networkError');
-      } else if (error.message.includes('Unexpected token')) {
-        errorMessage = t('serverErrorContactAdmin');
-      }
-      
-      alert(`❌ ${t('archiveError')}: ${errorMessage}`);
-    } finally {
-      setSaving(false);
+    console.log('📥 Réponse reçue - Status:', response.status);
+    
+    // Récupérer le texte de la réponse d'abord pour le débogage
+    const responseText = await response.text();
+    console.log('📋 Contenu réponse:', responseText.substring(0, 500));
+    
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ Impossible de parser JSON:', parseError);
+      throw new Error(`Réponse serveur invalide: ${responseText.substring(0, 200)}`);
     }
-  };
+
+    if (!response.ok) {
+      console.error('❌ Erreur serveur détaillée:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: data
+      });
+      
+      throw new Error(
+        data.error || 
+        data.details || 
+        data.message || 
+        `Erreur ${response.status}: ${JSON.stringify(data || {})}`
+      );
+    }
+
+    console.log('✅ ' + t('archiveSuccess'), data);
+    
+    if (data.employee) {
+      setFormData(data.employee);
+    }
+    
+    onArchive(data.employee || { id: employee.id, statut: 'archive' });
+    
+    setShowArchiveModal(false);
+    onClose();
+    
+    alert('✅ ' + t('employeeArchived'));
+    
+  } catch (error) {
+    console.error('❌ ' + t('archiveError'), error);
+    
+    let errorMessage = error.message;
+    
+    if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+      errorMessage = t('networkError');
+    } else if (error.message.includes('Unexpected token')) {
+      errorMessage = t('serverErrorContactAdmin');
+    } else if (error.message.includes('date') || error.message.includes('Date')) {
+      errorMessage = t('dateFormatError');
+    }
+    
+    alert(`❌ ${t('archiveError')}: ${errorMessage}`);
+  } finally {
+    setSaving(false);
+  }
+};
 
   const formatDateForInput = (dateString) => {
     if (!dateString) return '';
