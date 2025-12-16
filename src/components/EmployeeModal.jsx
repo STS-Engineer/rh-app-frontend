@@ -1,66 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { employeesAPI } from '../services/api';
 import { photoService } from '../services/photoService';
 import ArchiveModal from './ArchiveModal';
 import DossierRHModal from './DossierRHModal';
 import { useLanguage } from '../contexts/LanguageContext';
 import './EmployeeModal.css';
-
-// Déplacez les composants internes EN DEHORS du composant principal
-// pour éviter qu'ils soient recréés à chaque rendu
-
-const DetailRow = ({ label, value }) => (
-  <div className="detail-row">
-    <strong>{label}:</strong>
-    <span>{value}</span>
-  </div>
-);
-
-const FormInput = memo(({ label, name, type = 'text', value, onChange, placeholder, required }) => {
-  const handleChange = useCallback((e) => {
-    onChange(e);
-  }, [onChange]);
-
-  return (
-    <div className="form-input-group">
-      <label>{label}:{required && ' *'}</label>
-      <input
-        type={type}
-        name={name}
-        value={value || ''}
-        onChange={handleChange}
-        className="form-input"
-        placeholder={placeholder}
-        required={required}
-        onFocus={(e) => e.target.select()} // Sélectionne tout le texte au focus
-      />
-    </div>
-  );
-});
-
-const FormSelect = memo(({ label, name, value, onChange, options = [], required, t }) => {
-  const handleChange = useCallback((e) => {
-    onChange(e);
-  }, [onChange]);
-
-  return (
-    <div className="form-input-group">
-      <label>{label}:{required && ' *'}</label>
-      <select 
-        name={name}
-        value={value || ''}
-        onChange={handleChange}
-        className="form-input"
-        required={required}
-      >
-        <option value="">-- {t('select')} --</option>
-        {options.map((opt, index) => (
-          <option key={index} value={opt}>{opt}</option>
-        ))}
-      </select>
-    </div>
-  );
-});
 
 const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const { t } = useLanguage();
@@ -71,46 +15,65 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const [showDossierModal, setShowDossierModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
-  const [hasChanges, setHasChanges] = useState(false);
 
-  // Utilisez useMemo pour les valeurs qui ne devraient pas changer à chaque rendu
-  const employeeId = useMemo(() => employee?.id, [employee]);
+  // Déplacer les composants internes à l'intérieur du composant principal
+  const DetailRow = ({ label, value }) => (
+    <div className="detail-row">
+      <strong>{label}:</strong>
+      <span>{value}</span>
+    </div>
+  );
+
+  const FormInput = ({ label, name, type = 'text', value, onChange, placeholder, required }) => (
+    <div className="form-input-group">
+      <label>{label}:{required && ' *'}</label>
+      <input
+        type={type}
+        name={name}
+        value={value || ''}
+        onChange={onChange}
+        className="form-input"
+        placeholder={placeholder}
+        required={required}
+      />
+    </div>
+  );
+
+  const FormSelect = ({ label, name, value, onChange, options = [], required }) => (
+    <div className="form-input-group">
+      <label>{label}:{required && ' *'}</label>
+      <select 
+        name={name}
+        value={value || ''}
+        onChange={onChange}
+        className="form-input"
+        required={required}
+      >
+        <option value="">-- {t('select')} --</option>
+        {options.map((opt, index) => (
+          <option key={index} value={opt}>{opt}</option>
+        ))}
+      </select>
+    </div>
+  );
 
   useEffect(() => {
-    if (employee && isOpen) {
-      // Ne réinitialisez pas les données si on est en mode édition
-      // et que l'employé est le même
-      if (!isEditing || !formData.id || formData.id !== employee.id) {
-        setFormData(employee);
-        setSelectedFile(null);
-        setPhotoPreview('');
-        setHasChanges(false);
-      }
+    if (employee) {
+      setFormData(employee);
+      setSelectedFile(null);
+      setPhotoPreview('');
     }
-  }, [employee, isOpen, isEditing, formData.id]);
+  }, [employee]);
 
-  const handleInputChange = useCallback((e) => {
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
-    setFormData(prev => {
-      // Ne mettez à jour que si la valeur a changé
-      if (prev[name] === value) return prev;
-      
-      const newData = {
-        ...prev,
-        [name]: value
-      };
-      
-      // Marquer qu'il y a des changements
-      if (!hasChanges) {
-        setHasChanges(true);
-      }
-      
-      return newData;
-    });
-  }, [hasChanges]);
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-  const handlePhotoChange = useCallback((e) => {
+  const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
@@ -124,7 +87,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       }
       
       setSelectedFile(file);
-      setHasChanges(true);
       
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -132,14 +94,14 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       };
       reader.readAsDataURL(file);
     }
-  }, [t]);
+  };
 
-  const isValidEmail = useCallback((email) => {
+  const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
-  }, []);
+  };
 
-  const handleSave = useCallback(async () => {
+  const handleSave = async () => {
     if (saving) return;
     
     // Validation des emails
@@ -184,7 +146,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       setIsEditing(false);
       setSelectedFile(null);
       setPhotoPreview('');
-      setHasChanges(false);
       
       alert('✅ ' + t('changesSaved'));
       
@@ -195,157 +156,147 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     } finally {
       setSaving(false);
     }
-  }, [formData, selectedFile, saving, t, employee.id, onUpdate, isValidEmail]);
+  };
 
-  const handleArchive = useCallback(async (pdfUrl, archiveData) => {
+ const handleArchive = async (pdfUrl, archiveData) => {
+  try {
+    setSaving(true);
+    
+    console.log('📁 ' + t('archivingEmployee'), pdfUrl, 'Date brute:', archiveData?.date_depart);
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error(t('notAuthenticated'));
+    }
+    
+    const backendUrl = 'https://backend-rh.azurewebsites.net';
+    const archiveUrl = `${backendUrl}/api/employees/${employee.id}/archive`;
+    
+    console.log('📤 ' + t('requestTo'), archiveUrl);
+    
+    // Préparer les données d'archivage - formater la date
+    let dateDepart = archiveData?.date_depart || formData.date_depart;
+    
+    // Si la date est au format Date object ou ISO, la formater en YYYY-MM-DD
+    if (dateDepart) {
+      const dateObj = new Date(dateDepart);
+      if (!isNaN(dateObj.getTime())) {
+        dateDepart = dateObj.toISOString().split('T')[0];
+        console.log('📅 Date formatée pour envoi:', dateDepart);
+      }
+    }
+    
+    const requestData = {
+      pdf_url: pdfUrl,
+      entretien_depart: t('archivedDepartureInterview'),
+      date_depart: dateDepart
+    };
+    
+    console.log('📋 Données d\'archivage envoyées:', requestData);
+    
+    const response = await fetch(archiveUrl, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(requestData)
+    });
+
+    console.log('📥 Réponse reçue - Status:', response.status);
+    
+    // Récupérer le texte de la réponse d'abord pour le débogage
+    const responseText = await response.text();
+    console.log('📋 Contenu réponse:', responseText.substring(0, 500));
+    
+    let data;
     try {
-      setSaving(true);
-      
-      console.log('📁 ' + t('archivingEmployee'), pdfUrl, 'Date brute:', archiveData?.date_depart);
-      
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error(t('notAuthenticated'));
-      }
-      
-      const backendUrl = 'https://backend-rh.azurewebsites.net';
-      const archiveUrl = `${backendUrl}/api/employees/${employee.id}/archive`;
-      
-      console.log('📤 ' + t('requestTo'), archiveUrl);
-      
-      // Préparer les données d'archivage - formater la date
-      let dateDepart = archiveData?.date_depart || formData.date_depart;
-      
-      // Si la date est au format Date object ou ISO, la formater en YYYY-MM-DD
-      if (dateDepart) {
-        const dateObj = new Date(dateDepart);
-        if (!isNaN(dateObj.getTime())) {
-          dateDepart = dateObj.toISOString().split('T')[0];
-          console.log('📅 Date formatée pour envoi:', dateDepart);
-        }
-      }
-      
-      const requestData = {
-        pdf_url: pdfUrl,
-        entretien_depart: t('archivedDepartureInterview'),
-        date_depart: dateDepart
-      };
-      
-      console.log('📋 Données d\'archivage envoyées:', requestData);
-      
-      const response = await fetch(archiveUrl, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify(requestData)
+      data = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('❌ Impossible de parser JSON:', parseError);
+      throw new Error(`Réponse serveur invalide: ${responseText.substring(0, 200)}`);
+    }
+
+    if (!response.ok) {
+      console.error('❌ Erreur serveur détaillée:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: data
       });
-
-      console.log('📥 Réponse reçue - Status:', response.status);
       
-      // Récupérer le texte de la réponse d'abord pour le débogage
-      const responseText = await response.text();
-      console.log('📋 Contenu réponse:', responseText.substring(0, 500));
-      
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('❌ Impossible de parser JSON:', parseError);
-        throw new Error(`Réponse serveur invalide: ${responseText.substring(0, 200)}`);
-      }
-
-      if (!response.ok) {
-        console.error('❌ Erreur serveur détaillée:', {
-          status: response.status,
-          statusText: response.statusText,
-          data: data
-        });
-        
-        throw new Error(
-          data.error || 
-          data.details || 
-          data.message || 
-          `Erreur ${response.status}: ${JSON.stringify(data || {})}`
-        );
-      }
-
-      console.log('✅ ' + t('archiveSuccess'), data);
-      
-      if (data.employee) {
-        setFormData(data.employee);
-      }
-      
-      onArchive(data.employee || { id: employee.id, statut: 'archive' });
-      
-      setShowArchiveModal(false);
-      onClose();
-      
-      alert('✅ ' + t('employeeArchived'));
-      
-    } catch (error) {
-      console.error('❌ ' + t('archiveError'), error);
-      
-      let errorMessage = error.message;
-      
-      if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-        errorMessage = t('networkError');
-      } else if (error.message.includes('Unexpected token')) {
-        errorMessage = t('serverErrorContactAdmin');
-      } else if (error.message.includes('date') || error.message.includes('Date')) {
-        errorMessage = t('dateFormatError');
-      }
-      
-      alert(`❌ ${t('archiveError')}: ${errorMessage}`);
-    } finally {
-      setSaving(false);
+      throw new Error(
+        data.error || 
+        data.details || 
+        data.message || 
+        `Erreur ${response.status}: ${JSON.stringify(data || {})}`
+      );
     }
-  }, [employee.id, formData.date_depart, t, onArchive, onClose]);
 
-  const formatDateForInput = useCallback((dateString) => {
+    console.log('✅ ' + t('archiveSuccess'), data);
+    
+    if (data.employee) {
+      setFormData(data.employee);
+    }
+    
+    onArchive(data.employee || { id: employee.id, statut: 'archive' });
+    
+    setShowArchiveModal(false);
+    onClose();
+    
+    alert('✅ ' + t('employeeArchived'));
+    
+  } catch (error) {
+    console.error('❌ ' + t('archiveError'), error);
+    
+    let errorMessage = error.message;
+    
+    if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+      errorMessage = t('networkError');
+    } else if (error.message.includes('Unexpected token')) {
+      errorMessage = t('serverErrorContactAdmin');
+    } else if (error.message.includes('date') || error.message.includes('Date')) {
+      errorMessage = t('dateFormatError');
+    }
+    
+    alert(`❌ ${t('archiveError')}: ${errorMessage}`);
+  } finally {
+    setSaving(false);
+  }
+};
+
+  const formatDateForInput = (dateString) => {
     if (!dateString) return '';
-    try {
-      const date = new Date(dateString);
-      return date.toISOString().split('T')[0];
-    } catch (error) {
-      console.error('Erreur de formatage de date:', error);
-      return '';
-    }
-  }, []);
+    const date = new Date(dateString);
+    return date.toISOString().split('T')[0];
+  };
 
-  const formatDateForDisplay = useCallback((dateString) => {
+  const formatDateForDisplay = (dateString) => {
     if (!dateString) return t('notSpecified');
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch {
-      return t('notSpecified');
-    }
-  }, [t]);
+    return new Date(dateString).toLocaleDateString();
+  };
 
-  const getDefaultAvatar = useCallback(() => {
-    if (!employee) return '';
+  const getDefaultAvatar = () => {
     return `https://ui-avatars.com/api/?name=${employee.prenom}+${employee.nom}&background=3498db&color=fff&size=150`;
-  }, [employee]);
+  };
 
-  const getPhotoUrl = useCallback(() => {
+  const getPhotoUrl = () => {
     if (formData.photo && isValidUrl(formData.photo)) {
       return formData.photo;
     }
     return getDefaultAvatar();
-  }, [formData.photo, getDefaultAvatar]);
+  };
 
-  const isValidUrl = useCallback((string) => {
+  const isValidUrl = (string) => {
     try {
       new URL(string);
       return true;
     } catch (_) {
       return false;
     }
-  }, []);
+  };
 
-  const getDocumentUrl = useCallback((dossierRh) => {
+  const getDocumentUrl = (dossierRh) => {
     if (!dossierRh) return null;
     
     if (dossierRh.startsWith('http')) {
@@ -353,16 +304,16 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     }
     
     return null;
-  }, []);
+  };
 
-  const isPdfUrl = useCallback((url) => {
+  const isPdfUrl = (url) => {
     if (!url) return false;
     const lowerUrl = url.toLowerCase();
     return lowerUrl.endsWith('.pdf') || lowerUrl.includes('.pdf?') || 
            lowerUrl.includes('/pdf') || lowerUrl.includes('application/pdf');
-  }, []);
+  };
 
-  const getDocumentDisplayName = useCallback((url) => {
+  const getDocumentDisplayName = (url) => {
     if (!url) return t('documentPDF');
     
     try {
@@ -378,9 +329,9 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     } catch {
       return t('documentPDF');
     }
-  }, [t]);
+  };
 
-  const handleDocumentClick = useCallback((e, url) => {
+  const handleDocumentClick = (e, url) => {
     e.preventDefault();
     
     if (!url) {
@@ -396,51 +347,21 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     }
 
     window.open(url, '_blank');
-  }, [isPdfUrl, t]);
+  };
 
-  const handleClose = useCallback(() => {
-    if (hasChanges && isEditing) {
-      if (window.confirm(t('unsavedChangesConfirm'))) {
-        setIsEditing(false);
-        setFormData(employee);
-        setSelectedFile(null);
-        setPhotoPreview('');
-        setHasChanges(false);
-        onClose();
-      }
-    } else {
-      setIsEditing(false);
-      setFormData(employee);
-      setSelectedFile(null);
-      setPhotoPreview('');
-      setHasChanges(false);
-      onClose();
-    }
-  }, [employee, onClose, hasChanges, isEditing, t]);
+  const handleClose = () => {
+    setIsEditing(false);
+    setFormData(employee);
+    setSelectedFile(null);
+    setPhotoPreview('');
+    onClose();
+  };
 
-  const truncateUrl = useCallback((url, maxLength) => {
+  const truncateUrl = (url, maxLength) => {
     if (!url) return '';
     if (url.length <= maxLength) return url;
     return url.substring(0, maxLength) + '...';
-  }, []);
-
-  const handleCancelEdit = useCallback(() => {
-    if (hasChanges) {
-      if (window.confirm(t('unsavedChangesConfirm'))) {
-        setIsEditing(false);
-        setFormData(employee);
-        setSelectedFile(null);
-        setPhotoPreview('');
-        setHasChanges(false);
-      }
-    } else {
-      setIsEditing(false);
-      setFormData(employee);
-      setSelectedFile(null);
-      setPhotoPreview('');
-      setHasChanges(false);
-    }
-  }, [employee, hasChanges, t]);
+  };
 
   if (!isOpen || !employee) return null;
 
@@ -519,7 +440,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 <DetailRow label={t('idNumber')} value={formData.cin} />
                 <DetailRow label={t('passport')} value={formData.passeport || t('notSpecified')} />
                 <DetailRow label={t('passportIssueDate')} value={formatDateForDisplay(formData.date_emission_passport)} />
-                <DetailRow label={t('passportExpiryDate')} value={formatDateForDisplay(formData.date_expiration_passport)} />
+                <DetailRow  label={t('passportExpiryDate')}   value={formatDateForDisplay(formData.date_expiration_passport)} />
                 <DetailRow label={t('birthDate')} value={formatDateForDisplay(formData.date_naissance)} />
               </div>
 
@@ -601,48 +522,12 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               <div className="form-section">
                 <h4>📝 {t('personalInfo')}</h4>
                 <div className="form-grid">
+                  <FormInput label={t('employeeID')} name="matricule" value={formData.matricule} onChange={handleInputChange} required />
+                  <FormInput label={t('lastName')} name="nom" value={formData.nom} onChange={handleInputChange} required />
+                  <FormInput label={t('firstName')} name="prenom" value={formData.prenom} onChange={handleInputChange} required />
+                  <FormInput label={t('idNumber')} name="cin" value={formData.cin} onChange={handleInputChange} required />
+                  <FormInput label={t('passport')} name="passeport" value={formData.passeport} onChange={handleInputChange} placeholder={t('optional')} />
                   <FormInput 
-                    key={`${employeeId}-matricule`}
-                    label={t('employeeID')} 
-                    name="matricule" 
-                    value={formData.matricule || ''} 
-                    onChange={handleInputChange} 
-                    required 
-                  />
-                  <FormInput 
-                    key={`${employeeId}-nom`}
-                    label={t('lastName')} 
-                    name="nom" 
-                    value={formData.nom || ''} 
-                    onChange={handleInputChange} 
-                    required 
-                  />
-                  <FormInput 
-                    key={`${employeeId}-prenom`}
-                    label={t('firstName')} 
-                    name="prenom" 
-                    value={formData.prenom || ''} 
-                    onChange={handleInputChange} 
-                    required 
-                  />
-                  <FormInput 
-                    key={`${employeeId}-cin`}
-                    label={t('idNumber')} 
-                    name="cin" 
-                    value={formData.cin || ''} 
-                    onChange={handleInputChange} 
-                    required 
-                  />
-                  <FormInput 
-                    key={`${employeeId}-passeport`}
-                    label={t('passport')} 
-                    name="passeport" 
-                    value={formData.passeport || ''} 
-                    onChange={handleInputChange} 
-                    placeholder={t('optional')} 
-                  />
-                  <FormInput 
-                    key={`${employeeId}-date_emission_passport`}
                     label={t('passportIssueDate')} 
                     name="date_emission_passport" 
                     type="date" 
@@ -651,7 +536,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     placeholder={t('optional')} 
                   />
                   <FormInput 
-                    key={`${employeeId}-date_expiration_passport`}
                     label={t('passportExpiryDate')} 
                     name="date_expiration_passport" 
                     type="date" 
@@ -660,7 +544,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     placeholder={t('optional')} 
                   />
                   <FormInput 
-                    key={`${employeeId}-date_naissance`}
                     label={t('birthDate')} 
                     name="date_naissance" 
                     type="date" 
@@ -674,46 +557,32 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               <div className="form-section">
                 <h4>💼 {t('professionalInfo')}</h4>
                 <div className="form-grid">
-                  <FormInput 
-                    key={`${employeeId}-poste`}
-                    label={t('position')} 
-                    name="poste" 
-                    value={formData.poste || ''} 
-                    onChange={handleInputChange} 
-                    required 
-                  />
+                  <FormInput label={t('position')} name="poste" value={formData.poste} onChange={handleInputChange} required />
                   <FormSelect 
-                    key={`${employeeId}-site_dep`}
                     label={t('department')} 
                     name="site_dep" 
-                    value={formData.site_dep || ''} 
+                    value={formData.site_dep} 
                     onChange={handleInputChange}
                     options={[
-                      t('Commerce'),
-                      t('Finance'), 
-                      t('Chiffrage'),
-                      t('Digital'),
-                      t('General'),
-                      t('Logistique Germany'),
-                      t('Logistique Groupe'),
-                      t('Achat'),
-                      t('Qualité')
+                      t('headquarters'),
+                      t('northSite'), 
+                      t('southSite'),
+                      t('eastSite'),
+                      t('westSite'),
+                      t('hrDepartment'),
+                      t('itDepartment')
                     ]}
                     required 
-                    t={t}
                   />
                   <FormSelect 
-                    key={`${employeeId}-type_contrat`}
                     label={t('contractType')} 
                     name="type_contrat" 
-                    value={formData.type_contrat || ''} 
+                    value={formData.type_contrat} 
                     onChange={handleInputChange}
                     options={['CDI', 'CDD', t('internship'), 'CIVP']}
                     required 
-                    t={t}
                   />
                   <FormInput 
-                    key={`${employeeId}-date_debut`}
                     label={t('hireDate')} 
                     name="date_debut" 
                     type="date" 
@@ -722,12 +591,11 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     required 
                   />
                   <FormInput 
-                    key={`${employeeId}-salaire_brute`}
                     label={t('grossSalary')} 
                     name="salaire_brute" 
                     type="number" 
                     step="0.01" 
-                    value={formData.salaire_brute || ''} 
+                    value={formData.salaire_brute} 
                     onChange={handleInputChange} 
                     required 
                   />
@@ -738,30 +606,27 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 <h4>📧 {t('emailContacts')}</h4>
                 <div className="form-grid">
                   <FormInput 
-                    key={`${employeeId}-adresse_mail`}
                     label={`${t('employeeEmail')} *`} 
                     name="adresse_mail" 
                     type="email"
-                    value={formData.adresse_mail || ''} 
+                    value={formData.adresse_mail} 
                     onChange={handleInputChange} 
                     required 
                     placeholder="exemple@entreprise.com"
                   />
                   <FormInput 
-                    key={`${employeeId}-mail_responsable1`}
                     label={t('supervisor1Email')} 
                     name="mail_responsable1" 
                     type="email"
-                    value={formData.mail_responsable1 || ''} 
+                    value={formData.mail_responsable1} 
                     onChange={handleInputChange} 
                     placeholder="responsable1@entreprise.com"
                   />
                   <FormInput 
-                    key={`${employeeId}-mail_responsable2`}
                     label={t('supervisor2Email')} 
                     name="mail_responsable2" 
                     type="email"
-                    value={formData.mail_responsable2 || ''} 
+                    value={formData.mail_responsable2} 
                     onChange={handleInputChange} 
                     placeholder="responsable2@entreprise.com"
                   />
@@ -772,7 +637,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               <div className="archive-section">
                 <div className="form-grid">
                   <FormInput
-                    key={`${employeeId}-date_depart`}
                     label={t('departureDate')}
                     name="date_depart"
                     type="date"
@@ -786,7 +650,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                       type="button"
                       className={`archive-btn ${!hasDepartureDate ? 'archive-btn-disabled' : ''}`}
                       onClick={() => hasDepartureDate && setShowArchiveModal(true)}
-                      disabled={!hasDepartureDate || saving}
+                      disabled={!hasDepartureDate}
                       title={!hasDepartureDate ? t('addDepartureDateFirst') : t('archiveEmployee')}
                     >
                       📁 {t('archiveEmployee')}
@@ -805,11 +669,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
         <div className="employee-modal-footer">
           {!isEditing ? (
             <div className="view-actions">
-              <button 
-                className="edit-btn" 
-                onClick={() => setIsEditing(true)}
-                disabled={formData.statut === 'archive'}
-              >
+              <button className="edit-btn" onClick={() => setIsEditing(true)}>
                 ✏️ {t('editInfo')}
               </button>
             </div>
@@ -824,7 +684,12 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               </button>
               <button 
                 className="cancel-btn" 
-                onClick={handleCancelEdit}
+                onClick={() => {
+                  setIsEditing(false);
+                  setFormData(employee);
+                  setSelectedFile(null);
+                  setPhotoPreview('');
+                }}
                 disabled={saving}
               >
                 ❌ {t('cancel')}
@@ -835,30 +700,26 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       </div>
 
       {/* Modal d'archivage */}
-      {showArchiveModal && (
-        <ArchiveModal
-          employee={employee}
-          isOpen={showArchiveModal}
-          onClose={() => setShowArchiveModal(false)}
-          onArchive={handleArchive}
-          departureDate={formData.date_depart}
-        />
-      )}
+      <ArchiveModal
+        employee={employee}
+        isOpen={showArchiveModal}
+        onClose={() => setShowArchiveModal(false)}
+        onArchive={handleArchive}
+        departureDate={formData.date_depart}
+      />
 
       {/* Modal dossier RH */}
-      {showDossierModal && (
-        <DossierRHModal
-          employee={employee}
-          isOpen={showDossierModal}
-          onClose={() => setShowDossierModal(false)}
-          onSuccess={(updatedEmployee) => {
-            setFormData(updatedEmployee);
-            onUpdate(updatedEmployee);
-          }}
-        />
-      )}
+      <DossierRHModal
+        employee={employee}
+        isOpen={showDossierModal}
+        onClose={() => setShowDossierModal(false)}
+        onSuccess={(updatedEmployee) => {
+          setFormData(updatedEmployee);
+          onUpdate(updatedEmployee);
+        }}
+      />
     </div>
   );
 };
 
-export default memo(EmployeeModal);
+export default EmployeeModal;
