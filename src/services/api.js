@@ -75,8 +75,6 @@ export const employeesAPI = {
   getAll: () => api.get('/employees'),
   getById: (id) => api.get(`/employees/${id}`),
   create: (employeeData) => api.post('/employees', employeeData),
-  deleteDossierRh: (id) => api.delete(`/employees/${id}/dossier-rh`),
-
   update: (id, employeeData) => api.put(`/employees/${id}`, employeeData),
   archiveEmployee: (employeeId, data) =>
     api.put(`/employees/${employeeId}/archive`, data),
@@ -131,7 +129,6 @@ export const dossierRhAPI = {
   
   generatePDF: (employeeId, data) => 
     api.post(`/dossier-rh/generate-pdf/${employeeId}`, data),
-  
   
   getPDFUrl: (filename) => {
     const baseUrl = API_BASE_URL.replace('/api', '');
