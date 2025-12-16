@@ -158,33 +158,41 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     }
   };
 
-  const handleArchive = async (pdfUrl) => {
-    try {
-      setSaving(true);
-      
-      console.log('📁 ' + t('archivingEmployee'), pdfUrl);
-      
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error(t('notAuthenticated'));
-      }
-      
-      const backendUrl = 'https://backend-rh.azurewebsites.net';
-      const archiveUrl = `${backendUrl}/api/employees/${employee.id}/archive`;
-      
-      console.log('📤 ' + t('requestTo'), archiveUrl);
-      
-      const response = await fetch(archiveUrl, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          pdf_url: pdfUrl,
-          entretien_depart: t('archivedDepartureInterview')
-        })
-      });
+  const handleArchive = async (pdfUrl, archiveData) => {
+  try {
+    setSaving(true);
+    
+    console.log('📁 ' + t('archivingEmployee'), pdfUrl, 'Date:', archiveData?.date_depart);
+    
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error(t('notAuthenticated'));
+    }
+    
+    const backendUrl = 'https://backend-rh.azurewebsites.net';
+    const archiveUrl = `${backendUrl}/api/employees/${employee.id}/archive`;
+    
+    console.log('📤 ' + t('requestTo'), archiveUrl);
+    
+    // Préparer les données d'archivage
+    const requestData = {
+      pdf_url: pdfUrl,
+      entretien_depart: t('archivedDepartureInterview'),
+      date_depart: archiveData?.date_depart || formData.date_depart // <-- Inclure la date
+    };
+    
+    console.log('📋 Données d\'archivage:', requestData);
+    
+    const response = await fetch(archiveUrl, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestData) // <-- Envoyer toutes les données
+    });
+
+
 
       const contentType = response.headers.get('content-type');
       let data;
