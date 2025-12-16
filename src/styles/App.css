@@ -1,3 +1,5 @@
+@import "flag-icons/css/flag-icons.min.css";
+
 html {
   zoom: 0.75; /* EXACTEMENT comme Edge zoom 75% */
 }
