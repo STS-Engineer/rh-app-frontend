@@ -291,7 +291,7 @@ const DemandesRH = () => {
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal-content" onClick={e => e.stopPropagation()}>
           <div className="modal-header">
-            <h2>📋 {t('requestDetails')}</h2>
+            <h2>📑​{t('requestDetails')}</h2>
             <button className="modal-close" onClick={onClose}>×</button>
           </div>
           
