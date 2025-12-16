@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { employeesAPI, dossierRhAPI } from '../services/api';
+import { employeesAPI } from '../services/api';
 import { photoService } from '../services/photoService';
 import ArchiveModal from './ArchiveModal';
 import DossierRHModal from './DossierRHModal';
@@ -95,7 +95,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
 
-  /* ✅ Sync formData: seulement quand on ouvre / change d'employé,
+  /* ✅ Sync formData: seulement quand on ouvre / change d’employé,
      et surtout PAS pendant la saisie (sinon reset + focus issues) */
   useEffect(() => {
     if (!employee) return;
@@ -114,34 +114,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       [name]: value
     }));
   }, []);
-
-  const handleDeleteDossier = async () => {
-    if (!confirm(t('confirmDeleteDossier') || 'Êtes-vous sûr de vouloir supprimer le dossier RH de cet employé ? Cette action est irréversible.')) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-      const response = await dossierRhAPI.deleteDossier(employee.id);
-      
-      if (response.data.success) {
-        alert('✅ ' + (t('dossierDeleted') || 'Dossier RH supprimé avec succès'));
-        // Mettre à jour les données locales
-        setFormData(prev => ({ ...prev, dossier_rh: null }));
-        
-        // Appeler onUpdate pour rafraîchir la liste parente
-        if (onUpdate) {
-          onUpdate(response.data.employee);
-        }
-      }
-    } catch (error) {
-      console.error('❌ Erreur suppression dossier RH:', error);
-      alert('❌ ' + (t('deleteError') || 'Erreur lors de la suppression') + ': ' + 
-        (error.response?.data?.error || error.message));
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handlePhotoChange = useCallback(
     (e) => {
@@ -236,16 +208,16 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
 
   const getDocumentDisplayName = useCallback(
     (url) => {
-      if (!url) return t('documentPDF') || 'Document PDF';
+      if (!url) return t('documentPDF');
 
       try {
         const urlObj = new URL(url);
         const filename = urlObj.pathname.split('/').pop();
 
         if (filename && filename.includes('.pdf')) return decodeURIComponent(filename);
-        return `${t('document') || 'Document'} - ${urlObj.hostname}`;
+        return `${t('document')} - ${urlObj.hostname}`;
       } catch {
-        return t('documentPDF') || 'Document PDF';
+        return t('documentPDF');
       }
     },
     [t]
@@ -256,12 +228,12 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       e.preventDefault();
 
       if (!url) {
-        alert('❌ ' + (t('noDocumentAvailable') || 'Aucun document disponible'));
+        alert('❌ ' + t('noDocumentAvailable'));
         return;
       }
 
       if (!isPdfUrl(url)) {
-        if (confirm('⚠️ ' + (t('notPDFConfirm') || 'Ce document ne semble pas être un PDF. Voulez-vous quand même l\'ouvrir ?'))) {
+        if (confirm('⚠️ ' + t('notPDFConfirm'))) {
           window.open(url, '_blank');
         }
         return;
@@ -346,7 +318,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
 
         const requestData = {
           pdf_url: pdfUrl,
-          entretien_depart: t('archivedDepartureInterview') || 'Entretien de départ terminé',
+          entretien_depart: t('archivedDepartureInterview'),
           date_depart: dateDepart
         };
 
@@ -424,7 +396,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     <div className="employee-modal-overlay" onClick={handleClose}>
       <div className="employee-modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="employee-modal-header">
-          <h2>👤 {t('employeeDetails') || 'Détails de l\'employé'}</h2>
+          <h2>👤 {t('employeeDetails')}</h2>
           <button className="close-btn" onClick={handleClose}>
             ×
           </button>
@@ -447,21 +419,21 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 {formData.prenom} {formData.nom}
               </h3>
               <p className="employee-matricule">
-                {t('employeeID') || 'Matricule'}: {formData.matricule}
+                {t('employeeID')}: {formData.matricule}
               </p>
               <p className="employee-poste">{formData.poste}</p>
               <p className="employee-departement">{formData.site_dep}</p>
               <p className="employee-contrat">{formData.type_contrat}</p>
-              <p className="employee-email">📧 {formData.adresse_mail || t('emailNotSpecified') || 'Email non spécifié'}</p>
+              <p className="employee-email">📧 {formData.adresse_mail || t('emailNotSpecified')}</p>
 
               {/* Indicateur d'archivage */}
               {formData.statut === 'archive' && (
                 <div className="archive-badge">
                   <span className="badge-icon">📁</span>
-                  <span className="badge-text">{t('archived') || 'Archivé'}</span>
+                  <span className="badge-text">{t('archived')}</span>
                   {formData.date_depart && (
                     <span className="archive-date">
-                      {t('since') || 'Depuis'}: {formatDateForDisplay(formData.date_depart)}
+                      {t('since')}: {formatDateForDisplay(formData.date_depart)}
                     </span>
                   )}
                 </div>
@@ -478,10 +450,10 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     className="file-input"
                   />
                   <label htmlFor="change-photo" className="change-photo-btn">
-                    📷 {t('changePhoto') || 'Changer la photo'}
+                    📷 {t('changePhoto')}
                   </label>
 
-                  {selectedFile && <span className="photo-change-notice">{t('newPhotoSelected') || 'Nouvelle photo sélectionnée'}</span>}
+                  {selectedFile && <span className="photo-change-notice">{t('newPhotoSelected')}</span>}
                 </div>
               )}
             </div>
@@ -493,33 +465,33 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                ========================= */
             <div className="employee-details-grid">
               <div className="detail-section">
-                <h4>📝 {t('personalInfo') || 'Informations personnelles'}</h4>
-                <DetailRow label={t('idNumber') || 'CIN'} value={formData.cin} />
-                <DetailRow label={t('passport') || 'Passeport'} value={formData.passeport || t('notSpecified') || 'Non spécifié'} />
-                <DetailRow label={t('passportIssueDate') || 'Date émission passeport'} value={formatDateForDisplay(formData.date_emission_passport)} />
-                <DetailRow label={t('passportExpiryDate') || 'Date expiration passeport'} value={formatDateForDisplay(formData.date_expiration_passport)} />
-                <DetailRow label={t('birthDate') || 'Date de naissance'} value={formatDateForDisplay(formData.date_naissance)} />
+                <h4>📝 {t('personalInfo')}</h4>
+                <DetailRow label={t('idNumber')} value={formData.cin} />
+                <DetailRow label={t('passport')} value={formData.passeport || t('notSpecified')} />
+                <DetailRow label={t('passportIssueDate')} value={formatDateForDisplay(formData.date_emission_passport)} />
+                <DetailRow label={t('passportExpiryDate')} value={formatDateForDisplay(formData.date_expiration_passport)} />
+                <DetailRow label={t('birthDate')} value={formatDateForDisplay(formData.date_naissance)} />
               </div>
 
               <div className="detail-section">
-                <h4>💼 {t('professionalInfo') || 'Informations professionnelles'}</h4>
-                <DetailRow label={t('hireDate') || 'Date d\'embauche'} value={formatDateForDisplay(formData.date_debut)} />
-                <DetailRow label={t('grossSalary') || 'Salaire brut'} value={`${formData.salaire_brute ?? ''} DT`} />
-                <DetailRow label={t('departureDate') || 'Date de départ'} value={formatDateForDisplay(formData.date_depart)} />
+                <h4>💼 {t('professionalInfo')}</h4>
+                <DetailRow label={t('hireDate')} value={formatDateForDisplay(formData.date_debut)} />
+                <DetailRow label={t('grossSalary')} value={`${formData.salaire_brute ?? ''} DT`} />
+                <DetailRow label={t('departureDate')} value={formatDateForDisplay(formData.date_depart)} />
               </div>
 
               <div className="detail-section">
-                <h4>📧 {t('emailContacts') || 'Contacts email'}</h4>
-                <DetailRow label={t('employeeEmail') || 'Email employé'} value={formData.adresse_mail || t('notSpecified') || 'Non spécifié'} />
-                <DetailRow label={t('supervisor1Email') || 'Email responsable 1'} value={formData.mail_responsable1 || t('notSpecified') || 'Non spécifié'} />
-                <DetailRow label={t('supervisor2Email') || 'Email responsable 2'} value={formData.mail_responsable2 || t('notSpecified') || 'Non spécifié'} />
+                <h4>📧 {t('emailContacts')}</h4>
+                <DetailRow label={t('employeeEmail')} value={formData.adresse_mail || t('notSpecified')} />
+                <DetailRow label={t('supervisor1Email')} value={formData.mail_responsable1 || t('notSpecified')} />
+                <DetailRow label={t('supervisor2Email')} value={formData.mail_responsable2 || t('notSpecified')} />
               </div>
 
               <div className="detail-section">
-                <h4>📎 {t('documents') || 'Documents'}</h4>
+                <h4>📎 {t('documents')}</h4>
 
                 <div className="document-row">
-                  <strong>{t('hrFile') || 'Dossier RH'}:</strong>
+                  <strong>{t('hrFile')}:</strong>
                   <span>
                     {documentUrl ? (
                       <div className="document-container">
@@ -534,54 +506,16 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                         <div className="document-preview">
                           <small>🔗 {truncateUrl(formData.dossier_rh, 40)}</small>
                         </div>
-                        
-                        {/* Boutons d'action pour le dossier RH */}
-                        <div className="dossier-actions">
-                          <button 
-                            className="view-dossier-btn" 
-                            onClick={(e) => {
-                              e.preventDefault();
-                              window.open(documentUrl, '_blank');
-                            }}
-                          >
-                            👁️ {t('viewDocument') || 'Voir le document'}
-                          </button>
-                          <button 
-                            className="delete-dossier-btn" 
-                            onClick={handleDeleteDossier}
-                            disabled={saving}
-                          >
-                            {saving ? '⏳' : '🗑️'} {t('deleteDocument') || 'Supprimer'}
-                          </button>
-                          <button 
-                            className="add-dossier-btn" 
-                            onClick={() => setShowDossierModal(true)}
-                          >
-                            ➕ {t('addDocuments') || 'Ajouter des documents'}
-                          </button>
-                        </div>
                       </div>
                     ) : (
-                      <div>
-                        <span className="no-document">{t('noDocument') || 'Aucun dossier disponible'}</span>
-                        
-                        {/* Bouton pour créer un dossier s'il n'existe pas */}
-                        <div className="dossier-actions">
-                          <button 
-                            className="create-dossier-btn" 
-                            onClick={() => setShowDossierModal(true)}
-                          >
-                            📁 {t('createDossier') || 'Créer un dossier RH'}
-                          </button>
-                        </div>
-                      </div>
+                      <span className="no-document">{t('noDocument')}</span>
                     )}
                   </span>
                 </div>
 
                 {formData.pdf_archive_url && (
                   <div className="document-row">
-                    <strong>{t('departureInterview') || 'Entretien de départ'}:</strong>
+                    <strong>{t('departureInterview')}:</strong>
                     <span>
                       <div className="document-container">
                         <a
@@ -590,7 +524,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                           className="document-link archive-link"
                           title={formData.pdf_archive_url}
                         >
-                          📁 {t('interviewPDF') || 'PDF d\'entretien'}
+                          📁 {t('interviewPDF')}
                         </a>
                         <div className="document-preview">
                           <small>🔗 {truncateUrl(formData.pdf_archive_url, 40)}</small>
@@ -599,6 +533,12 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     </span>
                   </div>
                 )}
+
+                <div className="dossier-action">
+                  <button className="add-dossier-btn" onClick={() => setShowDossierModal(true)}>
+                    📁 {t('addUpdateDossier')}
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -607,32 +547,32 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                ========================= */
             <div className="edit-form">
               <div className="form-section">
-                <h4>📝 {t('personalInfo') || 'Informations personnelles'}</h4>
+                <h4>📝 {t('personalInfo')}</h4>
                 <div className="form-grid">
-                  <FormInput label={t('employeeID') || 'Matricule'} name="matricule" value={formData.matricule} onChange={handleInputChange} required />
-                  <FormInput label={t('lastName') || 'Nom'} name="nom" value={formData.nom} onChange={handleInputChange} required />
-                  <FormInput label={t('firstName') || 'Prénom'} name="prenom" value={formData.prenom} onChange={handleInputChange} required />
-                  <FormInput label={t('idNumber') || 'CIN'} name="cin" value={formData.cin} onChange={handleInputChange} required />
-                  <FormInput label={t('passport') || 'Passeport'} name="passeport" value={formData.passeport} onChange={handleInputChange} placeholder={t('optional') || 'Optionnel'} />
+                  <FormInput label={t('employeeID')} name="matricule" value={formData.matricule} onChange={handleInputChange} required />
+                  <FormInput label={t('lastName')} name="nom" value={formData.nom} onChange={handleInputChange} required />
+                  <FormInput label={t('firstName')} name="prenom" value={formData.prenom} onChange={handleInputChange} required />
+                  <FormInput label={t('idNumber')} name="cin" value={formData.cin} onChange={handleInputChange} required />
+                  <FormInput label={t('passport')} name="passeport" value={formData.passeport} onChange={handleInputChange} placeholder={t('optional')} />
 
                   <FormInput
-                    label={t('passportIssueDate') || 'Date émission passeport'}
+                    label={t('passportIssueDate')}
                     name="date_emission_passport"
                     type="date"
                     value={formatDateForInput(formData.date_emission_passport)}
                     onChange={handleInputChange}
-                    placeholder={t('optional') || 'Optionnel'}
+                    placeholder={t('optional')}
                   />
                   <FormInput
-                    label={t('passportExpiryDate') || 'Date expiration passeport'}
+                    label={t('passportExpiryDate')}
                     name="date_expiration_passport"
                     type="date"
                     value={formatDateForInput(formData.date_expiration_passport)}
                     onChange={handleInputChange}
-                    placeholder={t('optional') || 'Optionnel'}
+                    placeholder={t('optional')}
                   />
                   <FormInput
-                    label={t('birthDate') || 'Date de naissance'}
+                    label={t('birthDate')}
                     name="date_naissance"
                     type="date"
                     value={formatDateForInput(formData.date_naissance)}
@@ -643,33 +583,33 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               </div>
 
               <div className="form-section">
-                <h4>💼 {t('professionalInfo') || 'Informations professionnelles'}</h4>
+                <h4>💼 {t('professionalInfo')}</h4>
                 <div className="form-grid">
-                  <FormInput label={t('position') || 'Poste'} name="poste" value={formData.poste} onChange={handleInputChange} required />
+                  <FormInput label={t('position')} name="poste" value={formData.poste} onChange={handleInputChange} required />
 
                   <FormSelect
                     t={t}
-                    label={t('department') || 'Département/Site'}
+                    label={t('department')}
                     name="site_dep"
                     value={formData.site_dep}
                     onChange={handleInputChange}
                     options={[
-                      t('Commerce') || 'Commerce',
-                      t('Finance') || 'Finance',
-                      t('Chiffrage') || 'Chiffrage',
-                      t('Digitale') || 'Digitale',
-                      t('Général') || 'Général',
-                      t('Logistique Germany') || 'Logistique Germany',
-                      t('Logistique Groupe') || 'Logistique Groupe',
-                      t('Achat') || 'Achat',
-                      t('Qualité') || 'Qualité'
+                      t('Commerce'),
+                      t('Finance'),
+                      t('Chiffrage'),
+                      t('Digitale'),
+                      t('Général'),
+                      t('Logistique Germany'),
+                      t('Logistique Groupe'),
+                      t('Achat'),
+                      t('Qualité')
                     ]}
                     required
                   />
 
                   <FormSelect
                     t={t}
-                    label={t('contractType') || 'Type de contrat'}
+                    label={t('contractType')}
                     name="type_contrat"
                     value={formData.type_contrat}
                     onChange={handleInputChange}
@@ -678,7 +618,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                   />
 
                   <FormInput
-                    label={t('hireDate') || 'Date d\'embauche'}
+                    label={t('hireDate')}
                     name="date_debut"
                     type="date"
                     value={formatDateForInput(formData.date_debut)}
@@ -687,7 +627,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                   />
 
                   <FormInput
-                    label={t('grossSalary') || 'Salaire brut'}
+                    label={t('grossSalary')}
                     name="salaire_brute"
                     type="number"
                     step="0.01"
@@ -699,10 +639,10 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               </div>
 
               <div className="form-section">
-                <h4>📧 {t('emailContacts') || 'Contacts email'}</h4>
+                <h4>📧 {t('emailContacts')}</h4>
                 <div className="form-grid">
                   <FormInput
-                    label={t('employeeEmail') || 'Email employé'}
+                    label={t('employeeEmail')}
                     name="adresse_mail"
                     type="email"
                     value={formData.adresse_mail}
@@ -711,7 +651,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     placeholder="exemple@entreprise.com"
                   />
                   <FormInput
-                    label={t('supervisor1Email') || 'Email responsable 1'}
+                    label={t('supervisor1Email')}
                     name="mail_responsable1"
                     type="email"
                     value={formData.mail_responsable1}
@@ -719,7 +659,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                     placeholder="responsable1@entreprise.com"
                   />
                   <FormInput
-                    label={t('supervisor2Email') || 'Email responsable 2'}
+                    label={t('supervisor2Email')}
                     name="mail_responsable2"
                     type="email"
                     value={formData.mail_responsable2}
@@ -733,12 +673,12 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
               <div className="archive-section">
                 <div className="form-grid">
                   <FormInput
-                    label={t('departureDate') || 'Date de départ'}
+                    label={t('departureDate')}
                     name="date_depart"
                     type="date"
                     value={formatDateForInput(formData.date_depart)}
                     onChange={handleInputChange}
-                    placeholder={t('optional') || 'Optionnel'}
+                    placeholder={t('optional')}
                   />
 
                   <div className="archive-row">
@@ -747,14 +687,14 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                       className={`archive-btn ${!hasDepartureDate ? 'archive-btn-disabled' : ''}`}
                       onClick={() => hasDepartureDate && setShowArchiveModal(true)}
                       disabled={!hasDepartureDate}
-                      title={!hasDepartureDate ? (t('addDepartureDateFirst') || 'Ajouter une date de départ d\'abord') : (t('archiveEmployee') || 'Archiver l\'employé')}
+                      title={!hasDepartureDate ? t('addDepartureDateFirst') : t('archiveEmployee')}
                     >
-                      📁 {t('archiveEmployee') || 'Archiver l\'employé'}
+                      📁 {t('archiveEmployee')}
                     </button>
                   </div>
                 </div>
 
-                <p className="archive-hint">{t('archiveHint') || 'Pour archiver un employé, vous devez d\'abord spécifier une date de départ.'}</p>
+                <p className="archive-hint">{t('archiveHint')}</p>
               </div>
             </div>
           )}
@@ -764,13 +704,13 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
           {!isEditing ? (
             <div className="view-actions">
               <button className="edit-btn" onClick={() => setIsEditing(true)}>
-                ✏️ {t('editInfo') || 'Modifier les informations'}
+                ✏️ {t('editInfo')}
               </button>
             </div>
           ) : (
             <div className="edit-actions">
               <button className="save-btn" onClick={handleSave} disabled={saving}>
-                {saving ? `⏳ ${t('saving') || 'Enregistrement...'}` : `💾 ${t('save') || 'Enregistrer'}`}
+                {saving ? `⏳ ${t('saving')}` : `💾 ${t('save')}`}
               </button>
 
               <button
@@ -783,7 +723,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 }}
                 disabled={saving}
               >
-                ❌ {t('cancel') || 'Annuler'}
+                ❌ {t('cancel')}
               </button>
             </div>
           )}
