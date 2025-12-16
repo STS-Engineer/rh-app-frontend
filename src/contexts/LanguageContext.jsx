@@ -61,7 +61,7 @@ export const LanguageProvider = ({ children }) => {
       employeeManagement: 'Gestion de l\'Équipe',
       consultEmployees: 'Consulter et gérez les informations de vos employés actifs',
       searchPlaceholder: 'Rechercher par nom, prénom, poste ou matricule...',
-      employeesFound: 'employé(s) trouvé(s)',
+      employeesFound: 'employés trouvés',
       refresh: 'Actualiser',
       addEmployee: 'Ajouter Employé',
       noResults: 'Aucun employé trouvé',
