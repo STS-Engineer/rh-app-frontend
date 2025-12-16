@@ -537,7 +537,7 @@ const DemandesRH = () => {
 
       <div className="stats-section">
         <div className="stat-card total">
-          <div className="stat-icon"><span className="fi fi-rr-rectangle-list"></span></div>
+          <div className="stat-icon"><i class="fi fi-rr-rectangle-list"></i></div>
           <div className="stat-content">
             <div className="stat-number">{demandes.length}</div>
             <div className="stat-label">{t('totalRequests')}</div>
