@@ -1,5 +1,5 @@
 @import "flag-icons/css/flag-icons.min.css";
-
+@import "@flaticon/flaticon-uicons/css/all/all.css";
 html {
   zoom: 0.75; /* EXACTEMENT comme Edge zoom 75% */
 }
