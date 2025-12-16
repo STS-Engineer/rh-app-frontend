@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import './DossierRHModal.css';
-import { dossierRhAPI } from '../services/api'; // Ajustez le chemin selon votre structure
 
 const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const [photos, setPhotos] = useState([]);
@@ -8,23 +7,11 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [actionType, setActionType] = useState('new'); // 'new' ou 'add'
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
-
-  // Détecter si l'employé a déjà un dossier RH
-  React.useEffect(() => {
-    if (employee?.dossier_rh) {
-      setActionType('add');
-      setDossierName(`Ajout au dossier existant - ${new Date().toLocaleDateString('fr-FR')}`);
-    } else {
-      setActionType('new');
-      setDossierName('');
-    }
-  }, [employee]);
 
   // Ouvrir la caméra
   const startCamera = async () => {
@@ -153,7 +140,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
   // Générer le PDF final
   const generatePDF = async () => {
-    if (actionType === 'new' && !dossierName.trim()) {
+    if (!dossierName.trim()) {
       alert('Veuillez donner un nom au dossier');
       return;
     }
@@ -186,8 +173,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
           },
           body: JSON.stringify({
             photos: uploadedPhotos,
-            dossierName: dossierName || `Dossier RH - ${new Date().toLocaleDateString('fr-FR')}`,
-            actionType: actionType
+            dossierName: dossierName
           })
         }
       );
@@ -208,7 +194,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       }
 
       console.log('✅ PDF généré avec succès:', result);
-      alert(`✅ ${result.message || 'Dossier RH traité avec succès!'}`);
+      alert('✅ Dossier RH généré avec succès!');
       
       if (onSuccess) {
         onSuccess(result.employee);
@@ -223,43 +209,15 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     }
   };
 
-  // Supprimer le dossier RH
-  const deleteDossierRH = async () => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer le dossier RH de cet employé ? Cette action est irréversible.')) {
-      return;
-    }
-
-    try {
-      setGenerating(true);
-      const response = await dossierRhAPI.deleteDossier(employee.id);
-      
-      if (response.data.success) {
-        alert('✅ Dossier RH supprimé avec succès');
-        if (onSuccess) {
-          onSuccess(response.data.employee);
-        }
-        handleClose();
-      }
-    } catch (error) {
-      console.error('❌ Erreur suppression dossier RH:', error);
-      alert(`Erreur lors de la suppression: ${error.response?.data?.error || error.message}`);
-    } finally {
-      setGenerating(false);
-    }
-  };
-
   const handleClose = () => {
     stopCamera();
     photos.forEach(photo => URL.revokeObjectURL(photo.preview));
     setPhotos([]);
     setDossierName('');
-    setActionType('new');
     onClose();
   };
 
   if (!isOpen || !employee) return null;
-
-  const hasExistingDossier = !!employee.dossier_rh;
 
   return (
     <div className="dossier-modal-overlay" onClick={handleClose}>
@@ -268,9 +226,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
         onClick={e => e.stopPropagation()}
       >
         <div className="dossier-modal-header">
-          <h2>
-            {hasExistingDossier ? '📁 Ajouter au Dossier RH' : '📁 Créer un Dossier RH'}
-          </h2>
+          <h2>📁 Créer un Dossier RH</h2>
           <button className="close-btn" onClick={handleClose}>
             ×
           </button>
@@ -284,30 +240,21 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
             <p>
               Matricule: {employee.matricule} | Poste: {employee.poste}
             </p>
-            
-            {hasExistingDossier && (
-              <div className="existing-dossier-alert">
-                <p>⚠️ Un dossier RH existe déjà pour cet employé.</p>
-                <p>Les nouveaux documents seront ajoutés à la suite du dossier existant.</p>
-              </div>
-            )}
           </div>
 
-          {actionType === 'new' && (
-            <div className="form-section">
-              <label>Nom du dossier *</label>
-              <input
-                type="text"
-                value={dossierName}
-                onChange={e => setDossierName(e.target.value)}
-                placeholder="Ex: Dossier d'embauche, Évaluation trimestrielle..."
-                className="dossier-name-input"
-              />
-            </div>
-          )}
+          <div className="form-section">
+            <label>Nom du dossier *</label>
+            <input
+              type="text"
+              value={dossierName}
+              onChange={e => setDossierName(e.target.value)}
+              placeholder="Ex: Dossier d'embauche, Évaluation trimestrielle..."
+              className="dossier-name-input"
+            />
+          </div>
 
           <div className="photos-section">
-            <h4>Documents à ajouter ({photos.length})</h4>
+            <h4>Photos ({photos.length})</h4>
 
             <div className="capture-controls">
               {!isCapturing ? (
@@ -353,7 +300,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isCapturing}
               >
-                📁 Uploader des documents
+                📁 Uploader des photos
               </button>
 
               <input
@@ -368,7 +315,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
             {photos.length > 0 && (
               <div className="photos-gallery">
-                <h5>Documents ajoutés:</h5>
+                <h5>Photos ajoutées:</h5>
                 <div className="photos-grid">
                   {photos.map((photo, index) => (
                     <div key={index} className="photo-item">
@@ -377,7 +324,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
                         <button
                           className="remove-photo-btn"
                           onClick={() => removePhoto(index)}
-                          title="Supprimer ce document"
+                          title="Supprimer cette photo"
                         >
                           ×
                         </button>
@@ -392,45 +339,29 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
         </div>
 
         <div className="dossier-modal-footer">
-          <div className="footer-left">
-            {hasExistingDossier && (
-              <button
-                className="delete-btn"
-                onClick={deleteDossierRH}
-                disabled={generating || uploading}
-              >
-                🗑️ Supprimer le dossier RH
-              </button>
-            )}
-          </div>
-          
-          <div className="footer-right">
-            <button
-              className="cancel-btn"
-              onClick={handleClose}
-              disabled={generating || uploading}
-            >
-              ❌ Annuler
-            </button>
-            <button
-              className="generate-btn"
-              onClick={generatePDF}
-              disabled={
-                generating || 
-                uploading || 
-                photos.length === 0 || 
-                (actionType === 'new' && !dossierName.trim())
-              }
-            >
-              {generating
-                ? '⏳ Traitement en cours...'
-                : uploading
-                ? '⏳ Upload des documents...'
-                : hasExistingDossier
-                ? `📄 Ajouter au dossier (${photos.length} doc${photos.length > 1 ? 's' : ''})`
-                : `📄 Créer le dossier (${photos.length} doc${photos.length > 1 ? 's' : ''})`}
-            </button>
-          </div>
+          <button
+            className="cancel-btn"
+            onClick={handleClose}
+            disabled={generating || uploading}
+          >
+            ❌ Annuler
+          </button>
+          <button
+            className="generate-btn"
+            onClick={generatePDF}
+            disabled={
+              generating || 
+              uploading || 
+              photos.length === 0 || 
+              !dossierName.trim()
+            }
+          >
+            {generating
+              ? '⏳ Génération en cours...'
+              : uploading
+              ? '⏳ Upload des photos...'
+              : `📄 Générer le PDF (${photos.length} photo${photos.length > 1 ? 's' : ''})`}
+          </button>
         </div>
       </div>
     </div>
