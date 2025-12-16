@@ -171,8 +171,10 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
         <form onSubmit={handleSubmit} className="add-employee-form">
           <div className="form-grid">
             <div className="form-column">
+              
               <div className="photo-upload-section">
                 <label>📷 {t('employeePhoto')}</label>
+              </div>
                 <div className="photo-upload-area">
                   {photoPreview ? (
                     <div className="photo-preview">
@@ -207,7 +209,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                       </label>
                     </div>
                   )}
-                </div>
+             
               </div>
 
               <FormInput 
