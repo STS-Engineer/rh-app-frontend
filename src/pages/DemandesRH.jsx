@@ -558,7 +558,7 @@ const DemandesRH = () => {
           </div>
         </div>
         <div className="stat-card refused">
-          <div className="stat-icon"><span className="fi fi-ts-crossed-hands-reject"></span></div>
+          <div className="stat-icon"><i class="fi fi-tr-vote-nay"></i></div>
           <div className="stat-content">
             <div className="stat-number">{demandes.filter(d => d.statut === 'refuse').length}</div>
             <div className="stat-label">{t('refused')}</div>
