@@ -169,195 +169,228 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="add-employee-form">
-          {/* Section photo dans un div séparé */}
-          <div className="photo-section">
-            <div className="photo-upload-section">
-              <label className="section-label">📷 {t('employeePhoto')}</label>
-              <div className="photo-upload-area">
-                {photoPreview ? (
-                  <div className="photo-preview">
-                    <img src={photoPreview} alt="Preview" />
-                    <button 
-                      type="button" 
-                      className="remove-photo-btn"
-                      onClick={() => {
-                        setSelectedFile(null);
-                        setPhotoPreview('');
-                      }}
-                    >
-                      ✕ {t('removePhoto')}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="photo-placeholder">
-                    <div className="upload-instructions">
-                      <span className="upload-icon">📷</span>
-                      <p>{t('clickToSelectPhoto')}</p>
-                      <small>{t('photoRequirements')}</small>
+          <div className="form-layout">
+            {/* Colonne gauche pour la photo */}
+            <div className="photo-column">
+              <div className="photo-upload-section">
+                <label className="section-title">📷 {t('employeePhoto')}</label>
+                <div className="photo-upload-area">
+                  {photoPreview ? (
+                    <div className="photo-preview">
+                      <img src={photoPreview} alt="Preview" className="preview-image" />
+                      <button 
+                        type="button" 
+                        className="remove-photo-btn"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setPhotoPreview('');
+                        }}
+                      >
+                        ✕
+                      </button>
                     </div>
-                    <input
-                      type="file"
-                      id="photo-upload"
-                      accept="image/*"
-                      onChange={handleFileSelect}
-                      className="file-input"
-                    />
-                    <label htmlFor="photo-upload" className="upload-label">
-                      📤 {t('choosePhoto')}
-                    </label>
+                  ) : (
+                    <div className="photo-placeholder">
+                      <div className="upload-content">
+                        <span className="upload-icon">📷</span>
+                        <div className="upload-text">
+                          <h4>{t('uploadPhoto')}</h4>
+                          <p>{t('clickToSelectPhoto')}</p>
+                          <small>{t('photoRequirements')}</small>
+                        </div>
+                      </div>
+                      <input
+                        type="file"
+                        id="photo-upload"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="file-input"
+                      />
+                      <label htmlFor="photo-upload" className="upload-label">
+                        📤 {t('choosePhoto')}
+                      </label>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="upload-instructions">
+                  <div className="instructions-title">
+                    <span>ℹ️</span> {t('instructions')}
                   </div>
-                )}
+                  <ul className="instructions-list">
+                    <li>{t('photoMaxSize')}</li>
+                    <li>{t('supportedFormats')}</li>
+                    <li>{t('recommendedDimensions')}</li>
+                  </ul>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Section des informations de l'employé */}
-          <div className="form-grid">
-            <div className="form-column">
-              <FormInput 
-                label={`${t('employeeID')} *`} 
-                name="matricule" 
-                value={formData.matricule} 
-                onChange={handleInputChange} 
-                required 
-              />
-              <FormInput 
-                label={`${t('lastName')} *`} 
-                name="nom" 
-                value={formData.nom} 
-                onChange={handleInputChange} 
-                required 
-              />
-              <FormInput 
-                label={`${t('firstName')} *`} 
-                name="prenom" 
-                value={formData.prenom} 
-                onChange={handleInputChange} 
-                required 
-              />
-              <FormInput 
-                label={`${t('employeeEmail')} *`} 
-                name="adresse_mail" 
-                type="email"
-                value={formData.adresse_mail} 
-                onChange={handleInputChange} 
-                required 
-                placeholder="exemple@entreprise.com"
-              />
-            </div>
+            {/* Colonne droite pour les champs du formulaire */}
+            <div className="fields-column">
+              <div className="fields-grid">
+                <div className="form-section">
+                  <h3 className="section-title">👤 {t('personalInfo')}</h3>
+                  <div className="form-group">
+                    <FormInput 
+                      label={`${t('employeeID')} *`} 
+                      name="matricule" 
+                      value={formData.matricule} 
+                      onChange={handleInputChange} 
+                      required 
+                    />
+                    <FormInput 
+                      label={`${t('lastName')} *`} 
+                      name="nom" 
+                      value={formData.nom} 
+                      onChange={handleInputChange} 
+                      required 
+                    />
+                    <FormInput 
+                      label={`${t('firstName')} *`} 
+                      name="prenom" 
+                      value={formData.prenom} 
+                      onChange={handleInputChange} 
+                      required 
+                    />
+                    <FormInput 
+                      label={`${t('birthDate')} *`} 
+                      name="date_naissance" 
+                      type="date" 
+                      value={formData.date_naissance} 
+                      onChange={handleInputChange} 
+                      required 
+                    />
+                  </div>
+                </div>
 
-            <div className="form-column">
-              <FormInput 
-                label={`${t('idNumber')} *`} 
-                name="cin" 
-                value={formData.cin} 
-                onChange={handleInputChange} 
-                required 
-              />
-              <FormInput 
-                label={t('passport')} 
-                name="passeport" 
-                value={formData.passeport} 
-                onChange={handleInputChange} 
-                placeholder={t('optional')} 
-              />
-              <FormInput 
-                label={t('passportIssueDate')} 
-                name="date_emission_passport" 
-                type="date" 
-                value={formData.date_emission_passport} 
-                onChange={handleInputChange} 
-                placeholder={t('optional')} 
-              />
-              <FormInput 
-                label={t('passportExpiryDate')} 
-                name="date_expiration_passport" 
-                type="date" 
-                value={formData.date_expiration_passport} 
-                onChange={handleInputChange} 
-                placeholder={t('optional')} 
-              />         
+                <div className="form-section">
+                  <h3 className="section-title">🆔 {t('identification')}</h3>
+                  <div className="form-group">
+                    <FormInput 
+                      label={`${t('idNumber')} *`} 
+                      name="cin" 
+                      value={formData.cin} 
+                      onChange={handleInputChange} 
+                      required 
+                    />
+                    <FormInput 
+                      label={t('passport')} 
+                      name="passeport" 
+                      value={formData.passeport} 
+                      onChange={handleInputChange} 
+                      placeholder={t('optional')} 
+                    />
+                    <div className="form-row-dual">
+                      <FormInput 
+                        label={t('passportIssueDate')} 
+                        name="date_emission_passport" 
+                        type="date" 
+                        value={formData.date_emission_passport} 
+                        onChange={handleInputChange} 
+                        placeholder={t('optional')} 
+                        halfWidth
+                      />
+                      <FormInput 
+                        label={t('passportExpiryDate')} 
+                        name="date_expiration_passport" 
+                        type="date" 
+                        value={formData.date_expiration_passport} 
+                        onChange={handleInputChange} 
+                        placeholder={t('optional')} 
+                        halfWidth
+                      />
+                    </div>
+                  </div>
+                </div>
 
-                         
-              <FormInput 
-                label={`${t('birthDate')} *`} 
-                name="date_naissance" 
-                type="date" 
-                value={formData.date_naissance} 
-                onChange={handleInputChange} 
-                required 
-              />
-              <FormInput 
-                label={`${t('position')} *`} 
-                name="poste" 
-                value={formData.poste} 
-                onChange={handleInputChange} 
-                required 
-              />
-              <FormInput 
-                label={t('supervisor1Email')} 
-                name="mail_responsable1" 
-                type="email"
-                value={formData.mail_responsable1} 
-                onChange={handleInputChange} 
-                placeholder="responsable1@entreprise.com"
-              />
-            </div>
+                <div className="form-section">
+                  <h3 className="section-title">💼 {t('professionalInfo')}</h3>
+                  <div className="form-group">
+                    <FormInput 
+                      label={`${t('position')} *`} 
+                      name="poste" 
+                      value={formData.poste} 
+                      onChange={handleInputChange} 
+                      required 
+                    />
+                    <FormSelect 
+                      label={`${t('department')} *`} 
+                      name="site_dep" 
+                      value={formData.site_dep} 
+                      onChange={handleInputChange}
+                      options={[
+                        t('Commerce'),
+                        t('Finance'),
+                        t('Chiffrage'),
+                        t('Digitale'),
+                        t('Général'),
+                        t('Logistique Germany'),
+                        t('Logistique Groupe'),
+                        t('Achat'),
+                        t('Qualité')
+                      ]}
+                      required 
+                    />
+                    <FormSelect 
+                      label={`${t('contractType')} *`} 
+                      name="type_contrat" 
+                      value={formData.type_contrat} 
+                      onChange={handleInputChange}
+                      options={['CDI', 'CDD', 'CIVP']}
+                      required 
+                    />
+                    <FormInput 
+                      label={`${t('startDate')} *`} 
+                      name="date_debut" 
+                      type="date" 
+                      value={formData.date_debut} 
+                      onChange={handleInputChange} 
+                      required 
+                    />
+                    <FormInput 
+                      label={`${t('grossSalary')} *`} 
+                      name="salaire_brute" 
+                      type="number" 
+                      step="0.01" 
+                      value={formData.salaire_brute} 
+                      onChange={handleInputChange} 
+                      required 
+                    />
+                  </div>
+                </div>
 
-            <div className="form-column">
-              <FormSelect 
-                label={`${t('department')} *`} 
-                name="site_dep" 
-                value={formData.site_dep} 
-                onChange={handleInputChange}
-                options={[
-                      t('Commerce'),
-                      t('Finance'),
-                      t('Chiffrage'),
-                      t('Digitale'),
-                      t('Général'),
-                      t('Logistique Germany'),
-                      t('Logistique Groupe'),
-                      t('Achat'),
-                      t('Qualité')
-                ]}
-                required 
-              />
-              
-              <FormSelect 
-                label={`${t('contractType')} *`} 
-                name="type_contrat" 
-                value={formData.type_contrat} 
-                onChange={handleInputChange}
-                options={['CDI', 'CDD', 'CIVP']}
-                required 
-              />
-              
-              <FormInput 
-                label={`${t('startDate')} *`} 
-                name="date_debut" 
-                type="date" 
-                value={formData.date_debut} 
-                onChange={handleInputChange} 
-                required 
-              />
-              <FormInput 
-                label={`${t('grossSalary')} *`} 
-                name="salaire_brute" 
-                type="number" 
-                step="0.01" 
-                value={formData.salaire_brute} 
-                onChange={handleInputChange} 
-                required 
-              />
-              <FormInput 
-                label={t('supervisor2Email')} 
-                name="mail_responsable2" 
-                type="email"
-                value={formData.mail_responsable2} 
-                onChange={handleInputChange} 
-                placeholder="responsable2@entreprise.com"
-              />
+                <div className="form-section">
+                  <h3 className="section-title">📧 {t('contactInfo')}</h3>
+                  <div className="form-group">
+                    <FormInput 
+                      label={`${t('employeeEmail')} *`} 
+                      name="adresse_mail" 
+                      type="email"
+                      value={formData.adresse_mail} 
+                      onChange={handleInputChange} 
+                      required 
+                      placeholder="exemple@entreprise.com"
+                    />
+                    <FormInput 
+                      label={t('supervisor1Email')} 
+                      name="mail_responsable1" 
+                      type="email"
+                      value={formData.mail_responsable1} 
+                      onChange={handleInputChange} 
+                      placeholder="responsable1@entreprise.com"
+                    />
+                    <FormInput 
+                      label={t('supervisor2Email')} 
+                      name="mail_responsable2" 
+                      type="email"
+                      value={formData.mail_responsable2} 
+                      onChange={handleInputChange} 
+                      placeholder="responsable2@entreprise.com"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -386,8 +419,8 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
   );
 };
 
-const FormInput = ({ label, name, type = 'text', value, onChange, placeholder, required, fullWidth }) => (
-  <div className={`form-row ${fullWidth ? 'full-width' : ''}`}>
+const FormInput = ({ label, name, type = 'text', value, onChange, placeholder, required, halfWidth }) => (
+  <div className={`form-row ${halfWidth ? 'half-width' : ''}`}>
     <label>{label}</label>
     <input
       type={type}
