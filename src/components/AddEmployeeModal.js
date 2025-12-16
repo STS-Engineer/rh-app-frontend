@@ -310,7 +310,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                   t('Commerce'),
                   t('Finance'), 
                   t('Chiffrage'),
-                  t('Digital'),
+                  t('Digitale'),
                   t('General'),
                   t('Logistique Germany'),
                   t('Logistique Groupe'),
@@ -325,7 +325,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 name="type_contrat" 
                 value={formData.type_contrat} 
                 onChange={handleInputChange}
-                options={['CDI', 'CDD', t('internship'), 'CIVP']}
+                options={['CDI', 'CDD', 'CIVP']}
                 required 
               />
               
