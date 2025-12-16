@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './DemandesRH.css';
 import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../contexts/LanguageContext';
-import "flag-icons/css/flag-icons.min.css";
 
 
 const DemandesRH = () => {
