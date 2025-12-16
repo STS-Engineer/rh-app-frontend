@@ -169,49 +169,51 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="add-employee-form">
+          {/* Section photo dans un div séparé */}
+          <div className="photo-section">
+            <div className="photo-upload-section">
+              <label className="section-label">📷 {t('employeePhoto')}</label>
+              <div className="photo-upload-area">
+                {photoPreview ? (
+                  <div className="photo-preview">
+                    <img src={photoPreview} alt="Preview" />
+                    <button 
+                      type="button" 
+                      className="remove-photo-btn"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setPhotoPreview('');
+                      }}
+                    >
+                      ✕ {t('removePhoto')}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="photo-placeholder">
+                    <div className="upload-instructions">
+                      <span className="upload-icon">📷</span>
+                      <p>{t('clickToSelectPhoto')}</p>
+                      <small>{t('photoRequirements')}</small>
+                    </div>
+                    <input
+                      type="file"
+                      id="photo-upload"
+                      accept="image/*"
+                      onChange={handleFileSelect}
+                      className="file-input"
+                    />
+                    <label htmlFor="photo-upload" className="upload-label">
+                      📤 {t('choosePhoto')}
+                    </label>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Section des informations de l'employé */}
           <div className="form-grid">
             <div className="form-column">
-              
-              <div className="photo-upload-section">
-                <label>📷 {t('employeePhoto')}</label>
-              </div>
-                <div className="photo-upload-area">
-                  {photoPreview ? (
-                    <div className="photo-preview">
-                      <img src={photoPreview} alt="Preview" />
-                      <button 
-                        type="button" 
-                        className="remove-photo-btn"
-                        onClick={() => {
-                          setSelectedFile(null);
-                          setPhotoPreview('');
-                        }}
-                      >
-                        ✕ {t('removePhoto')}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="photo-placeholder">
-                      <div className="upload-instructions">
-                        <span className="upload-icon">📷</span>
-                        <p>{t('clickToSelectPhoto')}</p>
-                        <small>{t('photoRequirements')}</small>
-                      </div>
-                      <input
-                        type="file"
-                        id="photo-upload"
-                        accept="image/*"
-                        onChange={handleFileSelect}
-                        className="file-input"
-                      />
-                      <label htmlFor="photo-upload" className="upload-label">
-                        📤 {t('choosePhoto')}
-                      </label>
-                    </div>
-                  )}
-             
-              </div>
-
               <FormInput 
                 label={`${t('employeeID')} *`} 
                 name="matricule" 
