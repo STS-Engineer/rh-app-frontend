@@ -26,7 +26,7 @@ const Team = () => {
       const filtered = employees.filter(emp =>
         emp.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        emp.poste.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        
         emp.matricule.toLowerCase().includes(searchTerm.toLowerCase())
       );
       setFilteredEmployees(filtered);
