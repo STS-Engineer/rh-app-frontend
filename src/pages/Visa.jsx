@@ -3,7 +3,7 @@ import Sidebar from "../components/Sidebar";
 import "./Visa.css";
 import toast, { Toaster } from "react-hot-toast";
 
-const API = process.env.REACT_APP_API_URL || 'https://backend-rh.azurewebsites.net/api';
+const API = process.env.REACT_APP_API_URL || 'https://backend-rh.azurewebsites.net';
 
 /** -------------------------------------------------------
  * Constantes UI
