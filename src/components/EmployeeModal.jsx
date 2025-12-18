@@ -534,58 +534,11 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                   </div>
                 )}
 
-               // Dans EmployeeModal.jsx, cherchez la section du bouton d'ajout de dossier
-// Remplacer cette partie:
-
-{/* Ancien code à remplacer */}
-<div className="dossier-action">
-  <button className="add-dossier-btn" onClick={() => setShowDossierModal(true)}>
-    📁 {t('addUpdateDossier')}
-  </button>
-</div>
-
-{/* Nouveau code avec badge informatif */}
-<div className="dossier-action">
-  <div className="dossier-header">
-    <strong>{t('hrFile')}:</strong>
-    {documentUrl && (
-      <span className="dossier-status-badge">
-        📄 Dossier existant
-      </span>
-    )}
-  </div>
-  
-  <button 
-    className="add-dossier-btn"
-    onClick={() => setShowDossierModal(true)}
-    title={documentUrl ? "Ajouter des documents au dossier existant" : "Créer un nouveau dossier"}
-  >
-    {documentUrl ? (
-      <>
-        🔄 {t('addToDossier')}
-        <span className="btn-subtext">Ajouter des documents</span>
-      </>
-    ) : (
-      <>
-        📁 {t('createDossier')}
-        <span className="btn-subtext">Créer un nouveau dossier</span>
-      </>
-    )}
-  </button>
-  
-  {documentUrl && (
-    <div className="dossier-actions">
-      <a
-        href={documentUrl}
-        onClick={(e) => handleDocumentClick(e, documentUrl)}
-        className="view-dossier-link"
-        title="Voir le dossier complet"
-      >
-        👁️ Voir le dossier
-      </a>
-    </div>
-  )}
-</div>
+                <div className="dossier-action">
+                  <button className="add-dossier-btn" onClick={() => setShowDossierModal(true)}>
+                    📁 {t('addUpdateDossier')}
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
