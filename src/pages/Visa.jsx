@@ -3,6 +3,7 @@ import Sidebar from "../components/Sidebar";
 import "./Visa.css";
 import toast, { Toaster } from "react-hot-toast";
 
+
 const STEPS = [
   { key: "DOCS", label: "Documents validés" },
   { key: "PRET", label: "Prêt pour dépôt" },
