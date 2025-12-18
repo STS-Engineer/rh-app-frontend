@@ -3,7 +3,6 @@ import Sidebar from "../components/Sidebar";
 import "./Visa.css";
 import toast, { Toaster } from "react-hot-toast";
 
-
 const STEPS = [
   { key: "DOCS", label: "Documents validés" },
   { key: "PRET", label: "Prêt pour dépôt" },
@@ -16,7 +15,6 @@ const DOCUMENT_STATUS_LABEL = {
   REJECTED: "Refusé",
   RECEIVED_PHYSICAL: "Reçu physiquement",
 };
-
 
 function isDocumentSatisfied(doc) {
   if (doc.mode === "UPLOAD") return doc.status === "UPLOADED";
@@ -146,11 +144,11 @@ function confirmToast(message) {
    ========================================================= */
 function EmployeeSearchSelect({
   label = "Nom & Prénom",
-  required = false, 
+  required = false,
   employees = [],
   loading = false,
-  value, 
-  onChange, 
+  value,
+  onChange,
   groupLabel = "Employees - STS",
 }) {
   const rootRef = useRef(null);
@@ -220,9 +218,7 @@ function EmployeeSearchSelect({
 
   return (
     <div className="emp-select" ref={rootRef}>
-      <label className="emp-label">
-        {label} 
-      </label>
+      <label className="emp-label">{label}</label>
 
       <div className={`emp-inputWrap ${open ? "is-open" : ""}`}>
         <input
@@ -243,17 +239,8 @@ function EmployeeSearchSelect({
 
         <span className="emp-icon" aria-hidden="true">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-            <path
-              d="M16.5 16.5 21 21"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
+            <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" strokeWidth="2" />
+            <path d="M16.5 16.5 21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </span>
       </div>
@@ -361,7 +348,6 @@ function Section({ title, sectionStatus, innerRef, dossiers, onOpen }) {
                       </div>
 
                       <div className="progress-bar-small">
-                        {/* style dynamique => OK inline */}
                         <div className="progress-fill-small" style={{ width: `${progressPercent}%` }} />
                       </div>
                     </div>
@@ -402,14 +388,7 @@ function Section({ title, sectionStatus, innerRef, dossiers, onOpen }) {
 /**
  * Détail d’un dossier visa
  */
-function DossierDetail({
-  dossier,
-  onUpdateDocStatus,
-  onUpdateDossierStatus,
-  onUploadPdf,
-  onGeneratePdf,
-  onSendSpecificEmail,
-}) {
+function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUploadPdf, onGeneratePdf, onSendSpecificEmail, API }) {
   const [showVisaAccordeModal, setShowVisaAccordeModal] = useState(false);
   const [showPretDepotModal, setShowPretDepotModal] = useState(false);
   const [hasPrintedOnce, setHasPrintedOnce] = useState(false);
@@ -419,6 +398,13 @@ function DossierDetail({
     dateDebut: "",
     dateFin: "",
   });
+
+  // helper: rendre URL absolue si backend renvoie une URL relative
+  const absUrl = (u) => {
+    if (!u) return "";
+    if (/^https?:\/\//i.test(u)) return u;
+    return `${API}${u.startsWith("/") ? "" : "/"}${u}`;
+  };
 
   const summary = useMemo(() => {
     const docs = dossier.documents || [];
@@ -461,7 +447,7 @@ function DossierDetail({
   };
 
   const handlePrintDocuments = () => {
-    const url = `${API}/api/visa-dossiers/${dossier.id}/dossier-pdf`;
+    const url = absUrl(`/api/visa-dossiers/${dossier.id}/dossier-pdf`);
     const win = window.open(url, "_blank");
     if (!win) toast.error("Autorisez les popups pour imprimer le dossier.");
     else toast("Ouverture du PDF pour impression…");
@@ -550,7 +536,6 @@ function DossierDetail({
 
             <div className="progress">
               <div className="progress-bar">
-                {/* style dynamique => OK inline */}
                 <div className="progress-fill" style={{ width: `${summary.progressPercent}%` }} />
               </div>
               <span className="progress-text">{summary.progressPercent}% des documents requis sont fournis</span>
@@ -565,13 +550,7 @@ function DossierDetail({
                 <button
                   className="btn-primary"
                   disabled={!canOpenPretDepotModal}
-                  title={
-                    isFinal
-                      ? "Dossier clôturé"
-                      : !allDocumentsProvided
-                      ? "Tous les documents requis doivent être fournis"
-                      : ""
-                  }
+                  title={isFinal ? "Dossier clôturé" : !allDocumentsProvided ? "Tous les documents requis doivent être fournis" : ""}
                   onClick={handlePretDepotClick}
                 >
                   Prêt pour dépôt
@@ -644,9 +623,7 @@ function DossierDetail({
                     </td>
 
                     <td>
-                      <span className={`doc-status doc-${doc.status}`}>
-                        {DOCUMENT_STATUS_LABEL[doc.status] || doc.status}
-                      </span>
+                      <span className={`doc-status doc-${doc.status}`}>{DOCUMENT_STATUS_LABEL[doc.status] || doc.status}</span>
                     </td>
 
                     <td className="doc-actions">
@@ -673,7 +650,7 @@ function DossierDetail({
                               <button
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error("Aucun PDF uploadé.");
-                                  window.open(doc.fileUrl, "_blank");
+                                  window.open(absUrl(doc.fileUrl), "_blank");
                                 }}
                               >
                                 Aperçu
@@ -683,18 +660,14 @@ function DossierDetail({
 
                           {doc.code === "FRAIS_VISA" && (
                             <>
-                              <button
-                                onClick={() =>
-                                  window.open("https://france-visas.gouv.fr/fr-FR/web/france-visas/accueil", "_blank")
-                                }
-                              >
+                              <button onClick={() => window.open("https://france-visas.gouv.fr/fr-FR/web/france-visas/accueil", "_blank")}>
                                 Remplir formulaire
                               </button>
                               <button onClick={() => onUploadPdf(doc)}>Upload récépissé</button>
                               <button
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error("Aucun récépissé PDF uploadé.");
-                                  window.open(doc.fileUrl, "_blank");
+                                  window.open(absUrl(doc.fileUrl), "_blank");
                                 }}
                               >
                                 Aperçu PDF
@@ -711,7 +684,7 @@ function DossierDetail({
                               <button
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error("Aucun PDF de réservation uploadé.");
-                                  window.open(doc.fileUrl, "_blank");
+                                  window.open(absUrl(doc.fileUrl), "_blank");
                                 }}
                               >
                                 Aperçu
@@ -725,7 +698,7 @@ function DossierDetail({
                               <button
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error("Aucun PDF généré.");
-                                  window.open(doc.fileUrl, "_blank");
+                                  window.open(absUrl(doc.fileUrl), "_blank");
                                 }}
                               >
                                 Aperçu
@@ -734,21 +707,13 @@ function DossierDetail({
                           )}
 
                           {doc.mode === "UPLOAD" &&
-                            ![
-                              "FRAIS_VISA",
-                              "RESERVATION_HOTEL",
-                              "ATTESTATION_TRAVAIL",
-                              "INVITATION",
-                              "ORDRE_MISSION",
-                              "ASSURANCE",
-                              "BILLET_AVION",
-                            ].includes(doc.code) && (
+                            !["FRAIS_VISA", "RESERVATION_HOTEL", "ATTESTATION_TRAVAIL", "INVITATION", "ORDRE_MISSION", "ASSURANCE", "BILLET_AVION"].includes(doc.code) && (
                               <>
                                 <button onClick={() => onUploadPdf(doc)}>Upload PDF</button>
                                 <button
                                   onClick={() => {
                                     if (!doc.fileUrl) return toast.error("Aucun PDF uploadé.");
-                                    window.open(doc.fileUrl, "_blank");
+                                    window.open(absUrl(doc.fileUrl), "_blank");
                                   }}
                                 >
                                   Aperçu
@@ -797,20 +762,12 @@ function DossierDetail({
                   <div className="form-row">
                     <div>
                       <label>Date début validité</label>
-                      <input
-                        type="date"
-                        value={visaAccordeData.dateDebut}
-                        onChange={(e) => setVisaAccordeData((p) => ({ ...p, dateDebut: e.target.value }))}
-                      />
+                      <input type="date" value={visaAccordeData.dateDebut} onChange={(e) => setVisaAccordeData((p) => ({ ...p, dateDebut: e.target.value }))} />
                     </div>
 
                     <div>
                       <label>Date fin validité</label>
-                      <input
-                        type="date"
-                        value={visaAccordeData.dateFin}
-                        onChange={(e) => setVisaAccordeData((p) => ({ ...p, dateFin: e.target.value }))}
-                      />
+                      <input type="date" value={visaAccordeData.dateFin} onChange={(e) => setVisaAccordeData((p) => ({ ...p, dateFin: e.target.value }))} />
                     </div>
                   </div>
 
@@ -867,7 +824,7 @@ function DossierDetail({
               </div>
 
               <div className="form-actions">
-                <button type="button" className="btn-outline" onClick={handlePrintDocuments}>
+                <button type="button" className="btn-outline" onClick={() => handlePrintDocuments()}>
                   🖨 Imprimer les documents
                 </button>
 
@@ -923,6 +880,9 @@ export default function Visa() {
 
   const [selectedDossier, setSelectedDossier] = useState(null);
 
+  // ⚠️ Assure-toi que API est bien défini globalement (comme avant chez toi)
+  // ex: const API = process.env.REACT_APP_API_URL;
+
   /**
    * Chargement employees
    */
@@ -970,11 +930,7 @@ export default function Visa() {
    */
   const filteredDossiers = useMemo(() => {
     const term = search.toLowerCase();
-    return dossiers.filter(
-      (d) =>
-        (d.employee?.name || "").toLowerCase().includes(term) ||
-        (d.motif || "").toLowerCase().includes(term)
-    );
+    return dossiers.filter((d) => (d.employee?.name || "").toLowerCase().includes(term) || (d.motif || "").toLowerCase().includes(term));
   }, [dossiers, search]);
 
   // Lists par statut
@@ -1010,9 +966,6 @@ export default function Visa() {
 
   /**
    * Création dossier
-   * - validation dates
-   * - POST /api/visa-dossiers
-   * - feedback email envoyé ou non
    */
   async function handleCreateDossier(e) {
     e.preventDefault();
@@ -1052,14 +1005,9 @@ export default function Visa() {
       if (!res.ok) throw new Error(data?.message || "Erreur création dossier");
 
       if (data.emailSent) {
-        toast.success(`Dossier créé. Email envoyé à ${employeeName} (instructions + liste des documents requis).`, {
-          duration: 9000,
-        });
+        toast.success(`Dossier créé. Email envoyé à ${employeeName} (instructions + liste des documents requis).`, { duration: 9000 });
       } else {
-        toast.error(
-          `Dossier créé, mais email NON envoyé à ${employeeName}. ${data.emailError ? `Raison : ${data.emailError}` : ""}`,
-          { duration: 8000 }
-        );
+        toast.error(`Dossier créé, mais email NON envoyé à ${employeeName}. ${data.emailError ? `Raison : ${data.emailError}` : ""}`, { duration: 8000 });
       }
 
       await refreshDossiers();
@@ -1098,8 +1046,6 @@ export default function Visa() {
 
   /**
    * Mise à jour statut dossier
-   * - PATCH /api/visa-dossiers/:id/status
-   * - +visaData optionnel (si VISA_ACCORDE)
    */
   async function updateDossierStatus(dossierId, status, visaData = null) {
     try {
@@ -1125,7 +1071,8 @@ export default function Visa() {
   }
 
   /**
-   * Upload PDF document
+   * ✅ Upload PDF document (VISA "comme archive")
+   * IMPORTANT: clé multipart = pdfFile
    */
   async function uploadPdf(doc) {
     const input = document.createElement("input");
@@ -1136,7 +1083,7 @@ export default function Visa() {
       if (!file) return;
 
       const form = new FormData();
-      form.append("file", file);
+      form.append("pdfFile", file); // ✅ CHANGEMENT ICI (au lieu de "file")
 
       const loadingId = toast.loading("Upload du PDF…");
       try {
@@ -1226,12 +1173,7 @@ export default function Visa() {
   async function sendSpecificEmail(doc) {
     if (!selectedDossierId) return;
 
-    const endpoint =
-      doc.code === "ASSURANCE"
-        ? `${API}/api/email/assurance`
-        : doc.code === "BILLET_AVION"
-        ? `${API}/api/email/billet`
-        : null;
+    const endpoint = doc.code === "ASSURANCE" ? `${API}/api/email/assurance` : doc.code === "BILLET_AVION" ? `${API}/api/email/billet` : null;
 
     if (!endpoint) {
       toast.error("Envoi mail non disponible pour ce document.");
@@ -1293,27 +1235,15 @@ export default function Visa() {
             boxShadow: "0 16px 40px rgba(15, 23, 42, 0.25)",
           },
           success: {
-            style: {
-              background: "#ecfdf5",
-              color: "#065f46",
-              borderLeft: "7px solid #16a34a",
-            },
+            style: { background: "#ecfdf5", color: "#065f46", borderLeft: "7px solid #16a34a" },
             iconTheme: { primary: "#16a34a", secondary: "#ecfdf5" },
           },
           error: {
-            style: {
-              background: "#fef2f2",
-              color: "#7f1d1d",
-              borderLeft: "7px solid #dc2626",
-            },
+            style: { background: "#fef2f2", color: "#7f1d1d", borderLeft: "7px solid #dc2626" },
             iconTheme: { primary: "#dc2626", secondary: "#fef2f2" },
           },
           loading: {
-            style: {
-              background: "#eff6ff",
-              color: "#1e3a8a",
-              borderLeft: "7px solid #2563eb",
-            },
+            style: { background: "#eff6ff", color: "#1e3a8a", borderLeft: "7px solid #2563eb" },
           },
         }}
       />
@@ -1324,9 +1254,7 @@ export default function Visa() {
 
           <div className="page-header-text">
             <h1 className="page-title">Dossiers Visa France</h1>
-            <p className="page-subtitle">
-              {selectedDossier ? "Suivi détaillé du dossier visa" : "Gestion des demandes de visa professionnel - Tableau de bord"}
-            </p>
+            <p className="page-subtitle">{selectedDossier ? "Suivi détaillé du dossier visa" : "Gestion des demandes de visa professionnel - Tableau de bord"}</p>
           </div>
 
           {selectedDossier && (
@@ -1335,12 +1263,11 @@ export default function Visa() {
               onClick={() => {
                 setSelectedDossierId(null);
                 setSelectedDossier(null);
-                refreshDossiers(); 
+                refreshDossiers();
               }}
             >
               ← Retour au dashboard
             </button>
-
           )}
         </div>
 
@@ -1348,12 +1275,7 @@ export default function Visa() {
           <div className="page-toolbar">
             <div className="toolbar-left">
               <div className="search-wrapper">
-                <input
-                  type="text"
-                  placeholder="Rechercher un employé ou un motif..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
+                <input type="text" placeholder="Rechercher un employé ou un motif..." value={search} onChange={(e) => setSearch(e.target.value)} />
               </div>
             </div>
 
@@ -1407,33 +1329,18 @@ export default function Visa() {
 
                   <div>
                     <label>Motif du déplacement</label>
-                    <input
-                      type="text"
-                      name="motif"
-                      value={newDossierForm.motif}
-                      onChange={(e) => setNewDossierForm((p) => ({ ...p, motif: e.target.value }))}
-                    />
+                    <input type="text" name="motif" value={newDossierForm.motif} onChange={(e) => setNewDossierForm((p) => ({ ...p, motif: e.target.value }))} />
                   </div>
                 </div>
 
                 <div className="form-row">
                   <div>
                     <label>Date de départ</label>
-                    <input
-                      type="date"
-                      name="departureDate"
-                      value={newDossierForm.departureDate}
-                      onChange={(e) => setNewDossierForm((p) => ({ ...p, departureDate: e.target.value }))}
-                    />
+                    <input type="date" name="departureDate" value={newDossierForm.departureDate} onChange={(e) => setNewDossierForm((p) => ({ ...p, departureDate: e.target.value }))} />
                   </div>
                   <div>
                     <label>Date de retour</label>
-                    <input
-                      type="date"
-                      name="returnDate"
-                      value={newDossierForm.returnDate}
-                      onChange={(e) => setNewDossierForm((p) => ({ ...p, returnDate: e.target.value }))}
-                    />
+                    <input type="date" name="returnDate" value={newDossierForm.returnDate} onChange={(e) => setNewDossierForm((p) => ({ ...p, returnDate: e.target.value }))} />
                   </div>
                 </div>
 
@@ -1478,6 +1385,7 @@ export default function Visa() {
             onUploadPdf={uploadPdf}
             onGeneratePdf={generatePdf}
             onSendSpecificEmail={sendSpecificEmail}
+            API={API}
           />
         )}
       </div>
