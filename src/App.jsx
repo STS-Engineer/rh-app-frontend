@@ -9,6 +9,7 @@ import Statistics from './pages/Statistics';
 import DemandesRH from './pages/DemandesRH'; 
 import FicheDePaie from './pages/FicheDePaie';
 import Settings from './pages/Settings';
+import Visa from './pages/Visa';
 import './styles/App.css';
 
 const PrivateRoute = ({ children }) => {
@@ -84,8 +85,14 @@ function App() {
                 } 
               />
               
-              {/* Route de fallback */}
-              <Route path="*" element={<Navigate to="/dashboard" />} />
+              <Route 
+                path="/visa" 
+                element={
+                  <PrivateRoute>
+                    <Visa />
+                  </PrivateRoute>
+                } 
+              />
             </Routes>
           </div>
         </div>
