@@ -1,8 +1,13 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import "./Visa.css";
 import toast, { Toaster } from "react-hot-toast";
 
+const API = process.env.REACT_APP_API_URL || 'https://backend-rh.azurewebsites.net/api';
+
+/** -------------------------------------------------------
+ * Constantes UI
+ * ------------------------------------------------------ */
 const STEPS = [
   { key: "DOCS", label: "Documents validés" },
   { key: "PRET", label: "Prêt pour dépôt" },
@@ -16,18 +21,21 @@ const DOCUMENT_STATUS_LABEL = {
   RECEIVED_PHYSICAL: "Reçu physiquement",
 };
 
-function isDocumentSatisfied(doc) {
-  if (doc.mode === "UPLOAD") return doc.status === "UPLOADED";
-  if (doc.mode === "PHYSICAL") return doc.status === "RECEIVED_PHYSICAL";
-  return false;
-}
-
 const EMPTY_FORM = {
   employeeId: "",
   departureDate: "",
   returnDate: "",
   motif: "",
 };
+
+/** -------------------------------------------------------
+ * Helpers
+ * ------------------------------------------------------ */
+function isDocumentSatisfied(doc) {
+  if (doc.mode === "UPLOAD") return doc.status === "UPLOADED";
+  if (doc.mode === "PHYSICAL") return doc.status === "RECEIVED_PHYSICAL";
+  return false;
+}
 
 function getDocumentType(docCode) {
   switch (docCode) {
@@ -60,6 +68,18 @@ function typeToCssClass(typeLabel) {
   return `type-${typeLabel.replace(/\s+/g, "-").toLowerCase()}`;
 }
 
+function isValidHttpUrl(u) {
+  try {
+    const url = new URL(u);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+/** -------------------------------------------------------
+ * UI Components
+ * ------------------------------------------------------ */
 function StatusPill({ status }) {
   let cls = "status-pill";
   if (status === "EN_COURS") cls += " status-warning";
@@ -88,7 +108,9 @@ function Stepper({ stepIndex }) {
           <div className={`visa-step ${state}`} key={s.key}>
             <div className="visa-step-dot">{idx < stepIndex ? "✓" : idx + 1}</div>
             <div className="visa-step-label">{s.label}</div>
-            {idx < STEPS.length - 1 && <div className={`visa-step-line ${idx < stepIndex ? "done" : ""}`} />}
+            {idx < STEPS.length - 1 && (
+              <div className={`visa-step-line ${idx < stepIndex ? "done" : ""}`} />
+            )}
           </div>
         );
       })}
@@ -104,47 +126,11 @@ function LockedHint({ text }) {
   );
 }
 
-function confirmToast(message) {
-  return new Promise((resolve) => {
-    toast.custom((t) => (
-      <div className="toast-confirm">
-        <div className="toast-confirm-title">Confirmation</div>
-        <div className="toast-confirm-message">{message}</div>
-
-        <div className="toast-confirm-actions">
-          <button
-            className="btn-outline"
-            type="button"
-            onClick={() => {
-              toast.dismiss(t.id);
-              resolve(false);
-            }}
-          >
-            Annuler
-          </button>
-
-          <button
-            className="btn-danger"
-            type="button"
-            onClick={() => {
-              toast.dismiss(t.id);
-              resolve(true);
-            }}
-          >
-            Confirmer
-          </button>
-        </div>
-      </div>
-    ));
-  });
-}
-
-/* =========================================================
-   ✅ EmployeeSearchSelect (filtre PRENOM/NOM)
-   ========================================================= */
+/** -------------------------------------------------------
+ * ✅ EmployeeSearchSelect (filtre PRENOM/NOM)
+ * ------------------------------------------------------ */
 function EmployeeSearchSelect({
   label = "Nom & Prénom",
-  required = false,
   employees = [],
   loading = false,
   value,
@@ -159,7 +145,7 @@ function EmployeeSearchSelect({
   useEffect(() => {
     const emp = employees.find((e) => String(e.id) === String(value));
     if (!value) setQuery("");
-    else if (emp) setQuery(`${emp.prenom} ${emp.nom}`);
+    else if (emp) setQuery(`${emp.prenom ?? ""} ${emp.nom ?? ""}`.trim());
   }, [value, employees]);
 
   const filtered = useMemo(() => {
@@ -188,7 +174,7 @@ function EmployeeSearchSelect({
 
   function selectEmp(emp) {
     onChange(String(emp.id));
-    setQuery(`${emp.prenom} ${emp.nom}`);
+    setQuery(`${emp.prenom ?? ""} ${emp.nom ?? ""}`.trim());
     setOpen(false);
     setActiveIndex(-1);
   }
@@ -225,7 +211,7 @@ function EmployeeSearchSelect({
           className="emp-input"
           type="text"
           value={query}
-          placeholder={loading ? "Chargement..." : ""}
+          placeholder={loading ? "Chargement..." : "Rechercher..."}
           onFocus={() => setOpen(true)}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -239,8 +225,17 @@ function EmployeeSearchSelect({
 
         <span className="emp-icon" aria-hidden="true">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z" stroke="currentColor" strokeWidth="2" />
-            <path d="M16.5 16.5 21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            <path
+              d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
+              stroke="currentColor"
+              strokeWidth="2"
+            />
+            <path
+              d="M16.5 16.5 21 21"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
           </svg>
         </span>
       </div>
@@ -254,7 +249,7 @@ function EmployeeSearchSelect({
               <div className="emp-empty">Aucun employé trouvé</div>
             ) : (
               filtered.map((emp, idx) => {
-                const name = `${emp.prenom} ${emp.nom}`;
+                const name = `${emp.prenom ?? ""} ${emp.nom ?? ""}`.trim();
                 const isActive = idx === activeIndex;
                 return (
                   <button
@@ -279,9 +274,9 @@ function EmployeeSearchSelect({
   );
 }
 
-/**
+/** -------------------------------------------------------
  * Section Dashboard (liste de dossiers par statut)
- */
+ * ------------------------------------------------------ */
 function Section({ title, sectionStatus, innerRef, dossiers, onOpen }) {
   const isAccorde = sectionStatus === "VISA_ACCORDE";
   const showProgress = sectionStatus === "EN_COURS" || sectionStatus === "PRET_POUR_DEPOT";
@@ -326,7 +321,9 @@ function Section({ title, sectionStatus, innerRef, dossiers, onOpen }) {
                 <td>
                   <div className="emp-cell-name">{d.employee?.name}</div>
                   <div className="emp-cell-role">{d.employee?.poste}</div>
-                  {d.employee?.department && <div className="emp-cell-dept">{d.employee.department}</div>}
+                  {d.employee?.department && (
+                    <div className="emp-cell-dept">{d.employee.department}</div>
+                  )}
                 </td>
 
                 <td>
@@ -348,7 +345,10 @@ function Section({ title, sectionStatus, innerRef, dossiers, onOpen }) {
                       </div>
 
                       <div className="progress-bar-small">
-                        <div className="progress-fill-small" style={{ width: `${progressPercent}%` }} />
+                        <div
+                          className="progress-fill-small"
+                          style={{ width: `${progressPercent}%` }}
+                        />
                       </div>
                     </div>
                   </td>
@@ -357,7 +357,11 @@ function Section({ title, sectionStatus, innerRef, dossiers, onOpen }) {
                 {isAccorde && (
                   <>
                     <td>{d.visa?.numero || "—"}</td>
-                    <td>{d.visa?.dateDebut && d.visa?.dateFin ? `${d.visa.dateDebut} → ${d.visa.dateFin}` : "—"}</td>
+                    <td>
+                      {d.visa?.dateDebut && d.visa?.dateFin
+                        ? `${d.visa.dateDebut} → ${d.visa.dateFin}`
+                        : "—"}
+                    </td>
                   </>
                 )}
 
@@ -385,10 +389,18 @@ function Section({ title, sectionStatus, innerRef, dossiers, onOpen }) {
   );
 }
 
-/**
+/** -------------------------------------------------------
  * Détail d’un dossier visa
- */
-function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUploadPdf, onGeneratePdf, onSendSpecificEmail, API }) {
+ * ------------------------------------------------------ */
+function DossierDetail({
+  dossier,
+  onUpdateDocStatus,
+  onUpdateDossierStatus,
+  onUploadPdf,
+  onGeneratePdf,
+  onSendSpecificEmail,
+  apiBase,
+}) {
   const [showVisaAccordeModal, setShowVisaAccordeModal] = useState(false);
   const [showPretDepotModal, setShowPretDepotModal] = useState(false);
   const [hasPrintedOnce, setHasPrintedOnce] = useState(false);
@@ -399,12 +411,16 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
     dateFin: "",
   });
 
-  // helper: rendre URL absolue si backend renvoie une URL relative
-  const absUrl = (u) => {
-    if (!u) return "";
-    if (/^https?:\/\//i.test(u)) return u;
-    return `${API}${u.startsWith("/") ? "" : "/"}${u}`;
-  };
+  /** ✅ URL absolue */
+  const absUrl = useCallback(
+    (u) => {
+      if (!u) return "";
+      if (/^https?:\/\//i.test(u)) return u;
+      const base = apiBase || "";
+      return `${base}${u.startsWith("/") ? "" : "/"}${u}`;
+    },
+    [apiBase]
+  );
 
   const summary = useMemo(() => {
     const docs = dossier.documents || [];
@@ -413,7 +429,8 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
     const missing = docs.filter((d) => !isDocumentSatisfied(d)).length;
     const physicalDocs = docs.filter((d) => d.mode === "PHYSICAL").length;
 
-    const progressPercent = totalRequired > 0 ? Math.round((ok / totalRequired) * 100) : 0;
+    const progressPercent =
+      totalRequired > 0 ? Math.round((ok / totalRequired) * 100) : 0;
     return { totalRequired, ok, missing, physicalDocs, progressPercent };
   }, [dossier]);
 
@@ -422,17 +439,22 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
     return requiredDocs.every(isDocumentSatisfied);
   }, [dossier]);
 
-  const isFinal = dossier.status === "VISA_ACCORDE" || dossier.status === "VISA_REFUSE";
+  const isFinal =
+    dossier.status === "VISA_ACCORDE" || dossier.status === "VISA_REFUSE";
 
   const canOpenPretDepotModal =
-    (dossier.status === "EN_COURS" || dossier.status === "PRET_POUR_DEPOT") && allDocumentsProvided && !isFinal;
+    (dossier.status === "EN_COURS" || dossier.status === "PRET_POUR_DEPOT") &&
+    allDocumentsProvided &&
+    !isFinal;
 
-  const canConfirmPretDepot = dossier.status === "EN_COURS" && allDocumentsProvided && !isFinal;
+  const canConfirmPretDepot =
+    dossier.status === "EN_COURS" && allDocumentsProvided && !isFinal;
 
   const canDecideVisa = dossier.status === "PRET_POUR_DEPOT" && !isFinal;
 
   const stepIndex = useMemo(() => {
-    const isFinalLocal = dossier.status === "VISA_ACCORDE" || dossier.status === "VISA_REFUSE";
+    const isFinalLocal =
+      dossier.status === "VISA_ACCORDE" || dossier.status === "VISA_REFUSE";
     if (isFinalLocal) return STEPS.length;
     if (dossier.status === "PRET_POUR_DEPOT") return 1;
     return 0;
@@ -440,7 +462,9 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
 
   const handlePretDepotClick = () => {
     if (!allDocumentsProvided) {
-      toast.error("Tous les documents requis doivent être fournis avant de marquer comme prêt pour dépôt.");
+      toast.error(
+        "Tous les documents requis doivent être fournis avant de marquer comme prêt pour dépôt."
+      );
       return;
     }
     setShowPretDepotModal(true);
@@ -448,7 +472,11 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
 
   const handlePrintDocuments = () => {
     const url = absUrl(`/api/visa-dossiers/${dossier.id}/dossier-pdf`);
-    const win = window.open(url, "_blank");
+    if (!isValidHttpUrl(url)) {
+      toast.error("URL PDF invalide.");
+      return;
+    }
+    const win = window.open(url, "_blank", "noopener,noreferrer");
     if (!win) toast.error("Autorisez les popups pour imprimer le dossier.");
     else toast("Ouverture du PDF pour impression…");
     setHasPrintedOnce(true);
@@ -478,7 +506,9 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
       (t) => (
         <div className="toast-refuse">
           <h3 className="toast-refuse-title">Confirmer le refus de visa</h3>
-          <p className="toast-refuse-text">Cette action est définitive. Le dossier sera clôturé.</p>
+          <p className="toast-refuse-text">
+            Cette action est définitive. Le dossier sera clôturé.
+          </p>
 
           <div className="toast-refuse-actions">
             <button className="toast-btn-cancel" onClick={() => toast.dismiss(t.id)}>
@@ -538,11 +568,14 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
               <div className="progress-bar">
                 <div className="progress-fill" style={{ width: `${summary.progressPercent}%` }} />
               </div>
-              <span className="progress-text">{summary.progressPercent}% des documents requis sont fournis</span>
+              <span className="progress-text">
+                {summary.progressPercent}% des documents requis sont fournis
+              </span>
             </div>
 
             <p className="muted">
-              {summary.ok}/{summary.totalRequired} documents requis fournis – {summary.missing} manquants ({summary.physicalDocs} à apporter physiquement).
+              {summary.ok}/{summary.totalRequired} documents requis fournis –{" "}
+              {summary.missing} manquants ({summary.physicalDocs} à apporter physiquement).
             </p>
 
             <div className="actions-stack">
@@ -550,14 +583,22 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
                 <button
                   className="btn-primary"
                   disabled={!canOpenPretDepotModal}
-                  title={isFinal ? "Dossier clôturé" : !allDocumentsProvided ? "Tous les documents requis doivent être fournis" : ""}
+                  title={
+                    isFinal
+                      ? "Dossier clôturé"
+                      : !allDocumentsProvided
+                      ? "Tous les documents requis doivent être fournis"
+                      : ""
+                  }
                   onClick={handlePretDepotClick}
                 >
                   Prêt pour dépôt
                 </button>
 
                 {!hasPrintedOnce && canOpenPretDepotModal && (
-                  <div className="action-hint">⚠️ Impression requise avant confirmation “Prêt pour dépôt”.</div>
+                  <div className="action-hint">
+                    ⚠️ Impression requise avant confirmation “Prêt pour dépôt”.
+                  </div>
                 )}
               </div>
 
@@ -565,11 +606,19 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
                 <div className="decision-title">Décision visa</div>
 
                 <div className="decision-actions">
-                  <button className="btn-success" disabled={!canDecideVisa} onClick={() => setShowVisaAccordeModal(true)}>
+                  <button
+                    className="btn-success"
+                    disabled={!canDecideVisa}
+                    onClick={() => setShowVisaAccordeModal(true)}
+                  >
                     Visa accordé
                   </button>
 
-                  <button className="btn-danger" disabled={!canDecideVisa} onClick={handleVisaRefuseClick}>
+                  <button
+                    className="btn-danger"
+                    disabled={!canDecideVisa}
+                    onClick={handleVisaRefuseClick}
+                  >
                     Visa refusé
                   </button>
                 </div>
@@ -623,7 +672,9 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
                     </td>
 
                     <td>
-                      <span className={`doc-status doc-${doc.status}`}>{DOCUMENT_STATUS_LABEL[doc.status] || doc.status}</span>
+                      <span className={`doc-status doc-${doc.status}`}>
+                        {DOCUMENT_STATUS_LABEL[doc.status] || doc.status}
+                      </span>
                     </td>
 
                     <td className="doc-actions">
@@ -650,7 +701,9 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
                               <button
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error("Aucun PDF uploadé.");
-                                  window.open(absUrl(doc.fileUrl), "_blank");
+                                  const url = absUrl(doc.fileUrl);
+                                  if (!isValidHttpUrl(url)) return toast.error("URL PDF invalide.");
+                                  window.open(url, "_blank", "noopener,noreferrer");
                                 }}
                               >
                                 Aperçu
@@ -660,14 +713,24 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
 
                           {doc.code === "FRAIS_VISA" && (
                             <>
-                              <button onClick={() => window.open("https://france-visas.gouv.fr/fr-FR/web/france-visas/accueil", "_blank")}>
+                              <button
+                                onClick={() =>
+                                  window.open(
+                                    "https://france-visas.gouv.fr/fr-FR/web/france-visas/accueil",
+                                    "_blank",
+                                    "noopener,noreferrer"
+                                  )
+                                }
+                              >
                                 Remplir formulaire
                               </button>
                               <button onClick={() => onUploadPdf(doc)}>Upload récépissé</button>
                               <button
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error("Aucun récépissé PDF uploadé.");
-                                  window.open(absUrl(doc.fileUrl), "_blank");
+                                  const url = absUrl(doc.fileUrl);
+                                  if (!isValidHttpUrl(url)) return toast.error("URL PDF invalide.");
+                                  window.open(url, "_blank", "noopener,noreferrer");
                                 }}
                               >
                                 Aperçu PDF
@@ -677,14 +740,21 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
 
                           {doc.code === "RESERVATION_HOTEL" && (
                             <>
-                              <button className="btn-booking" onClick={() => window.open("https://www.booking.com", "_blank")}>
+                              <button
+                                className="btn-booking"
+                                onClick={() =>
+                                  window.open("https://www.booking.com", "_blank", "noopener,noreferrer")
+                                }
+                              >
                                 Réserver hôtel
                               </button>
                               <button onClick={() => onUploadPdf(doc)}>Upload PDF</button>
                               <button
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error("Aucun PDF de réservation uploadé.");
-                                  window.open(absUrl(doc.fileUrl), "_blank");
+                                  const url = absUrl(doc.fileUrl);
+                                  if (!isValidHttpUrl(url)) return toast.error("URL PDF invalide.");
+                                  window.open(url, "_blank", "noopener,noreferrer");
                                 }}
                               >
                                 Aperçu
@@ -692,13 +762,17 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
                             </>
                           )}
 
-                          {(doc.code === "ATTESTATION_TRAVAIL" || doc.code === "INVITATION" || doc.code === "ORDRE_MISSION") && (
+                          {(doc.code === "ATTESTATION_TRAVAIL" ||
+                            doc.code === "INVITATION" ||
+                            doc.code === "ORDRE_MISSION") && (
                             <>
                               <button onClick={() => onGeneratePdf(doc)}>Générer PDF</button>
                               <button
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error("Aucun PDF généré.");
-                                  window.open(absUrl(doc.fileUrl), "_blank");
+                                  const url = absUrl(doc.fileUrl);
+                                  if (!isValidHttpUrl(url)) return toast.error("URL PDF invalide.");
+                                  window.open(url, "_blank", "noopener,noreferrer");
                                 }}
                               >
                                 Aperçu
@@ -707,13 +781,23 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
                           )}
 
                           {doc.mode === "UPLOAD" &&
-                            !["FRAIS_VISA", "RESERVATION_HOTEL", "ATTESTATION_TRAVAIL", "INVITATION", "ORDRE_MISSION", "ASSURANCE", "BILLET_AVION"].includes(doc.code) && (
+                            ![
+                              "FRAIS_VISA",
+                              "RESERVATION_HOTEL",
+                              "ATTESTATION_TRAVAIL",
+                              "INVITATION",
+                              "ORDRE_MISSION",
+                              "ASSURANCE",
+                              "BILLET_AVION",
+                            ].includes(doc.code) && (
                               <>
                                 <button onClick={() => onUploadPdf(doc)}>Upload PDF</button>
                                 <button
                                   onClick={() => {
                                     if (!doc.fileUrl) return toast.error("Aucun PDF uploadé.");
-                                    window.open(absUrl(doc.fileUrl), "_blank");
+                                    const url = absUrl(doc.fileUrl);
+                                    if (!isValidHttpUrl(url)) return toast.error("URL PDF invalide.");
+                                    window.open(url, "_blank", "noopener,noreferrer");
                                   }}
                                 >
                                   Aperçu
@@ -762,12 +846,20 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
                   <div className="form-row">
                     <div>
                       <label>Date début validité</label>
-                      <input type="date" value={visaAccordeData.dateDebut} onChange={(e) => setVisaAccordeData((p) => ({ ...p, dateDebut: e.target.value }))} />
+                      <input
+                        type="date"
+                        value={visaAccordeData.dateDebut}
+                        onChange={(e) => setVisaAccordeData((p) => ({ ...p, dateDebut: e.target.value }))}
+                      />
                     </div>
 
                     <div>
                       <label>Date fin validité</label>
-                      <input type="date" value={visaAccordeData.dateFin} onChange={(e) => setVisaAccordeData((p) => ({ ...p, dateFin: e.target.value }))} />
+                      <input
+                        type="date"
+                        value={visaAccordeData.dateFin}
+                        onChange={(e) => setVisaAccordeData((p) => ({ ...p, dateFin: e.target.value }))}
+                      />
                     </div>
                   </div>
 
@@ -824,7 +916,7 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
               </div>
 
               <div className="form-actions">
-                <button type="button" className="btn-outline" onClick={() => handlePrintDocuments()}>
+                <button type="button" className="btn-outline" onClick={handlePrintDocuments}>
                   🖨 Imprimer les documents
                 </button>
 
@@ -858,12 +950,13 @@ function DossierDetail({ dossier, onUpdateDocStatus, onUpdateDossierStatus, onUp
   );
 }
 
-/* =========================================================
-   ✅ Page principale Visa
-   ========================================================= */
+/** -------------------------------------------------------
+ * ✅ Page principale Visa
+ * ------------------------------------------------------ */
 export default function Visa() {
   const [dossiers, setDossiers] = useState([]);
   const [selectedDossierId, setSelectedDossierId] = useState(null);
+  const [selectedDossier, setSelectedDossier] = useState(null);
 
   const [search, setSearch] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -873,75 +966,99 @@ export default function Visa() {
   const [employees, setEmployees] = useState([]);
   const [employeesLoading, setEmployeesLoading] = useState(false);
 
+  const [pageLoading, setPageLoading] = useState(false);
+
   const enCoursRef = useRef(null);
   const pretDepotRef = useRef(null);
   const visaAccordeRef = useRef(null);
   const visaRefuseRef = useRef(null);
 
-  const [selectedDossier, setSelectedDossier] = useState(null);
+  /** ✅ petit wrapper fetch JSON robuste */
+  const fetchJson = useCallback(async (url, options = {}) => {
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        ...(options.headers || {}),
+      },
+      // si tu utilises cookies/sessions => décommente :
+      // credentials: "include",
+    });
 
-  // ⚠️ Assure-toi que API est bien défini globalement (comme avant chez toi)
-  // ex: const API = process.env.REACT_APP_API_URL;
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data?.message || `Erreur HTTP ${res.status}`);
+    }
+    return data;
+  }, []);
 
-  /**
-   * Chargement employees
-   */
+  /** ✅ Chargement employees */
   useEffect(() => {
+    if (!API) {
+      toast.error("REACT_APP_API_URL manquant (.env)");
+      return;
+    }
+
     (async () => {
       setEmployeesLoading(true);
       try {
-        const res = await fetch(`${API}/api/employees`);
-        const data = await res.json();
+        const data = await fetchJson(`${API}/api/employees`);
         setEmployees(Array.isArray(data) ? data : []);
       } catch (e) {
-        toast.error("Erreur chargement employees");
+        toast.error(e.message || "Erreur chargement employees");
       } finally {
         setEmployeesLoading(false);
       }
     })();
-  }, []);
+  }, [fetchJson]);
 
-  /**
-   * Refresh liste dossiers
-   */
-  async function refreshDossiers() {
-    const res = await fetch(`${API}/api/visa-dossiers`);
-    const data = await res.json();
-    setDossiers(Array.isArray(data) ? data : []);
-  }
+  /** ✅ Refresh dossiers */
+  const refreshDossiers = useCallback(async () => {
+    if (!API) return;
+    try {
+      setPageLoading(true);
+      const data = await fetchJson(`${API}/api/visa-dossiers`);
+      setDossiers(Array.isArray(data) ? data : []);
+    } catch (e) {
+      toast.error(e.message || "Erreur chargement dossiers");
+    } finally {
+      setPageLoading(false);
+    }
+  }, [fetchJson]);
 
   useEffect(() => {
-    refreshDossiers().catch(() => {});
-  }, []);
+    refreshDossiers();
+  }, [refreshDossiers]);
 
-  /**
-   * Ouvrir dossier (détail) => récup dossier complet
-   */
-  async function openDossier(dossierId) {
-    const res = await fetch(`${API}/api/visa-dossiers/${dossierId}`);
-    const data = await res.json();
+  /** ✅ Ouvrir dossier (détail) */
+  const openDossier = useCallback(
+    async (dossierId) => {
+      try {
+        const data = await fetchJson(`${API}/api/visa-dossiers/${dossierId}`);
+        setSelectedDossierId(dossierId);
+        setSelectedDossier(data);
+      } catch (e) {
+        toast.error(e.message || "Erreur ouverture dossier");
+      }
+    },
+    [fetchJson]
+  );
 
-    setSelectedDossierId(dossierId);
-    setSelectedDossier(data);
-  }
-
-  /**
-   * Filtre dashboard (search)
-   */
+  /** ✅ Filtre dashboard */
   const filteredDossiers = useMemo(() => {
-    const term = search.toLowerCase();
-    return dossiers.filter((d) => (d.employee?.name || "").toLowerCase().includes(term) || (d.motif || "").toLowerCase().includes(term));
+    const term = search.toLowerCase().trim();
+    if (!term) return dossiers;
+    return dossiers.filter(
+      (d) =>
+        (d.employee?.name || "").toLowerCase().includes(term) ||
+        (d.motif || "").toLowerCase().includes(term)
+    );
   }, [dossiers, search]);
 
-  // Lists par statut
   const dossiersEnCours = filteredDossiers.filter((d) => d.status === "EN_COURS");
   const dossiersPretDepot = filteredDossiers.filter((d) => d.status === "PRET_POUR_DEPOT");
   const dossiersVisaAccorde = filteredDossiers.filter((d) => d.status === "VISA_ACCORDE");
   const dossiersVisaRefuse = filteredDossiers.filter((d) => d.status === "VISA_REFUSE");
 
-  /**
-   * Stats KPI
-   */
   const stats = useMemo(
     () => ({
       enCours: dossiers.filter((d) => d.status === "EN_COURS").length,
@@ -964,9 +1081,7 @@ export default function Visa() {
     setNewDossierForm(EMPTY_FORM);
   }
 
-  /**
-   * Création dossier
-   */
+  /** ✅ create dossier */
   async function handleCreateDossier(e) {
     e.preventDefault();
     const { employeeId, departureDate, returnDate, motif } = newDossierForm;
@@ -982,13 +1097,12 @@ export default function Visa() {
       return;
     }
 
-    const emp = employees.find((e) => String(e.id) === String(employeeId));
-    const employeeName = emp ? `${emp.prenom} ${emp.nom}` : "Employé";
+    const emp = employees.find((x) => String(x.id) === String(employeeId));
+    const employeeName = emp ? `${emp.prenom ?? ""} ${emp.nom ?? ""}`.trim() : "Employé";
 
+    const loadingId = toast.loading("Création du dossier…");
     try {
-      const loadingId = toast.loading("Création du dossier…");
-
-      const res = await fetch(`${API}/api/visa-dossiers`, {
+      const data = await fetchJson(`${API}/api/visa-dossiers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -999,15 +1113,20 @@ export default function Visa() {
         }),
       });
 
-      const data = await res.json();
       toast.dismiss(loadingId);
 
-      if (!res.ok) throw new Error(data?.message || "Erreur création dossier");
-
-      if (data.emailSent) {
-        toast.success(`Dossier créé. Email envoyé à ${employeeName} (instructions + liste des documents requis).`, { duration: 9000 });
+      if (data?.emailSent) {
+        toast.success(
+          `Dossier créé. Email envoyé à ${employeeName} (instructions + liste des documents requis).`,
+          { duration: 9000 }
+        );
       } else {
-        toast.error(`Dossier créé, mais email NON envoyé à ${employeeName}. ${data.emailError ? `Raison : ${data.emailError}` : ""}`, { duration: 8000 });
+        toast.error(
+          `Dossier créé, mais email NON envoyé à ${employeeName}. ${
+            data?.emailError ? `Raison : ${data.emailError}` : ""
+          }`,
+          { duration: 8000 }
+        );
       }
 
       await refreshDossiers();
@@ -1016,26 +1135,20 @@ export default function Visa() {
       setNewDossierForm(EMPTY_FORM);
       setFormError("");
     } catch (err) {
+      toast.dismiss(loadingId);
       setFormError(err.message);
       toast.error(err.message || "Erreur création dossier");
     }
   }
 
-  /**
-   * Mise à jour statut document
-   */
+  /** ✅ update doc */
   async function updateDocStatus(docId, status, extra = {}) {
     try {
-      const res = await fetch(`${API}/api/visa-documents/${docId}`, {
+      await fetchJson(`${API}/api/visa-documents/${docId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status, ...extra }),
       });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || "Erreur mise à jour document");
-      }
 
       if (selectedDossierId) await openDossier(selectedDossierId);
       else await refreshDossiers();
@@ -1044,24 +1157,14 @@ export default function Visa() {
     }
   }
 
-  /**
-   * Mise à jour statut dossier
-   */
+  /** ✅ update dossier status */
   async function updateDossierStatus(dossierId, status, visaData = null) {
     try {
-      const res = await fetch(`${API}/api/visa-dossiers/${dossierId}/status`, {
+      await fetchJson(`${API}/api/visa-dossiers/${dossierId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status,
-          ...(visaData || {}),
-        }),
+        body: JSON.stringify({ status, ...(visaData || {}) }),
       });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || "Erreur mise à jour dossier");
-      }
 
       await refreshDossiers();
       await openDossier(dossierId);
@@ -1070,10 +1173,7 @@ export default function Visa() {
     }
   }
 
-  /**
-   * ✅ Upload PDF document (VISA "comme archive")
-   * IMPORTANT: clé multipart = pdfFile
-   */
+  /** ✅ upload PDF */
   async function uploadPdf(doc) {
     const input = document.createElement("input");
     input.type = "file";
@@ -1083,13 +1183,14 @@ export default function Visa() {
       if (!file) return;
 
       const form = new FormData();
-      form.append("pdfFile", file); // ✅ CHANGEMENT ICI (au lieu de "file")
+      form.append("pdfFile", file); // ✅ IMPORTANT
 
       const loadingId = toast.loading("Upload du PDF…");
       try {
         const res = await fetch(`${API}/api/visa-documents/${doc.id}/upload`, {
           method: "POST",
           body: form,
+          // credentials: "include",
         });
 
         const data = await res.json().catch(() => ({}));
@@ -1107,14 +1208,16 @@ export default function Visa() {
     input.click();
   }
 
-  /**
-   * Générer PDF (attestation / invitation / ordre mission)
-   */
+  /** ✅ generate PDF */
   async function generatePdf(doc) {
     const dossier = selectedDossier;
     if (!dossier) return;
 
-    const employeId = dossier.employee.id;
+    const employeId = dossier.employee?.id;
+    if (!employeId) {
+      toast.error("Employé introuvable dans le dossier.");
+      return;
+    }
 
     let url = "";
     let body = {};
@@ -1146,19 +1249,24 @@ export default function Visa() {
 
     const loadingId = toast.loading("Génération PDF…");
     try {
-      const res = await fetch(url, {
+      const data = await fetchJson(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-
-      const data = await res.json().catch(() => ({}));
       toast.dismiss(loadingId);
 
-      if (!res.ok) throw new Error(data?.message || "Erreur génération");
-
       toast.success("PDF généré avec succès.");
-      if (data.fileUrl) window.open(data.fileUrl, "_blank");
+
+      if (data?.fileUrl) {
+        const absolute = /^https?:\/\//i.test(data.fileUrl)
+          ? data.fileUrl
+          : `${API}${data.fileUrl.startsWith("/") ? "" : "/"}${data.fileUrl}`;
+
+        if (isValidHttpUrl(absolute)) {
+          window.open(absolute, "_blank", "noopener,noreferrer");
+        }
+      }
 
       await openDossier(selectedDossierId);
     } catch (e) {
@@ -1167,13 +1275,16 @@ export default function Visa() {
     }
   }
 
-  /**
-   * Envoi email spécifique (assurance / billet)
-   */
+  /** ✅ send specific email */
   async function sendSpecificEmail(doc) {
     if (!selectedDossierId) return;
 
-    const endpoint = doc.code === "ASSURANCE" ? `${API}/api/email/assurance` : doc.code === "BILLET_AVION" ? `${API}/api/email/billet` : null;
+    const endpoint =
+      doc.code === "ASSURANCE"
+        ? `${API}/api/email/assurance`
+        : doc.code === "BILLET_AVION"
+        ? `${API}/api/email/billet`
+        : null;
 
     if (!endpoint) {
       toast.error("Envoi mail non disponible pour ce document.");
@@ -1182,17 +1293,12 @@ export default function Visa() {
 
     const loadingId = toast.loading("Envoi de l’email…");
     try {
-      const res = await fetch(endpoint, {
+      await fetchJson(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dossierId: selectedDossierId }),
       });
-
-      const data = await res.json().catch(() => ({}));
       toast.dismiss(loadingId);
-
-      if (!res.ok) throw new Error(data?.message || "Erreur envoi email");
-
       toast.success("Email envoyé ✅");
     } catch (e) {
       toast.dismiss(loadingId);
@@ -1200,9 +1306,7 @@ export default function Visa() {
     }
   }
 
-  /**
-   * Jump vers une section de statut
-   */
+  /** ✅ Jump vers section */
   function handleStatusJump(e) {
     const value = e.target.value;
     if (!value) return;
@@ -1215,6 +1319,28 @@ export default function Visa() {
     };
 
     map[value]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  /** ✅ Loading page */
+  if (pageLoading && !selectedDossier) {
+    return (
+      <div className="layout">
+        <Sidebar />
+        <div className="main">
+          <div className="page-header-card">
+            <div className="page-header-icon">📋</div>
+            <div className="page-header-text">
+              <h1 className="page-title">Dossiers Visa France</h1>
+              <p className="page-subtitle">Chargement…</p>
+            </div>
+          </div>
+          <div className="loading" style={{ padding: 24 }}>
+            <div className="loading-spinner" />
+            <p>Chargement des dossiers visa…</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -1235,15 +1361,27 @@ export default function Visa() {
             boxShadow: "0 16px 40px rgba(15, 23, 42, 0.25)",
           },
           success: {
-            style: { background: "#ecfdf5", color: "#065f46", borderLeft: "7px solid #16a34a" },
+            style: {
+              background: "#ecfdf5",
+              color: "#065f46",
+              borderLeft: "7px solid #16a34a",
+            },
             iconTheme: { primary: "#16a34a", secondary: "#ecfdf5" },
           },
           error: {
-            style: { background: "#fef2f2", color: "#7f1d1d", borderLeft: "7px solid #dc2626" },
+            style: {
+              background: "#fef2f2",
+              color: "#7f1d1d",
+              borderLeft: "7px solid #dc2626",
+            },
             iconTheme: { primary: "#dc2626", secondary: "#fef2f2" },
           },
           loading: {
-            style: { background: "#eff6ff", color: "#1e3a8a", borderLeft: "7px solid #2563eb" },
+            style: {
+              background: "#eff6ff",
+              color: "#1e3a8a",
+              borderLeft: "7px solid #2563eb",
+            },
           },
         }}
       />
@@ -1254,7 +1392,11 @@ export default function Visa() {
 
           <div className="page-header-text">
             <h1 className="page-title">Dossiers Visa France</h1>
-            <p className="page-subtitle">{selectedDossier ? "Suivi détaillé du dossier visa" : "Gestion des demandes de visa professionnel - Tableau de bord"}</p>
+            <p className="page-subtitle">
+              {selectedDossier
+                ? "Suivi détaillé du dossier visa"
+                : "Gestion des demandes de visa professionnel - Tableau de bord"}
+            </p>
           </div>
 
           {selectedDossier && (
@@ -1275,13 +1417,21 @@ export default function Visa() {
           <div className="page-toolbar">
             <div className="toolbar-left">
               <div className="search-wrapper">
-                <input type="text" placeholder="Rechercher un employé ou un motif..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                <input
+                  type="text"
+                  placeholder="Rechercher un employé ou un motif..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
               </div>
             </div>
 
             <div className="toolbar-center">
               <span className="toolbar-count">
-                {filteredDossiers.length} {filteredDossiers.length === 1 ? "dossier trouvé" : "dossiers trouvés"}
+                {filteredDossiers.length}{" "}
+                {filteredDossiers.length === 1
+                  ? "dossier trouvé"
+                  : "dossiers trouvés"}
               </span>
             </div>
 
@@ -1318,36 +1468,71 @@ export default function Visa() {
                   <div>
                     <EmployeeSearchSelect
                       label="Nom & Prénom"
-                      required
                       employees={employees}
                       loading={employeesLoading}
                       value={newDossierForm.employeeId}
-                      onChange={(employeeId) => setNewDossierForm((p) => ({ ...p, employeeId }))}
+                      onChange={(employeeId) =>
+                        setNewDossierForm((p) => ({ ...p, employeeId }))
+                      }
                       groupLabel="Employees - STS"
                     />
                   </div>
 
                   <div>
                     <label>Motif du déplacement</label>
-                    <input type="text" name="motif" value={newDossierForm.motif} onChange={(e) => setNewDossierForm((p) => ({ ...p, motif: e.target.value }))} />
+                    <input
+                      type="text"
+                      name="motif"
+                      value={newDossierForm.motif}
+                      onChange={(e) =>
+                        setNewDossierForm((p) => ({
+                          ...p,
+                          motif: e.target.value,
+                        }))
+                      }
+                    />
                   </div>
                 </div>
 
                 <div className="form-row">
                   <div>
                     <label>Date de départ</label>
-                    <input type="date" name="departureDate" value={newDossierForm.departureDate} onChange={(e) => setNewDossierForm((p) => ({ ...p, departureDate: e.target.value }))} />
+                    <input
+                      type="date"
+                      name="departureDate"
+                      value={newDossierForm.departureDate}
+                      onChange={(e) =>
+                        setNewDossierForm((p) => ({
+                          ...p,
+                          departureDate: e.target.value,
+                        }))
+                      }
+                    />
                   </div>
                   <div>
                     <label>Date de retour</label>
-                    <input type="date" name="returnDate" value={newDossierForm.returnDate} onChange={(e) => setNewDossierForm((p) => ({ ...p, returnDate: e.target.value }))} />
+                    <input
+                      type="date"
+                      name="returnDate"
+                      value={newDossierForm.returnDate}
+                      onChange={(e) =>
+                        setNewDossierForm((p) => ({
+                          ...p,
+                          returnDate: e.target.value,
+                        }))
+                      }
+                    />
                   </div>
                 </div>
 
                 {formError && <p className="error-text">{formError}</p>}
 
                 <div className="form-actions">
-                  <button type="button" className="btn-outline" onClick={handleCancelCreate}>
+                  <button
+                    type="button"
+                    className="btn-outline"
+                    onClick={handleCancelCreate}
+                  >
                     Annuler
                   </button>
                   <button type="submit" className="btn-primary">
@@ -1369,10 +1554,34 @@ export default function Visa() {
             </section>
 
             <div className="dossiers-container">
-              <Section title="📋 Dossiers en cours" sectionStatus="EN_COURS" innerRef={enCoursRef} dossiers={dossiersEnCours} onOpen={openDossier} />
-              <Section title="✅ Dossiers prêts pour dépôt" sectionStatus="PRET_POUR_DEPOT" innerRef={pretDepotRef} dossiers={dossiersPretDepot} onOpen={openDossier} />
-              <Section title="🎉 Visa accordé" sectionStatus="VISA_ACCORDE" innerRef={visaAccordeRef} dossiers={dossiersVisaAccorde} onOpen={openDossier} />
-              <Section title="❌ Visa refusé" sectionStatus="VISA_REFUSE" innerRef={visaRefuseRef} dossiers={dossiersVisaRefuse} onOpen={openDossier} />
+              <Section
+                title="📋 Dossiers en cours"
+                sectionStatus="EN_COURS"
+                innerRef={enCoursRef}
+                dossiers={dossiersEnCours}
+                onOpen={openDossier}
+              />
+              <Section
+                title="✅ Dossiers prêts pour dépôt"
+                sectionStatus="PRET_POUR_DEPOT"
+                innerRef={pretDepotRef}
+                dossiers={dossiersPretDepot}
+                onOpen={openDossier}
+              />
+              <Section
+                title="🎉 Visa accordé"
+                sectionStatus="VISA_ACCORDE"
+                innerRef={visaAccordeRef}
+                dossiers={dossiersVisaAccorde}
+                onOpen={openDossier}
+              />
+              <Section
+                title="❌ Visa refusé"
+                sectionStatus="VISA_REFUSE"
+                innerRef={visaRefuseRef}
+                dossiers={dossiersVisaRefuse}
+                onOpen={openDossier}
+              />
             </div>
           </>
         )}
@@ -1385,7 +1594,7 @@ export default function Visa() {
             onUploadPdf={uploadPdf}
             onGeneratePdf={generatePdf}
             onSendSpecificEmail={sendSpecificEmail}
-            API={API}
+            apiBase={API}
           />
         )}
       </div>
