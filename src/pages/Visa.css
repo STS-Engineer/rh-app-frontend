@@ -951,6 +951,11 @@ button:disabled {
   gap: 18px;
 }
 
+.required { 
+  color: #dc2626; 
+  margin-left: 6px;
+}
+
 .form-row {
   display: flex;
   gap: 18px;
