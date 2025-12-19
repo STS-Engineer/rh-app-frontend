@@ -979,7 +979,6 @@ export default function Visa() {
       const blobUrl = URL.createObjectURL(blob);
 
       const win = window.open(blobUrl, "_blank", "noopener,noreferrer");
-      if (!win) throw new Error("Autorisez les popups pour ouvrir le fichier.");
 
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     },
@@ -987,16 +986,12 @@ export default function Visa() {
   );
 
   /** ✅ ouvrir PDF complet dossier (protégé) */
-  const openDossierPdf = useCallback(
-    async (dossierId) => {
-      const url = `${API}/api/visa-dossiers/${dossierId}/dossier-pdf`;
-      
-      const testPopup = window.open("", "_blank", "noopener,noreferrer");
-      if (!testPopup || testPopup.closed || typeof testPopup.closed === "undefined") {
-        throw new Error("Autorisez les popups pour imprimer le dossier.");
-      }
-      testPopup.close();
+  const openDossierPdf = useCallback(async (dossierId) => {
+    const win = window.open("", "_blank", "noopener,noreferrer");
+    if (!win) throw new Error("Autorisez les popups pour imprimer le dossier.");
   
+    try {
+      const url = `${API}/api/visa-dossiers/${dossierId}/dossier-pdf`;
       const res = await fetch(url, { headers: { ...getAuthHeaders() } });
   
       if (res.status === 401) throw new Error("Non autorisé (401). Merci de vous reconnecter.");
@@ -1006,23 +1001,17 @@ export default function Visa() {
       }
   
       const blob = await res.blob();
-      
-      if (!blob.type.includes("pdf")) {
-        throw new Error("Le fichier n'est pas un PDF valide.");
-      }
-      
       const blobUrl = URL.createObjectURL(blob);
   
-      const win = window.open(blobUrl, "_blank", "noopener,noreferrer");
-      if (!win) {
-        URL.revokeObjectURL(blobUrl);
-        throw new Error("Autorisez les popups pour imprimer le dossier.");
-      }
+      win.location.href = blobUrl;
   
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-    },
-    [getAuthHeaders]
-  );
+    } catch (e) {
+      win.close(); 
+      throw e;
+    }
+  }, [getAuthHeaders]);
+
   
   /** ✅ Chargement employees */
   useEffect(() => {
