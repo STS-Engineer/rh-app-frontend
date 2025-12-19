@@ -442,7 +442,7 @@ function DossierDetail({
   const stepIndex = useMemo(() => {
     const isFinalLocal = dossier.status === "VISA_ACCORDE" || dossier.status === "VISA_REFUSE";
     if (isFinalLocal) return STEPS.length;
-    if (dossier.status === "PRET_POUR_DEPOT") return 1;
+    if (dossier.status === "PRET_POUR_DEPOT") return 2;
     return 0;
   }, [dossier.status]);
 
