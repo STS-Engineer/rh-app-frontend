@@ -958,37 +958,30 @@ export default function Visa() {
   const openProtectedFile = useCallback(
     async (fileUrl) => {
       if (!fileUrl) throw new Error("URL fichier manquante.");
-  
+
       const absolute = /^https?:\/\//i.test(fileUrl)
         ? fileUrl
         : `${API}${fileUrl.startsWith("/") ? "" : "/"}${fileUrl}`;
-  
+
       if (!isValidHttpUrl(absolute)) throw new Error("URL invalide.");
-  
-      const win = window.open("about:blank", "_blank", "noopener,noreferrer");
-      if (!win) throw new Error("Autorisez les popups pour ouvrir le fichier.");
-  
-      try {
-        const res = await fetch(absolute, {
-          headers: { ...getAuthHeaders() },
-        });
-  
-        if (res.status === 401) throw new Error("Non autorisé (401). Merci de vous reconnecter.");
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data?.message || `Erreur HTTP ${res.status}`);
-        }
-  
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
-  
-        win.location.href = blobUrl;
-  
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-      } catch (e) {
-        win.close();
-        throw e;
+
+      const res = await fetch(absolute, {
+        headers: { ...getAuthHeaders() },
+      });
+
+      if (res.status === 401) throw new Error("Non autorisé (401). Merci de vous reconnecter.");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || `Erreur HTTP ${res.status}`);
       }
+
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const win = window.open(blobUrl, "_blank", "noopener,noreferrer");
+      if (!win) throw new Error("Autorisez les popups pour ouvrir le fichier.");
+
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     },
     [getAuthHeaders]
   );
@@ -996,37 +989,41 @@ export default function Visa() {
   /** ✅ ouvrir PDF complet dossier (protégé) */
   const openDossierPdf = useCallback(
     async (dossierId) => {
-      if (!dossierId) throw new Error("ID dossier manquant.");
-  
       const url = `${API}/api/visa-dossiers/${dossierId}/dossier-pdf`;
-  
-      // ✅ OUVERTURE IMMEDIATE (évite popup bloquée)
-      const win = window.open("about:blank", "_blank", "noopener,noreferrer");
-      if (!win) throw new Error("Autorisez les popups pour imprimer le dossier.");
-  
-      try {
-        const res = await fetch(url, { headers: { ...getAuthHeaders() } });
-  
-        if (res.status === 401) throw new Error("Non autorisé (401). Merci de vous reconnecter.");
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data?.message || `Erreur HTTP ${res.status}`);
-        }
-  
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
-  
-        win.location.href = blobUrl;
-  
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-      } catch (e) {
-        win.close();
-        throw e;
+      
+      const testPopup = window.open("", "_blank", "noopener,noreferrer");
+      if (!testPopup || testPopup.closed || typeof testPopup.closed === "undefined") {
+        throw new Error("Autorisez les popups pour imprimer le dossier.");
       }
+      testPopup.close();
+  
+      const res = await fetch(url, { headers: { ...getAuthHeaders() } });
+  
+      if (res.status === 401) throw new Error("Non autorisé (401). Merci de vous reconnecter.");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || `Erreur HTTP ${res.status}`);
+      }
+  
+      const blob = await res.blob();
+      
+      if (!blob.type.includes("pdf")) {
+        throw new Error("Le fichier n'est pas un PDF valide.");
+      }
+      
+      const blobUrl = URL.createObjectURL(blob);
+  
+      const win = window.open(blobUrl, "_blank", "noopener,noreferrer");
+      if (!win) {
+        URL.revokeObjectURL(blobUrl);
+        throw new Error("Autorisez les popups pour imprimer le dossier.");
+      }
+  
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     },
     [getAuthHeaders]
   );
-
+  
   /** ✅ Chargement employees */
   useEffect(() => {
     if (!API) {
