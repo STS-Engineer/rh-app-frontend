@@ -958,29 +958,12 @@ export default function Visa() {
   const openProtectedFile = useCallback(
     async (fileUrl) => {
       if (!fileUrl) throw new Error("URL fichier manquante.");
-
-      const absolute = /^https?:\/\//i.test(fileUrl)
-        ? fileUrl
-        : `${API}${fileUrl.startsWith("/") ? "" : "/"}${fileUrl}`;
-
-      if (!isValidHttpUrl(absolute)) throw new Error("URL invalide.");
-
-      const res = await fetch(absolute, {
-        headers: { ...getAuthHeaders() },
-      });
-
-      if (res.status === 401) throw new Error("Non autorisé (401). Merci de vous reconnecter.");
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || `Erreur HTTP ${res.status}`);
+  
+      if (!isValidHttpUrl(fileUrl)) {
+        throw new Error("URL invalide.");
       }
-
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-
-      window.open(blobUrl, "_blank", "noopener,noreferrer");
-
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+      
+      window.open(fileUrl, "_blank", "noopener,noreferrer");
     },
     [getAuthHeaders]
   );
