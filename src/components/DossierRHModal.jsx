@@ -18,7 +18,6 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   useEffect(() => {
     if (employee && employee.dossier_rh) {
       setHasExistingDossier(true);
-      // Pré-remplir le nom du dossier avec un indicateur de mise à jour
       if (!dossierName) {
         setDossierName('Mise à jour du dossier RH');
       }
@@ -152,7 +151,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     }
   };
 
-  // ✅ Générer ou Fusionner le PDF
+  // ✅ MODIFICATION PRINCIPALE : Utiliser merge-pdf pour dossiers existants
   const generateOrMergePDF = async () => {
     if (!dossierName.trim()) {
       alert('Veuillez donner un nom au dossier');
@@ -178,12 +177,12 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       
       const token = localStorage.getItem('token');
       
-      // ✅ Choisir l'endpoint selon si un dossier existe déjà
+      // ✅ CHANGEMENT CLÉ : Utiliser merge-pdf pour dossiers existants
       const endpoint = hasExistingDossier 
         ? `${API_BASE_URL}/api/dossier-rh/merge-pdf/${employee.id}`
         : `${API_BASE_URL}/api/dossier-rh/generate-pdf/${employee.id}`;
       
-      console.log(`📍 Endpoint utilisé: ${hasExistingDossier ? 'MERGE' : 'CREATE'}`);
+      console.log(`📍 Endpoint: ${hasExistingDossier ? 'MERGE (anciennes + nouvelles photos)' : 'CREATE (nouvelles photos)'}`);
       
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -215,7 +214,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       console.log('✅ PDF généré/fusionné avec succès:', result);
       
       const successMessage = hasExistingDossier 
-        ? '✅ Dossier RH mis à jour avec succès!'
+        ? '✅ Dossier RH fusionné avec succès! Les anciennes et nouvelles photos ont été combinées.'
         : '✅ Dossier RH créé avec succès!';
       
       alert(successMessage);
@@ -251,7 +250,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       >
         <div className="dossier-modal-header">
           <h2>
-            📁 {hasExistingDossier ? 'Mettre à jour le Dossier RH' : 'Créer un Dossier RH'}
+            📁 {hasExistingDossier ? 'Fusionner le Dossier RH' : 'Créer un Dossier RH'}
           </h2>
           <button className="close-btn" onClick={handleClose}>
             ×
@@ -267,23 +266,24 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
               Matricule: {employee.matricule} | Poste: {employee.poste}
             </p>
             
-            {/* ✅ Indicateur de dossier existant */}
+            {/* ✅ Message explicatif amélioré */}
             {hasExistingDossier && (
               <div style={{
-                background: '#e3f2fd',
-                border: '2px solid #2196f3',
+                background: '#fff3cd',
+                border: '2px solid #ffc107',
                 borderRadius: '8px',
                 padding: '12px',
                 marginTop: '12px',
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-start',
                 gap: '8px'
               }}>
-                <span style={{ fontSize: '20px' }}>ℹ️</span>
+                <span style={{ fontSize: '20px' }}>🔄</span>
                 <div>
-                  <strong>Dossier existant détecté</strong>
+                  <strong>Mode Fusion Activé</strong>
                   <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#555' }}>
-                    Les nouvelles photos seront ajoutées au dossier RH existant
+                    Les nouvelles photos seront <strong>ajoutées</strong> aux anciennes photos existantes dans le PDF. 
+                    L'ancien dossier sera conservé puis fusionné avec les nouvelles images.
                   </p>
                 </div>
               </div>
@@ -298,7 +298,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
               onChange={e => setDossierName(e.target.value)}
               placeholder={
                 hasExistingDossier 
-                  ? "Ex: Mise à jour documents 2024..."
+                  ? "Ex: Ajout documents 2024..."
                   : "Ex: Dossier d'embauche, Évaluation trimestrielle..."
               }
               className="dossier-name-input"
@@ -409,11 +409,11 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
             }
           >
             {generating
-              ? '⏳ Génération en cours...'
+              ? '⏳ Traitement en cours...'
               : uploading
               ? '⏳ Upload des photos...'
               : hasExistingDossier
-              ? `🔄 Mettre à jour (${photos.length} photo${photos.length > 1 ? 's' : ''})`
+              ? `🔄 Fusionner (${photos.length} nouvelle${photos.length > 1 ? 's' : ''} photo${photos.length > 1 ? 's' : ''})`
               : `📄 Créer le PDF (${photos.length} photo${photos.length > 1 ? 's' : ''})`}
           </button>
         </div>
