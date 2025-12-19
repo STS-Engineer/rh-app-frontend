@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './DossierRHModal.css';
 
 const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
@@ -7,11 +7,25 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [hasExistingDossier, setHasExistingDossier] = useState(false);
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
+
+  // ✅ Détecter si un dossier existe déjà
+  useEffect(() => {
+    if (employee && employee.dossier_rh) {
+      setHasExistingDossier(true);
+      // Pré-remplir le nom du dossier avec un indicateur de mise à jour
+      if (!dossierName) {
+        setDossierName('Mise à jour du dossier RH');
+      }
+    } else {
+      setHasExistingDossier(false);
+    }
+  }, [employee, dossierName]);
 
   // Ouvrir la caméra
   const startCamera = async () => {
@@ -138,8 +152,8 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     }
   };
 
-  // Générer le PDF final
-  const generatePDF = async () => {
+  // ✅ Générer ou Fusionner le PDF
+  const generateOrMergePDF = async () => {
     if (!dossierName.trim()) {
       alert('Veuillez donner un nom au dossier');
       return;
@@ -152,7 +166,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
     setGenerating(true);
     try {
-      console.log('🔄 Début génération PDF...');
+      console.log('🔄 Début génération/fusion PDF...');
       
       const uploadedPhotos = await uploadPhotos();
       if (!uploadedPhotos) {
@@ -163,20 +177,25 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       console.log('📸 Photos uploadées:', uploadedPhotos);
       
       const token = localStorage.getItem('token');
-      const response = await fetch(
-        `${API_BASE_URL}/api/dossier-rh/generate-pdf/${employee.id}`,
-        {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            photos: uploadedPhotos,
-            dossierName: dossierName
-          })
-        }
-      );
+      
+      // ✅ Choisir l'endpoint selon si un dossier existe déjà
+      const endpoint = hasExistingDossier 
+        ? `${API_BASE_URL}/api/dossier-rh/merge-pdf/${employee.id}`
+        : `${API_BASE_URL}/api/dossier-rh/generate-pdf/${employee.id}`;
+      
+      console.log(`📍 Endpoint utilisé: ${hasExistingDossier ? 'MERGE' : 'CREATE'}`);
+      
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          photos: uploadedPhotos,
+          dossierName: dossierName
+        })
+      });
 
       let result;
       try {
@@ -187,14 +206,19 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       }
 
       if (!response.ok) {
-        console.error('❌ Erreur génération PDF:', result);
+        console.error('❌ Erreur génération/fusion PDF:', result);
         throw new Error(
           result?.error || result?.details || `Erreur ${response.status}`
         );
       }
 
-      console.log('✅ PDF généré avec succès:', result);
-      alert('✅ Dossier RH généré avec succès!');
+      console.log('✅ PDF généré/fusionné avec succès:', result);
+      
+      const successMessage = hasExistingDossier 
+        ? '✅ Dossier RH mis à jour avec succès!'
+        : '✅ Dossier RH créé avec succès!';
+      
+      alert(successMessage);
       
       if (onSuccess) {
         onSuccess(result.employee);
@@ -202,7 +226,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       
       handleClose();
     } catch (error) {
-      console.error('❌ Erreur génération PDF:', error);
+      console.error('❌ Erreur génération/fusion PDF:', error);
       alert(`Erreur lors de la génération du PDF: ${error.message}`);
     } finally {
       setGenerating(false);
@@ -226,7 +250,9 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
         onClick={e => e.stopPropagation()}
       >
         <div className="dossier-modal-header">
-          <h2>📁 Créer un Dossier RH</h2>
+          <h2>
+            📁 {hasExistingDossier ? 'Mettre à jour le Dossier RH' : 'Créer un Dossier RH'}
+          </h2>
           <button className="close-btn" onClick={handleClose}>
             ×
           </button>
@@ -240,6 +266,28 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
             <p>
               Matricule: {employee.matricule} | Poste: {employee.poste}
             </p>
+            
+            {/* ✅ Indicateur de dossier existant */}
+            {hasExistingDossier && (
+              <div style={{
+                background: '#e3f2fd',
+                border: '2px solid #2196f3',
+                borderRadius: '8px',
+                padding: '12px',
+                marginTop: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span style={{ fontSize: '20px' }}>ℹ️</span>
+                <div>
+                  <strong>Dossier existant détecté</strong>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#555' }}>
+                    Les nouvelles photos seront ajoutées au dossier RH existant
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="form-section">
@@ -248,13 +296,17 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
               type="text"
               value={dossierName}
               onChange={e => setDossierName(e.target.value)}
-              placeholder="Ex: Dossier d'embauche, Évaluation trimestrielle..."
+              placeholder={
+                hasExistingDossier 
+                  ? "Ex: Mise à jour documents 2024..."
+                  : "Ex: Dossier d'embauche, Évaluation trimestrielle..."
+              }
               className="dossier-name-input"
             />
           </div>
 
           <div className="photos-section">
-            <h4>Photos ({photos.length})</h4>
+            <h4>Photos à ajouter ({photos.length})</h4>
 
             <div className="capture-controls">
               {!isCapturing ? (
@@ -348,7 +400,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
           </button>
           <button
             className="generate-btn"
-            onClick={generatePDF}
+            onClick={generateOrMergePDF}
             disabled={
               generating || 
               uploading || 
@@ -360,7 +412,9 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
               ? '⏳ Génération en cours...'
               : uploading
               ? '⏳ Upload des photos...'
-              : `📄 Générer le PDF (${photos.length} photo${photos.length > 1 ? 's' : ''})`}
+              : hasExistingDossier
+              ? `🔄 Mettre à jour (${photos.length} photo${photos.length > 1 ? 's' : ''})`
+              : `📄 Créer le PDF (${photos.length} photo${photos.length > 1 ? 's' : ''})`}
           </button>
         </div>
       </div>
