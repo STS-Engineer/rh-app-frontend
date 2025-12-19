@@ -3,7 +3,7 @@ import Sidebar from "../components/Sidebar";
 import "./Visa.css";
 import toast, { Toaster } from "react-hot-toast";
 
-const API = process.env.REACT_APP_API_URL || 'https://backend-rh.azurewebsites.net';
+const API = process.env.REACT_APP_API_URL || "https://backend-rh.azurewebsites.net";
 
 /** -------------------------------------------------------
  * Constantes UI
@@ -345,10 +345,7 @@ function Section({ title, sectionStatus, innerRef, dossiers, onOpen }) {
                       </div>
 
                       <div className="progress-bar-small">
-                        <div
-                          className="progress-fill-small"
-                          style={{ width: `${progressPercent}%` }}
-                        />
+                        <div className="progress-fill-small" style={{ width: `${progressPercent}%` }} />
                       </div>
                     </div>
                   </td>
@@ -399,7 +396,8 @@ function DossierDetail({
   onUploadPdf,
   onGeneratePdf,
   onSendSpecificEmail,
-  apiBase,
+  onOpenProtectedFile,     // ✅ NEW
+  onOpenDossierPdf,        // ✅ NEW
 }) {
   const [showVisaAccordeModal, setShowVisaAccordeModal] = useState(false);
   const [showPretDepotModal, setShowPretDepotModal] = useState(false);
@@ -411,17 +409,6 @@ function DossierDetail({
     dateFin: "",
   });
 
-  /** ✅ URL absolue */
-  const absUrl = useCallback(
-    (u) => {
-      if (!u) return "";
-      if (/^https?:\/\//i.test(u)) return u;
-      const base = apiBase || "";
-      return `${base}${u.startsWith("/") ? "" : "/"}${u}`;
-    },
-    [apiBase]
-  );
-
   const summary = useMemo(() => {
     const docs = dossier.documents || [];
     const totalRequired = docs.length;
@@ -429,8 +416,7 @@ function DossierDetail({
     const missing = docs.filter((d) => !isDocumentSatisfied(d)).length;
     const physicalDocs = docs.filter((d) => d.mode === "PHYSICAL").length;
 
-    const progressPercent =
-      totalRequired > 0 ? Math.round((ok / totalRequired) * 100) : 0;
+    const progressPercent = totalRequired > 0 ? Math.round((ok / totalRequired) * 100) : 0;
     return { totalRequired, ok, missing, physicalDocs, progressPercent };
   }, [dossier]);
 
@@ -439,8 +425,7 @@ function DossierDetail({
     return requiredDocs.every(isDocumentSatisfied);
   }, [dossier]);
 
-  const isFinal =
-    dossier.status === "VISA_ACCORDE" || dossier.status === "VISA_REFUSE";
+  const isFinal = dossier.status === "VISA_ACCORDE" || dossier.status === "VISA_REFUSE";
 
   const canOpenPretDepotModal =
     (dossier.status === "EN_COURS" || dossier.status === "PRET_POUR_DEPOT") &&
@@ -453,8 +438,7 @@ function DossierDetail({
   const canDecideVisa = dossier.status === "PRET_POUR_DEPOT" && !isFinal;
 
   const stepIndex = useMemo(() => {
-    const isFinalLocal =
-      dossier.status === "VISA_ACCORDE" || dossier.status === "VISA_REFUSE";
+    const isFinalLocal = dossier.status === "VISA_ACCORDE" || dossier.status === "VISA_REFUSE";
     if (isFinalLocal) return STEPS.length;
     if (dossier.status === "PRET_POUR_DEPOT") return 1;
     return 0;
@@ -462,24 +446,20 @@ function DossierDetail({
 
   const handlePretDepotClick = () => {
     if (!allDocumentsProvided) {
-      toast.error(
-        "Tous les documents requis doivent être fournis avant de marquer comme prêt pour dépôt."
-      );
+      toast.error("Tous les documents requis doivent être fournis avant de marquer comme prêt pour dépôt.");
       return;
     }
     setShowPretDepotModal(true);
   };
 
-  const handlePrintDocuments = () => {
-    const url = absUrl(`/api/visa-dossiers/${dossier.id}/dossier-pdf`);
-    if (!isValidHttpUrl(url)) {
-      toast.error("URL PDF invalide.");
-      return;
+  const handlePrintDocuments = async () => {
+    try {
+      await onOpenDossierPdf(dossier.id);
+      toast("Ouverture du PDF pour impression…");
+      setHasPrintedOnce(true);
+    } catch (e) {
+      toast.error(e.message || "Erreur impression PDF");
     }
-    const win = window.open(url, "_blank", "noopener,noreferrer");
-    if (!win) toast.error("Autorisez les popups pour imprimer le dossier.");
-    else toast("Ouverture du PDF pour impression…");
-    setHasPrintedOnce(true);
   };
 
   const handleVisaAccordeSubmit = () => {
@@ -506,9 +486,7 @@ function DossierDetail({
       (t) => (
         <div className="toast-refuse">
           <h3 className="toast-refuse-title">Confirmer le refus de visa</h3>
-          <p className="toast-refuse-text">
-            Cette action est définitive. Le dossier sera clôturé.
-          </p>
+          <p className="toast-refuse-text">Cette action est définitive. Le dossier sera clôturé.</p>
 
           <div className="toast-refuse-actions">
             <button className="toast-btn-cancel" onClick={() => toast.dismiss(t.id)}>
@@ -568,14 +546,12 @@ function DossierDetail({
               <div className="progress-bar">
                 <div className="progress-fill" style={{ width: `${summary.progressPercent}%` }} />
               </div>
-              <span className="progress-text">
-                {summary.progressPercent}% des documents requis sont fournis
-              </span>
+              <span className="progress-text">{summary.progressPercent}% des documents requis sont fournis</span>
             </div>
 
             <p className="muted">
-              {summary.ok}/{summary.totalRequired} documents requis fournis –{" "}
-              {summary.missing} manquants ({summary.physicalDocs} à apporter physiquement).
+              {summary.ok}/{summary.totalRequired} documents requis fournis – {summary.missing} manquants (
+              {summary.physicalDocs} à apporter physiquement).
             </p>
 
             <div className="actions-stack">
@@ -596,9 +572,7 @@ function DossierDetail({
                 </button>
 
                 {!hasPrintedOnce && canOpenPretDepotModal && (
-                  <div className="action-hint">
-                    ⚠️ Impression requise avant confirmation “Prêt pour dépôt”.
-                  </div>
+                  <div className="action-hint">⚠️ Impression requise avant confirmation “Prêt pour dépôt”.</div>
                 )}
               </div>
 
@@ -606,19 +580,11 @@ function DossierDetail({
                 <div className="decision-title">Décision visa</div>
 
                 <div className="decision-actions">
-                  <button
-                    className="btn-success"
-                    disabled={!canDecideVisa}
-                    onClick={() => setShowVisaAccordeModal(true)}
-                  >
+                  <button className="btn-success" disabled={!canDecideVisa} onClick={() => setShowVisaAccordeModal(true)}>
                     Visa accordé
                   </button>
 
-                  <button
-                    className="btn-danger"
-                    disabled={!canDecideVisa}
-                    onClick={handleVisaRefuseClick}
-                  >
+                  <button className="btn-danger" disabled={!canDecideVisa} onClick={handleVisaRefuseClick}>
                     Visa refusé
                   </button>
                 </div>
@@ -701,9 +667,7 @@ function DossierDetail({
                               <button
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error("Aucun PDF uploadé.");
-                                  const url = absUrl(doc.fileUrl);
-                                  if (!isValidHttpUrl(url)) return toast.error("URL PDF invalide.");
-                                  window.open(url, "_blank", "noopener,noreferrer");
+                                  onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
                                 }}
                               >
                                 Aperçu
@@ -728,9 +692,7 @@ function DossierDetail({
                               <button
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error("Aucun récépissé PDF uploadé.");
-                                  const url = absUrl(doc.fileUrl);
-                                  if (!isValidHttpUrl(url)) return toast.error("URL PDF invalide.");
-                                  window.open(url, "_blank", "noopener,noreferrer");
+                                  onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
                                 }}
                               >
                                 Aperçu PDF
@@ -752,9 +714,7 @@ function DossierDetail({
                               <button
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error("Aucun PDF de réservation uploadé.");
-                                  const url = absUrl(doc.fileUrl);
-                                  if (!isValidHttpUrl(url)) return toast.error("URL PDF invalide.");
-                                  window.open(url, "_blank", "noopener,noreferrer");
+                                  onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
                                 }}
                               >
                                 Aperçu
@@ -769,10 +729,8 @@ function DossierDetail({
                               <button onClick={() => onGeneratePdf(doc)}>Générer PDF</button>
                               <button
                                 onClick={() => {
-                                  if (!doc.fileUrl) return toast.error("Aucun PDF généré.");
-                                  const url = absUrl(doc.fileUrl);
-                                  if (!isValidHttpUrl(url)) return toast.error("URL PDF invalide.");
-                                  window.open(url, "_blank", "noopener,noreferrer");
+                                  if (!doc.fileUrl) return toast.error("Aucun fichier généré.");
+                                  onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
                                 }}
                               >
                                 Aperçu
@@ -795,9 +753,7 @@ function DossierDetail({
                                 <button
                                   onClick={() => {
                                     if (!doc.fileUrl) return toast.error("Aucun PDF uploadé.");
-                                    const url = absUrl(doc.fileUrl);
-                                    if (!isValidHttpUrl(url)) return toast.error("URL PDF invalide.");
-                                    window.open(url, "_blank", "noopener,noreferrer");
+                                    onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
                                   }}
                                 >
                                   Aperçu
@@ -973,23 +929,92 @@ export default function Visa() {
   const visaAccordeRef = useRef(null);
   const visaRefuseRef = useRef(null);
 
-  /** ✅ petit wrapper fetch JSON robuste */
-  const fetchJson = useCallback(async (url, options = {}) => {
-    const res = await fetch(url, {
-      ...options,
-      headers: {
-        ...(options.headers || {}),
-      },
-      // si tu utilises cookies/sessions => décommente :
-      // credentials: "include",
-    });
+  // ✅ token helpers
+  const getToken = useCallback(() => localStorage.getItem("token"), []);
+  const getAuthHeaders = useCallback(() => {
+    const token = getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }, [getToken]);
 
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(data?.message || `Erreur HTTP ${res.status}`);
-    }
-    return data;
-  }, []);
+  /** ✅ fetch JSON avec Authorization */
+  const fetchJson = useCallback(
+    async (url, options = {}) => {
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          ...(options.headers || {}),
+          ...getAuthHeaders(),
+        },
+        // credentials: "include",
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401) {
+        throw new Error("Non autorisé (401). Merci de vous reconnecter.");
+      }
+      if (!res.ok) {
+        throw new Error(data?.message || `Erreur HTTP ${res.status}`);
+      }
+      return data;
+    },
+    [getAuthHeaders]
+  );
+
+  /** ✅ ouvrir fichier protégé (visa-pdfs / visa-generated) via blob */
+  const openProtectedFile = useCallback(
+    async (fileUrl) => {
+      if (!fileUrl) throw new Error("URL fichier manquante.");
+
+      const absolute = /^https?:\/\//i.test(fileUrl)
+        ? fileUrl
+        : `${API}${fileUrl.startsWith("/") ? "" : "/"}${fileUrl}`;
+
+      if (!isValidHttpUrl(absolute)) throw new Error("URL invalide.");
+
+      const res = await fetch(absolute, {
+        headers: { ...getAuthHeaders() },
+      });
+
+      if (res.status === 401) throw new Error("Non autorisé (401). Merci de vous reconnecter.");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || `Erreur HTTP ${res.status}`);
+      }
+
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const win = window.open(blobUrl, "_blank", "noopener,noreferrer");
+      if (!win) throw new Error("Autorisez les popups pour ouvrir le fichier.");
+
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    },
+    [getAuthHeaders]
+  );
+
+  /** ✅ ouvrir PDF complet dossier (protégé) */
+  const openDossierPdf = useCallback(
+    async (dossierId) => {
+      const url = `${API}/api/visa-dossiers/${dossierId}/dossier-pdf`;
+      const res = await fetch(url, { headers: { ...getAuthHeaders() } });
+
+      if (res.status === 401) throw new Error("Non autorisé (401). Merci de vous reconnecter.");
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || `Erreur HTTP ${res.status}`);
+      }
+
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const win = window.open(blobUrl, "_blank", "noopener,noreferrer");
+      if (!win) throw new Error("Autorisez les popups pour imprimer le dossier.");
+
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    },
+    [getAuthHeaders]
+  );
 
   /** ✅ Chargement employees */
   useEffect(() => {
@@ -1116,15 +1141,12 @@ export default function Visa() {
       toast.dismiss(loadingId);
 
       if (data?.emailSent) {
-        toast.success(
-          `Dossier créé. Email envoyé à ${employeeName} (instructions + liste des documents requis).`,
-          { duration: 9000 }
-        );
+        toast.success(`Dossier créé. Email envoyé à ${employeeName} (instructions + liste des documents requis).`, {
+          duration: 9000,
+        });
       } else {
         toast.error(
-          `Dossier créé, mais email NON envoyé à ${employeeName}. ${
-            data?.emailError ? `Raison : ${data.emailError}` : ""
-          }`,
+          `Dossier créé, mais email NON envoyé à ${employeeName}. ${data?.emailError ? `Raison : ${data.emailError}` : ""}`,
           { duration: 8000 }
         );
       }
@@ -1173,7 +1195,7 @@ export default function Visa() {
     }
   }
 
-  /** ✅ upload PDF */
+  /** ✅ upload PDF (avec Authorization) */
   async function uploadPdf(doc) {
     const input = document.createElement("input");
     input.type = "file";
@@ -1190,12 +1212,14 @@ export default function Visa() {
         const res = await fetch(`${API}/api/visa-documents/${doc.id}/upload`, {
           method: "POST",
           body: form,
+          headers: { ...getAuthHeaders() }, // ✅ IMPORTANT
           // credentials: "include",
         });
 
         const data = await res.json().catch(() => ({}));
         toast.dismiss(loadingId);
 
+        if (res.status === 401) throw new Error("Non autorisé (401). Merci de vous reconnecter.");
         if (!res.ok) throw new Error(data?.message || "Erreur upload");
 
         toast.success("PDF uploadé avec succès.");
@@ -1208,7 +1232,7 @@ export default function Visa() {
     input.click();
   }
 
-  /** ✅ generate PDF */
+  /** ✅ generate PDF (en réalité backend renvoie fileUrl doc/docx) */
   async function generatePdf(doc) {
     const dossier = selectedDossier;
     if (!dossier) return;
@@ -1247,7 +1271,7 @@ export default function Visa() {
       return;
     }
 
-    const loadingId = toast.loading("Génération PDF…");
+    const loadingId = toast.loading("Génération…");
     try {
       const data = await fetchJson(url, {
         method: "POST",
@@ -1256,16 +1280,11 @@ export default function Visa() {
       });
       toast.dismiss(loadingId);
 
-      toast.success("PDF généré avec succès.");
+      toast.success("Fichier généré avec succès.");
 
       if (data?.fileUrl) {
-        const absolute = /^https?:\/\//i.test(data.fileUrl)
-          ? data.fileUrl
-          : `${API}${data.fileUrl.startsWith("/") ? "" : "/"}${data.fileUrl}`;
-
-        if (isValidHttpUrl(absolute)) {
-          window.open(absolute, "_blank", "noopener,noreferrer");
-        }
+        // ✅ route protégée → ouvrir via blob
+        await openProtectedFile(data.fileUrl);
       }
 
       await openDossier(selectedDossierId);
@@ -1393,9 +1412,7 @@ export default function Visa() {
           <div className="page-header-text">
             <h1 className="page-title">Dossiers Visa France</h1>
             <p className="page-subtitle">
-              {selectedDossier
-                ? "Suivi détaillé du dossier visa"
-                : "Gestion des demandes de visa professionnel - Tableau de bord"}
+              {selectedDossier ? "Suivi détaillé du dossier visa" : "Gestion des demandes de visa professionnel - Tableau de bord"}
             </p>
           </div>
 
@@ -1428,10 +1445,7 @@ export default function Visa() {
 
             <div className="toolbar-center">
               <span className="toolbar-count">
-                {filteredDossiers.length}{" "}
-                {filteredDossiers.length === 1
-                  ? "dossier trouvé"
-                  : "dossiers trouvés"}
+                {filteredDossiers.length} {filteredDossiers.length === 1 ? "dossier trouvé" : "dossiers trouvés"}
               </span>
             </div>
 
@@ -1471,9 +1485,7 @@ export default function Visa() {
                       employees={employees}
                       loading={employeesLoading}
                       value={newDossierForm.employeeId}
-                      onChange={(employeeId) =>
-                        setNewDossierForm((p) => ({ ...p, employeeId }))
-                      }
+                      onChange={(employeeId) => setNewDossierForm((p) => ({ ...p, employeeId }))}
                       groupLabel="Employees - STS"
                     />
                   </div>
@@ -1484,12 +1496,7 @@ export default function Visa() {
                       type="text"
                       name="motif"
                       value={newDossierForm.motif}
-                      onChange={(e) =>
-                        setNewDossierForm((p) => ({
-                          ...p,
-                          motif: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => setNewDossierForm((p) => ({ ...p, motif: e.target.value }))}
                     />
                   </div>
                 </div>
@@ -1501,12 +1508,7 @@ export default function Visa() {
                       type="date"
                       name="departureDate"
                       value={newDossierForm.departureDate}
-                      onChange={(e) =>
-                        setNewDossierForm((p) => ({
-                          ...p,
-                          departureDate: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => setNewDossierForm((p) => ({ ...p, departureDate: e.target.value }))}
                     />
                   </div>
                   <div>
@@ -1515,12 +1517,7 @@ export default function Visa() {
                       type="date"
                       name="returnDate"
                       value={newDossierForm.returnDate}
-                      onChange={(e) =>
-                        setNewDossierForm((p) => ({
-                          ...p,
-                          returnDate: e.target.value,
-                        }))
-                      }
+                      onChange={(e) => setNewDossierForm((p) => ({ ...p, returnDate: e.target.value }))}
                     />
                   </div>
                 </div>
@@ -1528,11 +1525,7 @@ export default function Visa() {
                 {formError && <p className="error-text">{formError}</p>}
 
                 <div className="form-actions">
-                  <button
-                    type="button"
-                    className="btn-outline"
-                    onClick={handleCancelCreate}
-                  >
+                  <button type="button" className="btn-outline" onClick={handleCancelCreate}>
                     Annuler
                   </button>
                   <button type="submit" className="btn-primary">
@@ -1554,34 +1547,10 @@ export default function Visa() {
             </section>
 
             <div className="dossiers-container">
-              <Section
-                title="📋 Dossiers en cours"
-                sectionStatus="EN_COURS"
-                innerRef={enCoursRef}
-                dossiers={dossiersEnCours}
-                onOpen={openDossier}
-              />
-              <Section
-                title="✅ Dossiers prêts pour dépôt"
-                sectionStatus="PRET_POUR_DEPOT"
-                innerRef={pretDepotRef}
-                dossiers={dossiersPretDepot}
-                onOpen={openDossier}
-              />
-              <Section
-                title="🎉 Visa accordé"
-                sectionStatus="VISA_ACCORDE"
-                innerRef={visaAccordeRef}
-                dossiers={dossiersVisaAccorde}
-                onOpen={openDossier}
-              />
-              <Section
-                title="❌ Visa refusé"
-                sectionStatus="VISA_REFUSE"
-                innerRef={visaRefuseRef}
-                dossiers={dossiersVisaRefuse}
-                onOpen={openDossier}
-              />
+              <Section title="📋 Dossiers en cours" sectionStatus="EN_COURS" innerRef={enCoursRef} dossiers={dossiersEnCours} onOpen={openDossier} />
+              <Section title="✅ Dossiers prêts pour dépôt" sectionStatus="PRET_POUR_DEPOT" innerRef={pretDepotRef} dossiers={dossiersPretDepot} onOpen={openDossier} />
+              <Section title="🎉 Visa accordé" sectionStatus="VISA_ACCORDE" innerRef={visaAccordeRef} dossiers={dossiersVisaAccorde} onOpen={openDossier} />
+              <Section title="❌ Visa refusé" sectionStatus="VISA_REFUSE" innerRef={visaRefuseRef} dossiers={dossiersVisaRefuse} onOpen={openDossier} />
             </div>
           </>
         )}
@@ -1594,7 +1563,8 @@ export default function Visa() {
             onUploadPdf={uploadPdf}
             onGeneratePdf={generatePdf}
             onSendSpecificEmail={sendSpecificEmail}
-            apiBase={API}
+            onOpenProtectedFile={openProtectedFile}
+            onOpenDossierPdf={openDossierPdf}
           />
         )}
       </div>
