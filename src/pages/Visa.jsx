@@ -206,7 +206,7 @@ function EmployeeSearchSelect({
   return (
     <div className="emp-select" ref={rootRef}>
       <label className="emp-label">
-        {label} 
+        {label} {required && <span className="required">*</span>}
       </label>
 
       <div className={`emp-inputWrap ${open ? "is-open" : ""}`}>
@@ -1495,7 +1495,9 @@ export default function Visa() {
                   </div>
 
                   <div>
-                    <label>Motif du déplacement</label>
+                    <label>
+                      Motif du déplacement <span className="required">*</span>
+                    </label>
                     <input
                       type="text"
                       name="motif"
@@ -1507,7 +1509,9 @@ export default function Visa() {
 
                 <div className="form-row">
                   <div>
-                    <label>Date de départ</label>
+                    <label>
+                      Date de départ <span className="required">*</span>
+                    </label>
                     <input
                       type="date"
                       name="departureDate"
@@ -1516,7 +1520,9 @@ export default function Visa() {
                     />
                   </div>
                   <div>
-                    <label>Date de retour</label>
+                    <label>
+                      Date de retour <span className="required">*</span>
+                    </label>
                     <input
                       type="date"
                       name="returnDate"
