@@ -951,9 +951,12 @@ button:disabled {
   gap: 18px;
 }
 
+.create-form label {
+  text-transform: none !important;
+}
+
 .required { 
   color: #dc2626; 
-  margin-left: 6px;
 }
 
 .form-row {
@@ -1381,6 +1384,7 @@ button:disabled {
   display: block;
   font-weight: 700;
   margin-bottom: 8px;
+  text-transform: none !important;
 }
 
 .emp-inputWrap {
