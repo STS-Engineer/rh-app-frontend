@@ -954,7 +954,7 @@ export default function Visa() {
     [getAuthHeaders]
   );
 
-  /** ✅ ouvrir fichier protégé (visa-pdfs / visa-generated) via blob */
+  /** ✅ ouvrir fichier (visa-pdfs / visa-generated) */
   const openProtectedFile = useCallback(
     async (fileUrl) => {
       if (!fileUrl) throw new Error("URL fichier manquante.");
@@ -965,30 +965,18 @@ export default function Visa() {
       
       window.open(fileUrl, "_blank", "noopener,noreferrer");
     },
-    [getAuthHeaders]
+    []
   );
 
-  /** ✅ ouvrir PDF complet dossier (protégé) */
-    const openDossierPdf = useCallback(
-    async (dossierId) => {
+  /** ✅ ouvrir PDF complet dossier */
+  const openDossierPdf = useCallback(
+    (dossierId) => {
       const url = `${API}/api/visa-dossiers/${dossierId}/dossier-pdf`;
-      const res = await fetch(url, { headers: { ...getAuthHeaders() } });
-
-      if (res.status === 401) throw new Error("Non autorisé (401). Merci de vous reconnecter.");
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || `Erreur HTTP ${res.status}`);
-      }
-
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-
-      window.open(blobUrl, "_blank", "noopener,noreferrer");
-
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+      window.open(url, "_blank", "noopener,noreferrer");
     },
-    [getAuthHeaders]
+    [API]
   );
+
   
   /** ✅ Chargement employees */
   useEffect(() => {
