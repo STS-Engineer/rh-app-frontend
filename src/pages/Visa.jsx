@@ -954,38 +954,46 @@ export default function Visa() {
     [getAuthHeaders]
   );
 
-  /** ✅ ouvrir fichier protégé (visa-pdfs / visa-generated) via blob */
+  /** ✅ Ouvrir fichier protégé (visa-pdfs / visa-generated) via blob */
   const openProtectedFile = useCallback(
     async (fileUrl) => {
       if (!fileUrl) throw new Error("URL fichier manquante.");
-
+  
       const absolute = /^https?:\/\//i.test(fileUrl)
         ? fileUrl
         : `${API}${fileUrl.startsWith("/") ? "" : "/"}${fileUrl}`;
-
+  
       if (!isValidHttpUrl(absolute)) throw new Error("URL invalide.");
-
-      const res = await fetch(absolute, {
-        headers: { ...getAuthHeaders() },
-      });
-
-      if (res.status === 401) throw new Error("Non autorisé (401). Merci de vous reconnecter.");
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data?.message || `Erreur HTTP ${res.status}`);
+  
+      try {
+        const res = await fetch(absolute, {
+          headers: { ...getAuthHeaders() },
+        });
+  
+        if (res.status === 401) throw new Error("Non autorisé (401). Merci de vous reconnecter.");
+        if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`);
+  
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+  
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.target = '_blank'; 
+        link.rel = 'noopener noreferrer';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+        
+      } catch (err) {
+        throw new Error(err.message || "Erreur lors de l'ouverture du fichier.");
       }
-
-      const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-
-      const win = window.open(blobUrl, "_blank", "noopener,noreferrer");
-      if (!win) throw new Error("Autorisez les popups pour ouvrir le fichier.");
-
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     },
     [getAuthHeaders]
   );
-
+  
   /** ✅ ouvrir PDF complet dossier (protégé) */
   const openDossierPdf = useCallback(
     async (dossierId) => {
