@@ -1026,7 +1026,7 @@ export default function Visa() {
     (async () => {
       setEmployeesLoading(true);
       try {
-        const data = await fetchJson(`${API}/api/employees`);
+        const data = await fetchJson(`${API}/api/employee`);
         setEmployees(Array.isArray(data) ? data : []);
       } catch (e) {
         toast.error(e.message || "Erreur chargement employees");
