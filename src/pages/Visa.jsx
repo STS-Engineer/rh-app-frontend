@@ -404,7 +404,6 @@ function DossierDetail({
 }) {
   const [showVisaAccordeModal, setShowVisaAccordeModal] = useState(false);
   const [showPretDepotModal, setShowPretDepotModal] = useState(false);
-  const [hasPrintedOnce, setHasPrintedOnce] = useState(false);
 
   const [visaAccordeData, setVisaAccordeData] = useState({
     numeroVisa: "",
@@ -459,7 +458,6 @@ function DossierDetail({
     try {
       await onOpenDossierPdf(dossier.id);
       toast("Ouverture du PDF pour impression…");
-      setHasPrintedOnce(true);
     } catch (e) {
       toast.error(e.message || "Erreur impression PDF");
     }
@@ -573,10 +571,6 @@ function DossierDetail({
                 >
                   Prêt pour dépôt
                 </button>
-
-                {!hasPrintedOnce && canOpenPretDepotModal && (
-                  <div className="action-hint">⚠️ Impression requise avant confirmation “Prêt pour dépôt”.</div>
-                )}
               </div>
 
               <div className="decision-block">
@@ -887,10 +881,6 @@ function DossierDetail({
                   type="button"
                   className="btn-primary"
                   onClick={() => {
-                    if (!hasPrintedOnce) {
-                      toast.error("Veuillez imprimer au moins une fois avant de confirmer 'Prêt pour dépôt'.");
-                      return;
-                    }
                     if (!canConfirmPretDepot) return;
                     onUpdateDossierStatus(dossier.id, "PRET_POUR_DEPOT");
                     toast.success("Dossier marqué comme 'Prêt pour dépôt'.");
