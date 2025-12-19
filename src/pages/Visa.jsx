@@ -978,7 +978,7 @@ export default function Visa() {
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
 
-      const win = window.open(blobUrl, "_blank", "noopener,noreferrer");
+      window.open(blobUrl, "_blank", "noopener,noreferrer");
 
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     },
@@ -986,32 +986,26 @@ export default function Visa() {
   );
 
   /** ✅ ouvrir PDF complet dossier (protégé) */
-  const openDossierPdf = useCallback(async (dossierId) => {
-    const win = window.open("", "_blank", "noopener,noreferrer");
-    if (!win) throw new Error("Autorisez les popups pour imprimer le dossier.");
-  
-    try {
+    const openDossierPdf = useCallback(
+    async (dossierId) => {
       const url = `${API}/api/visa-dossiers/${dossierId}/dossier-pdf`;
       const res = await fetch(url, { headers: { ...getAuthHeaders() } });
-  
+
       if (res.status === 401) throw new Error("Non autorisé (401). Merci de vous reconnecter.");
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data?.message || `Erreur HTTP ${res.status}`);
       }
-  
+
       const blob = await res.blob();
       const blobUrl = URL.createObjectURL(blob);
-  
-      win.location.href = blobUrl;
-  
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-    } catch (e) {
-      win.close(); 
-      throw e;
-    }
-  }, [getAuthHeaders]);
 
+      window.open(blobUrl, "_blank", "noopener,noreferrer");
+
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    },
+    [getAuthHeaders]
+  );
   
   /** ✅ Chargement employees */
   useEffect(() => {
