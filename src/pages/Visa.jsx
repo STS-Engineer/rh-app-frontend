@@ -1482,6 +1482,7 @@ export default function Visa() {
                   <div>
                     <EmployeeSearchSelect
                       label="Nom & Prénom"
+                      required
                       employees={employees}
                       loading={employeesLoading}
                       value={newDossierForm.employeeId}
