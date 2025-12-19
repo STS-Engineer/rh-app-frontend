@@ -205,7 +205,9 @@ function EmployeeSearchSelect({
 
   return (
     <div className="emp-select" ref={rootRef}>
-      <label className="emp-label">{label}</label>
+      <label className="emp-label">
+        {label} 
+      </label>
 
       <div className={`emp-inputWrap ${open ? "is-open" : ""}`}>
         <input
