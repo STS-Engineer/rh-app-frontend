@@ -131,6 +131,7 @@ function LockedHint({ text }) {
  * ------------------------------------------------------ */
 function EmployeeSearchSelect({
   label = "Nom & Prénom",
+  required = false, 
   employees = [],
   loading = false,
   value,
@@ -211,7 +212,7 @@ function EmployeeSearchSelect({
           className="emp-input"
           type="text"
           value={query}
-          placeholder={loading ? "Chargement..." : "Rechercher..."}
+          placeholder={loading ? "Chargement..." : ""}
           onFocus={() => setOpen(true)}
           onChange={(e) => {
             setQuery(e.target.value);
