@@ -59,7 +59,7 @@ body {
   align-items: center;
 }
 
-/* Search (style team search-input) */
+/* Search */
 .search-wrapper input {
   border-radius: 14px;
   border: 2px solid var(--neutral-grey);
@@ -83,6 +83,21 @@ body {
   border-color: var(--primary-blue);
   box-shadow: 0 8px 25px rgba(4, 110, 175, 0.2);
   transform: translateY(-2px);
+}
+
+.search-wrapper input::placeholder {
+  color: var(--neutral-grey);
+  font-weight: 400;
+}
+
+.search-icon {
+  position: absolute;
+  right: 25px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--primary-blue);
+  font-size: 1.2rem;
+  transition: color 0.3s ease;
 }
 
 /* Buttons entête */
