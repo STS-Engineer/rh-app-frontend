@@ -1298,19 +1298,6 @@ button:disabled {
   border-radius: 20px 20px 0 0;
 }
 
-.page-header-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  background: rgba(4,110,175,0.08);
-  border: 1px solid rgba(229,231,235,0.7);
-  box-shadow: 0 6px 20px rgba(4,110,175,0.12);
-  font-size: 20px;
-  color: var(--primary-blue-dark);
-}
-
 .page-header-text {
   flex: 1;
   min-width: 0;
