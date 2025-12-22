@@ -404,6 +404,7 @@ function DossierDetail({
 }) {
   const [showVisaAccordeModal, setShowVisaAccordeModal] = useState(false);
   const [showPretDepotModal, setShowPretDepotModal] = useState(false);
+  const [showVisaRefuseModal, setShowVisaRefuseModal] = useState(false);
 
   const [visaAccordeData, setVisaAccordeData] = useState({
     numeroVisa: "",
@@ -482,33 +483,9 @@ function DossierDetail({
 
   const handleVisaRefuseClick = () => {
     if (!canDecideVisa) return;
-
-    toast.custom(
-      (t) => (
-        <div className="toast-refuse">
-          <h3 className="toast-refuse-title">Confirmer le refus de visa</h3>
-          <p className="toast-refuse-text">Cette action est définitive. Le dossier sera clôturé.</p>
-
-          <div className="toast-refuse-actions">
-            <button className="toast-btn-cancel" onClick={() => toast.dismiss(t.id)}>
-              Annuler
-            </button>
-            <button
-              className="toast-btn-confirm-refuse"
-              onClick={() => {
-                toast.dismiss(t.id);
-                onUpdateDossierStatus(dossier.id, "VISA_REFUSE");
-                toast.success("Visa refusé : dossier clôturé.", { position: "top-right" });
-              }}
-            >
-              Confirmer le refus
-            </button>
-          </div>
-        </div>
-      ),
-      { position: "top-center", duration: Infinity }
-    );
+    setShowVisaRefuseModal(true);
   };
+
 
   return (
     <>
@@ -889,6 +866,44 @@ function DossierDetail({
                   disabled={!canConfirmPretDepot}
                 >
                   Confirmer Prêt pour Dépôt
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL VISA REFUSÉ */}
+      {showVisaRefuseModal && (
+        <div className="modal-overlay" onMouseDown={() => setShowVisaRefuseModal(false)}>
+          <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Visa Refusé - Dossier de {dossier.employee?.name}</h2>
+              <button className="modal-close" onClick={() => setShowVisaRefuseModal(false)}>
+                ✕
+              </button>
+            </div>
+      
+            <div className="create-form">
+              <p className="toast-refuse-text" style={{ marginTop: 0 }}>
+                Cette action est définitive. Le dossier sera clôturé.
+              </p>
+      
+              <div className="form-actions">
+                <button type="button" className="btn-outline" onClick={() => setShowVisaRefuseModal(false)}>
+                  Annuler
+                </button>
+      
+                <button
+                  type="button"
+                  className="btn-danger"
+                  onClick={() => {
+                    onUpdateDossierStatus(dossier.id, "VISA_REFUSE");
+                    toast.success("Visa refusé : dossier clôturé.", { position: "top-right" });
+                    setShowVisaRefuseModal(false);
+                  }}
+                >
+                  Confirmer le refus
                 </button>
               </div>
             </div>
