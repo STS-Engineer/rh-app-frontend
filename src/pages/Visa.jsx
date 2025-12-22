@@ -1369,10 +1369,8 @@ export default function Visa() {
 
       <div className="main">
         <div className="page-header-card">
-          <div className="page-header-icon">📋</div>
-
           <div className="page-header-text">
-            <h1 className="page-title">Dossiers Visa France</h1>
+            <h1 className="page-title">📋 Dossiers Visa France</h1>
             <p className="page-subtitle">
               {selectedDossier ? "Suivi détaillé du dossier visa" : "Gestion des demandes de visa professionnel - Tableau de bord"}
             </p>
