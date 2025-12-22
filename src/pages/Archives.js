@@ -157,9 +157,7 @@ const Archives = () => {
             />
             <span className="search-icon">🔍</span>
           </div>
-          <div className="archives-count">
-            {filteredEmployees.length} {t('archivedEmployeesFound')}
-          </div>
+         
           <div className="action-buttons">
             <button className="refresh-btn" onClick={loadArchivedEmployees}>
               🔄 {t('refresh')}
