@@ -1302,9 +1302,9 @@ button:disabled {
   padding: 40px 35px;
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 20px;
   box-shadow: 0 12px 40px rgba(4,110,175,0.1);
-  margin-bottom: 16px;
+  margin-bottom: 40px;
   backdrop-filter: blur(10px);
   position: relative;
   overflow: hidden;
