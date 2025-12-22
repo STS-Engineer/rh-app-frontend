@@ -96,7 +96,7 @@ body {
   font-weight: 400;
 }
 
-.search-icon {
+.search-wrapper .search-icon {
   position: absolute;
   right: 25px;
   top: 50%;
