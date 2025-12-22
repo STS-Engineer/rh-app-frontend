@@ -1400,6 +1400,7 @@ export default function Visa() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
+                span className="search-icon">🔍</span>
               </div>
             </div>
 
