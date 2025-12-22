@@ -700,7 +700,8 @@ button {
 }
 
 .btn-success {
-  border-radius: 999px;
+  padding: 14px 18px;
+  border-radius: 14px;  
   border: none;
   padding: 6px 12px;
   background: #16a34a;
@@ -714,7 +715,8 @@ button {
 }
 
 .btn-danger {
-  border-radius: 999px;
+  padding: 14px 18px;
+  border-radius: 14px;  
   border: none;
   padding: 6px 12px;
   background: #ef4444;
@@ -1768,65 +1770,4 @@ button:disabled {
 .ready-doc-meta {
   font-size: 0.85rem;
   color: #6b7280;
-}
-
-.toast-confirm {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 14px;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-  width: 360px;
-}
-.toast-confirm-title {
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-.toast-confirm-message {
-  font-size: 14px;
-  color: #334155;
-  margin-bottom: 12px;
-}
-.toast-confirm-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-}
-
-.toast-refuse {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  text-align: center;
-  max-width: 400px;
-  margin: auto;
-}
-.toast-refuse-title {
-  margin-bottom: 10px;
-  color: #dc2626;
-}
-.toast-refuse-text {
-  margin-bottom: 20px;
-  color: #4b5563;
-}
-.toast-refuse-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-}
-.toast-btn-cancel {
-  padding: 8px 16px;
-  background: #f3f4f6;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  cursor: pointer;
-}
-.toast-btn-confirm-refuse {
-  padding: 8px 16px;
-  background: #dc2626;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
 }
