@@ -60,6 +60,12 @@ body {
 }
 
 /* Search */
+.search-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+
 .search-wrapper input {
   border-radius: 14px;
   border: 2px solid var(--neutral-grey);
