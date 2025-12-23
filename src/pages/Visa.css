@@ -603,10 +603,16 @@ background: linear-gradient(90deg, #046eaf, #60a5fa);
 }
 
 .section-header h2 {
-  margin: 0;
+  margin: 7px;
   font-size: 1.35rem;
-  font-weight: 700;
-  color: #1e293b;
+  font-weight: 900;
+  letter-spacing: -0.2px;
+  color: var(--primary-blue-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  padding-bottom: 8px;
 }
 
 .status-block {
@@ -617,7 +623,7 @@ background: linear-gradient(90deg, #046eaf, #60a5fa);
 }
 
 .status-block .label {
-  font-size: 0.85rem;
+  font-size: 1rem;
   color: #6b7280;
 }
 
@@ -641,7 +647,7 @@ background: linear-gradient(90deg, #046eaf, #60a5fa);
 
 .progress-text {
   margin-top: 4px;
-  font-size: 0.8rem;
+  font-size: 0.95rem;
   color: #6b7280;
 }
 
@@ -810,7 +816,7 @@ button {
 
 .muted {
   color: #6b7280;
-  font-size: 0.85rem;
+  font-size: 0.95rem;
 }
 
 .small {
@@ -929,14 +935,21 @@ button:disabled {
 
 /* Décision visa */
 .decision-block {
-  padding-top: 12px;
+  padding-top: 15px;
   border-top: 1px solid #e5e7eb;
 }
 
 .decision-title {
-  font-weight: 700;
-  color: #0f172a;
-  margin-bottom: 4px;
+  margin: 0 0 10px;
+  font-size: 1.3rem;
+  font-weight: 900;
+  letter-spacing: -0.2px;
+  color: var(--primary-blue-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  padding-bottom: 8px;
 }
 
 .decision-subtitle {
@@ -949,6 +962,30 @@ button:disabled {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.decision-actions .btn-danger {
+  border: none;
+  padding: 12px 18px;    
+  border-radius: 14px;    
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.decision-actions .btn-success {
+  border: none;
+  padding: 12px 18px;    
+  border-radius: 14px;    
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
 }
 
 /* ============================================================
@@ -1608,14 +1645,14 @@ button:disabled {
 }
 
 .visa-step-label{
-  font-size:0.9rem;
+  font-size:1.02rem;
   color:#334155;
   font-weight:600;
 }
 
 .visa-step-line{
   width:36px;
-  height:2px;
+  height:3px;
   background:#e2e8f0;
   margin-left:6px;
 }
@@ -1753,7 +1790,7 @@ button:disabled {
 .progress-pct { font-size: 0.8rem; color: #64748b; font-weight: 500; }
 
 .detail-inner { padding: 0 8px; }
-.detail-strong-line { margin-top: 14px; }
+.detail-strong-line {padding: 9px 0 6px; }
 .detail-hint { margin-top: 8px; }
 
 .ready-docs-wrap { width: 100%; }
