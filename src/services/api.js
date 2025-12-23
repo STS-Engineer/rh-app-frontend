@@ -147,7 +147,7 @@ export const deleteDossierRH = async (employeeId) => {
       throw new Error('Non authentifié');
     }
 
-    const response = await fetch(`${API_URL}/employees/${employeeId}/dossier-rh`, {
+    const response = await fetch(`${API_BASE_URL}/employees/${employeeId}/dossier-rh`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`,
