@@ -136,6 +136,37 @@ export const dossierRhAPI = {
   }
 };
 
+
+
+
+// Fonction pour supprimer le dossier RH
+export const deleteDossierRH = async (employeeId) => {
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      throw new Error('Non authentifié');
+    }
+
+    const response = await fetch(`${API_URL}/employees/${employeeId}/dossier-rh`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Erreur lors de la suppression du dossier RH');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur API deleteDossierRH:', error);
+    throw error;
+  }
+};
+
 // =========================
 // API Fiche de Paie
 // =========================
