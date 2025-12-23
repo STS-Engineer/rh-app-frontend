@@ -114,10 +114,7 @@ const DeleteConfirmationModal = memo(function DeleteConfirmationModal({
             <p><strong>{t('employeeID')}:</strong> {employeeId}</p>
           </div>
           
-          <div className="warning-message">
-            <p>{t('deleteWarning1')}</p>
-            <p>{t('deleteWarning2')}</p>
-          </div>
+          
           
           <div className="confirmation-checkbox">
             <label>
