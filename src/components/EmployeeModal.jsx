@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { employeesAPI } from '../services/api';
+import { employeesAPI, deleteDossierRH } from '../services/api';
 import { photoService } from '../services/photoService';
 import ArchiveModal from './ArchiveModal';
 import DossierRHModal from './DossierRHModal';
@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import './EmployeeModal.css';
 
 /* =========================
-   ✅ Composants externes (ne pas définir dans EmployeeModal)
+   ✅ Composants externes
    ========================= */
 
 const DetailRow = memo(function DetailRow({ label, value }) {
@@ -81,7 +81,75 @@ const FormSelect = memo(function FormSelect({
 });
 
 /* =========================
-   ✅ EmployeeModal
+   ✅ Modal de confirmation pour suppression
+   ========================= */
+const DeleteConfirmationModal = memo(function DeleteConfirmationModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  employeeName,
+  employeeId,
+  deleting,
+  t
+}) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="confirmation-modal-overlay" onClick={onClose}>
+      <div className="confirmation-modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="confirmation-modal-header">
+          <h3>⚠️ {t('confirmDeleteDossier')}</h3>
+          <button className="close-btn" onClick={onClose} disabled={deleting}>
+            ×
+          </button>
+        </div>
+        
+        <div className="confirmation-modal-body">
+          <div className="warning-icon">
+            <span>🗑️</span>
+          </div>
+          
+          <div className="confirmation-details">
+            <p><strong>{t('employee')}:</strong> {employeeName}</p>
+            <p><strong>{t('employeeID')}:</strong> {employeeId}</p>
+          </div>
+          
+          <div className="warning-message">
+            <p>{t('deleteWarning1')}</p>
+            <p>{t('deleteWarning2')}</p>
+          </div>
+          
+          <div className="confirmation-checkbox">
+            <label>
+              <input type="checkbox" id="confirm-delete" />
+              {t('confirmDeleteCheckbox')}
+            </label>
+          </div>
+        </div>
+        
+        <div className="confirmation-modal-footer">
+          <button
+            className="cancel-delete-btn"
+            onClick={onClose}
+            disabled={deleting}
+          >
+            {t('cancel')}
+          </button>
+          <button
+            className="confirm-delete-btn"
+            onClick={onConfirm}
+            disabled={deleting}
+          >
+            {deleting ? t('deleting') : t('confirmDelete')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+/* =========================
+   ✅ EmployeeModal Principal
    ========================= */
 
 const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
@@ -92,11 +160,12 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const [saving, setSaving] = useState(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [showDossierModal, setShowDossierModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingDossier, setDeletingDossier] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
 
-  /* ✅ Sync formData: seulement quand on ouvre / change d’employé,
-     et surtout PAS pendant la saisie (sinon reset + focus issues) */
+  /* ✅ Sync formData */
   useEffect(() => {
     if (!employee) return;
     if (!isOpen) return;
@@ -296,6 +365,42 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     }
   }, [saving, formData, isValidEmail, t, selectedFile, employee?.id, onUpdate]);
 
+  const handleDeleteDossier = useCallback(async () => {
+    if (!employee?.id) return;
+    
+    try {
+      setDeletingDossier(true);
+      
+      const response = await deleteDossierRH(employee.id);
+      
+      // Mettre à jour les données locales
+      setFormData(prev => ({ ...prev, dossier_rh: null }));
+      
+      // Informer le parent du changement
+      if (onUpdate) {
+        onUpdate(response.employee);
+      }
+      
+      alert(`✅ ${t('dossierDeletedSuccess')}`);
+      setShowDeleteConfirm(false);
+    } catch (error) {
+      console.error('Erreur suppression dossier RH:', error);
+      alert(`❌ ${t('errorDeletingDossier')}: ${error.message}`);
+    } finally {
+      setDeletingDossier(false);
+    }
+  }, [employee?.id, t, onUpdate]);
+
+  const confirmDeleteDossier = useCallback(() => {
+    const confirmCheckbox = document.getElementById('confirm-delete');
+    if (!confirmCheckbox || !confirmCheckbox.checked) {
+      alert('❌ ' + t('confirmCheckboxRequired'));
+      return;
+    }
+    
+    handleDeleteDossier();
+  }, [handleDeleteDossier, t]);
+
   const handleArchive = useCallback(
     async (pdfUrl, archiveData) => {
       try {
@@ -352,7 +457,9 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
 
         if (data.employee) setFormData(data.employee);
 
-        onArchive(data.employee || { id: employee.id, statut: 'archive' });
+        if (onArchive) {
+          onArchive(data.employee || { id: employee.id, statut: 'archive' });
+        }
 
         setShowArchiveModal(false);
         handleClose();
@@ -383,6 +490,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     setFormData(employee || {});
     setSelectedFile(null);
     setPhotoPreview('');
+    setShowDeleteConfirm(false);
     onClose();
   }, [employee, onClose]);
 
@@ -393,340 +501,353 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const currentPhotoUrl = photoPreview || getPhotoUrl();
 
   return (
-    <div className="employee-modal-overlay" onClick={handleClose}>
-      <div className="employee-modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="employee-modal-header">
-          <h2>👤 {t('employeeDetails')}</h2>
-          <button className="close-btn" onClick={handleClose}>
-            ×
-          </button>
-        </div>
-
-        <div className="employee-modal-body">
-          {/* En-tête */}
-          <div className="employee-header">
-            <img
-              src={currentPhotoUrl}
-              alt={`${formData.prenom} ${formData.nom}`}
-              className="employee-photo"
-              onError={(e) => {
-                e.currentTarget.src = getDefaultAvatar();
-              }}
-            />
-
-            <div className="employee-basic-info">
-              <h3>
-                {formData.prenom} {formData.nom}
-              </h3>
-              <p className="employee-matricule">
-                {t('employeeID')}: {formData.matricule}
-              </p>
-              <p className="employee-poste">{formData.poste}</p>
-              <p className="employee-departement">{formData.site_dep}</p>
-              <p className="employee-contrat">{formData.type_contrat}</p>
-              <p className="employee-email">📧 {formData.adresse_mail || t('emailNotSpecified')}</p>
-
-              {/* Indicateur d'archivage */}
-              {formData.statut === 'archive' && (
-                <div className="archive-badge">
-                  <span className="badge-icon">📁</span>
-                  <span className="badge-text">{t('archived')}</span>
-                  {formData.date_depart && (
-                    <span className="archive-date">
-                      {t('since')}: {formatDateForDisplay(formData.date_depart)}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {/* Changer photo en mode édition */}
-              {isEditing && (
-                <div className="photo-change-section">
-                  <input
-                    type="file"
-                    id="change-photo"
-                    accept="image/*"
-                    onChange={handlePhotoChange}
-                    className="file-input"
-                  />
-                  <label htmlFor="change-photo" className="change-photo-btn">
-                    📷 {t('changePhoto')}
-                  </label>
-
-                  {selectedFile && <span className="photo-change-notice">{t('newPhotoSelected')}</span>}
-                </div>
-              )}
-            </div>
+    <>
+      <div className="employee-modal-overlay" onClick={handleClose}>
+        <div className="employee-modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="employee-modal-header">
+            <h2>👤 {t('employeeDetails')}</h2>
+            <button className="close-btn" onClick={handleClose}>
+              ×
+            </button>
           </div>
 
-          {!isEditing ? (
-            /* =========================
-               Mode visualisation
-               ========================= */
-            <div className="employee-details-grid">
-              <div className="detail-section">
-                <h4>📝 {t('personalInfo')}</h4>
-                <DetailRow label={t('idNumber')} value={formData.cin} />
-                <DetailRow label={t('passport')} value={formData.passeport || t('notSpecified')} />
-                <DetailRow label={t('passportIssueDate')} value={formatDateForDisplay(formData.date_emission_passport)} />
-                <DetailRow label={t('passportExpiryDate')} value={formatDateForDisplay(formData.date_expiration_passport)} />
-                <DetailRow label={t('birthDate')} value={formatDateForDisplay(formData.date_naissance)} />
-              </div>
+          <div className="employee-modal-body">
+            {/* En-tête */}
+            <div className="employee-header">
+              <img
+                src={currentPhotoUrl}
+                alt={`${formData.prenom} ${formData.nom}`}
+                className="employee-photo"
+                onError={(e) => {
+                  e.currentTarget.src = getDefaultAvatar();
+                }}
+              />
 
-              <div className="detail-section">
-                <h4>💼 {t('professionalInfo')}</h4>
-                <DetailRow label={t('hireDate')} value={formatDateForDisplay(formData.date_debut)} />
-                <DetailRow label={t('grossSalary')} value={`${formData.salaire_brute ?? ''} DT`} />
-                <DetailRow label={t('departureDate')} value={formatDateForDisplay(formData.date_depart)} />
-              </div>
+              <div className="employee-basic-info">
+                <h3>
+                  {formData.prenom} {formData.nom}
+                </h3>
+                <p className="employee-matricule">
+                  {t('employeeID')}: {formData.matricule}
+                </p>
+                <p className="employee-poste">{formData.poste}</p>
+                <p className="employee-departement">{formData.site_dep}</p>
+                <p className="employee-contrat">{formData.type_contrat}</p>
+                <p className="employee-email">📧 {formData.adresse_mail || t('emailNotSpecified')}</p>
 
-              <div className="detail-section">
-                <h4>📧 {t('emailContacts')}</h4>
-                <DetailRow label={t('employeeEmail')} value={formData.adresse_mail || t('notSpecified')} />
-                <DetailRow label={t('supervisor1Email')} value={formData.mail_responsable1 || t('notSpecified')} />
-                <DetailRow label={t('supervisor2Email')} value={formData.mail_responsable2 || t('notSpecified')} />
-              </div>
-
-              <div className="detail-section">
-                <h4>📎 {t('documents')}</h4>
-
-                <div className="document-row">
-                  <strong>{t('hrFile')}:</strong>
-                  <span>
-                    {documentUrl ? (
-                      <div className="document-container">
-                        <a
-                          href={documentUrl}
-                          onClick={(e) => handleDocumentClick(e, documentUrl)}
-                          className="document-link"
-                          title={formData.dossier_rh}
-                        >
-                          📄 {getDocumentDisplayName(formData.dossier_rh)}
-                        </a>
-                        <div className="document-preview">
-                          <small>🔗 {truncateUrl(formData.dossier_rh, 40)}</small>
-                        </div>
-                      </div>
-                    ) : (
-                      <span className="no-document">{t('noDocument')}</span>
+                {/* Indicateur d'archivage */}
+                {formData.statut === 'archive' && (
+                  <div className="archive-badge">
+                    <span className="badge-icon">📁</span>
+                    <span className="badge-text">{t('archived')}</span>
+                    {formData.date_depart && (
+                      <span className="archive-date">
+                        {t('since')}: {formatDateForDisplay(formData.date_depart)}
+                      </span>
                     )}
-                  </span>
-                </div>
-
-                {formData.pdf_archive_url && (
-                  <div className="document-row">
-                    <strong>{t('departureInterview')}:</strong>
-                    <span>
-                      <div className="document-container">
-                        <a
-                          href={formData.pdf_archive_url}
-                          onClick={(e) => handleDocumentClick(e, formData.pdf_archive_url)}
-                          className="document-link archive-link"
-                          title={formData.pdf_archive_url}
-                        >
-                          📁 {t('interviewPDF')}
-                        </a>
-                        <div className="document-preview">
-                          <small>🔗 {truncateUrl(formData.pdf_archive_url, 40)}</small>
-                        </div>
-                      </div>
-                    </span>
                   </div>
                 )}
 
-                <div className="dossier-action">
-                  <button className="add-dossier-btn" onClick={() => setShowDossierModal(true)}>
-                    📁 {t('addUpdateDossier')}
-                  </button>
-                </div>
+                {/* Changer photo en mode édition */}
+                {isEditing && (
+                  <div className="photo-change-section">
+                    <input
+                      type="file"
+                      id="change-photo"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="file-input"
+                    />
+                    <label htmlFor="change-photo" className="change-photo-btn">
+                      📷 {t('changePhoto')}
+                    </label>
+
+                    {selectedFile && <span className="photo-change-notice">{t('newPhotoSelected')}</span>}
+                  </div>
+                )}
               </div>
             </div>
-          ) : (
-            /* =========================
-               Mode édition
-               ========================= */
-            <div className="edit-form">
-              <div className="form-section">
-                <h4>📝 {t('personalInfo')}</h4>
-                <div className="form-grid">
-                  <FormInput label={t('employeeID')} name="matricule" value={formData.matricule} onChange={handleInputChange} required />
-                  <FormInput label={t('lastName')} name="nom" value={formData.nom} onChange={handleInputChange} required />
-                  <FormInput label={t('firstName')} name="prenom" value={formData.prenom} onChange={handleInputChange} required />
-                  <FormInput label={t('idNumber')} name="cin" value={formData.cin} onChange={handleInputChange} required />
-                  <FormInput label={t('passport')} name="passeport" value={formData.passeport} onChange={handleInputChange} placeholder={t('optional')} />
 
-                  <FormInput
-                    label={t('passportIssueDate')}
-                    name="date_emission_passport"
-                    type="date"
-                    value={formatDateForInput(formData.date_emission_passport)}
-                    onChange={handleInputChange}
-                    placeholder={t('optional')}
-                  />
-                  <FormInput
-                    label={t('passportExpiryDate')}
-                    name="date_expiration_passport"
-                    type="date"
-                    value={formatDateForInput(formData.date_expiration_passport)}
-                    onChange={handleInputChange}
-                    placeholder={t('optional')}
-                  />
-                  <FormInput
-                    label={t('birthDate')}
-                    name="date_naissance"
-                    type="date"
-                    value={formatDateForInput(formData.date_naissance)}
-                    onChange={handleInputChange}
-                    required
-                  />
+            {!isEditing ? (
+              /* =========================
+                 Mode visualisation
+                 ========================= */
+              <div className="employee-details-grid">
+                <div className="detail-section">
+                  <h4>📝 {t('personalInfo')}</h4>
+                  <DetailRow label={t('idNumber')} value={formData.cin} />
+                  <DetailRow label={t('passport')} value={formData.passeport || t('notSpecified')} />
+                  <DetailRow label={t('passportIssueDate')} value={formatDateForDisplay(formData.date_emission_passport)} />
+                  <DetailRow label={t('passportExpiryDate')} value={formatDateForDisplay(formData.date_expiration_passport)} />
+                  <DetailRow label={t('birthDate')} value={formatDateForDisplay(formData.date_naissance)} />
                 </div>
-              </div>
 
-              <div className="form-section">
-                <h4>💼 {t('professionalInfo')}</h4>
-                <div className="form-grid">
-                  <FormInput label={t('position')} name="poste" value={formData.poste} onChange={handleInputChange} required />
-
-                  <FormSelect
-                    t={t}
-                    label={t('department')}
-                    name="site_dep"
-                    value={formData.site_dep}
-                    onChange={handleInputChange}
-                    options={[
-                      t('Commerce'),
-                      t('Finance'),
-                      t('Chiffrage'),
-                      t('Digitale'),
-                      t('Général'),
-                      t('Logistique Germany'),
-                      t('Logistique Groupe'),
-                      t('Achat'),
-                      t('Qualité')
-                    ]}
-                    required
-                  />
-
-                  <FormSelect
-                    t={t}
-                    label={t('contractType')}
-                    name="type_contrat"
-                    value={formData.type_contrat}
-                    onChange={handleInputChange}
-                    options={['CDI', 'CDD', 'CIVP']}
-                    required
-                  />
-
-                  <FormInput
-                    label={t('hireDate')}
-                    name="date_debut"
-                    type="date"
-                    value={formatDateForInput(formData.date_debut)}
-                    onChange={handleInputChange}
-                    required
-                  />
-
-                  <FormInput
-                    label={t('grossSalary')}
-                    name="salaire_brute"
-                    type="number"
-                    step="0.01"
-                    value={formData.salaire_brute}
-                    onChange={handleInputChange}
-                    required
-                  />
+                <div className="detail-section">
+                  <h4>💼 {t('professionalInfo')}</h4>
+                  <DetailRow label={t('hireDate')} value={formatDateForDisplay(formData.date_debut)} />
+                  <DetailRow label={t('grossSalary')} value={`${formData.salaire_brute ?? ''} DT`} />
+                  <DetailRow label={t('departureDate')} value={formatDateForDisplay(formData.date_depart)} />
                 </div>
-              </div>
 
-              <div className="form-section">
-                <h4>📧 {t('emailContacts')}</h4>
-                <div className="form-grid">
-                  <FormInput
-                    label={t('employeeEmail')}
-                    name="adresse_mail"
-                    type="email"
-                    value={formData.adresse_mail}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="exemple@entreprise.com"
-                  />
-                  <FormInput
-                    label={t('supervisor1Email')}
-                    name="mail_responsable1"
-                    type="email"
-                    value={formData.mail_responsable1}
-                    onChange={handleInputChange}
-                    placeholder="responsable1@entreprise.com"
-                  />
-                  <FormInput
-                    label={t('supervisor2Email')}
-                    name="mail_responsable2"
-                    type="email"
-                    value={formData.mail_responsable2}
-                    onChange={handleInputChange}
-                    placeholder="responsable2@entreprise.com"
-                  />
+                <div className="detail-section">
+                  <h4>📧 {t('emailContacts')}</h4>
+                  <DetailRow label={t('employeeEmail')} value={formData.adresse_mail || t('notSpecified')} />
+                  <DetailRow label={t('supervisor1Email')} value={formData.mail_responsable1 || t('notSpecified')} />
+                  <DetailRow label={t('supervisor2Email')} value={formData.mail_responsable2 || t('notSpecified')} />
                 </div>
-              </div>
 
-              {/* Date départ + bouton archiver */}
-              <div className="archive-section">
-                <div className="form-grid">
-                  <FormInput
-                    label={t('departureDate')}
-                    name="date_depart"
-                    type="date"
-                    value={formatDateForInput(formData.date_depart)}
-                    onChange={handleInputChange}
-                    placeholder={t('optional')}
-                  />
+                <div className="detail-section">
+                  <h4>📎 {t('documents')}</h4>
 
-                  <div className="archive-row">
-                    <button
-                      type="button"
-                      className={`archive-btn ${!hasDepartureDate ? 'archive-btn-disabled' : ''}`}
-                      onClick={() => hasDepartureDate && setShowArchiveModal(true)}
-                      disabled={!hasDepartureDate}
-                      title={!hasDepartureDate ? t('addDepartureDateFirst') : t('archiveEmployee')}
-                    >
-                      📁 {t('archiveEmployee')}
+                  <div className="document-row">
+                    <strong>{t('hrFile')}:</strong>
+                    <span>
+                      {documentUrl ? (
+                        <div className="document-container">
+                          <div className="document-actions">
+                            <a
+                              href={documentUrl}
+                              onClick={(e) => handleDocumentClick(e, documentUrl)}
+                              className="document-link"
+                              title={formData.dossier_rh}
+                            >
+                              📄 {getDocumentDisplayName(formData.dossier_rh)}
+                            </a>
+                            
+                            <button
+                              className="delete-dossier-btn"
+                              onClick={() => setShowDeleteConfirm(true)}
+                              title={t('deleteDossier')}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                          
+                          <div className="document-preview">
+                            <small>🔗 {truncateUrl(formData.dossier_rh, 40)}</small>
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="no-document">{t('noDocument')}</span>
+                      )}
+                    </span>
+                  </div>
+
+                  {formData.pdf_archive_url && (
+                    <div className="document-row">
+                      <strong>{t('departureInterview')}:</strong>
+                      <span>
+                        <div className="document-container">
+                          <a
+                            href={formData.pdf_archive_url}
+                            onClick={(e) => handleDocumentClick(e, formData.pdf_archive_url)}
+                            className="document-link archive-link"
+                            title={formData.pdf_archive_url}
+                          >
+                            📁 {t('interviewPDF')}
+                          </a>
+                          <div className="document-preview">
+                            <small>🔗 {truncateUrl(formData.pdf_archive_url, 40)}</small>
+                          </div>
+                        </div>
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="dossier-action">
+                    <button className="add-dossier-btn" onClick={() => setShowDossierModal(true)}>
+                      📁 {t('addUpdateDossier')}
                     </button>
                   </div>
                 </div>
-
-                <p className="archive-hint">{t('archiveHint')}</p>
               </div>
-            </div>
-          )}
-        </div>
+            ) : (
+              /* =========================
+                 Mode édition
+                 ========================= */
+              <div className="edit-form">
+                <div className="form-section">
+                  <h4>📝 {t('personalInfo')}</h4>
+                  <div className="form-grid">
+                    <FormInput label={t('employeeID')} name="matricule" value={formData.matricule} onChange={handleInputChange} required />
+                    <FormInput label={t('lastName')} name="nom" value={formData.nom} onChange={handleInputChange} required />
+                    <FormInput label={t('firstName')} name="prenom" value={formData.prenom} onChange={handleInputChange} required />
+                    <FormInput label={t('idNumber')} name="cin" value={formData.cin} onChange={handleInputChange} required />
+                    <FormInput label={t('passport')} name="passeport" value={formData.passeport} onChange={handleInputChange} placeholder={t('optional')} />
 
-        <div className="employee-modal-footer">
-          {!isEditing ? (
-            <div className="view-actions">
-              <button className="edit-btn" onClick={() => setIsEditing(true)}>
-                ✏️ {t('editInfo')}
-              </button>
-            </div>
-          ) : (
-            <div className="edit-actions">
-              <button className="save-btn" onClick={handleSave} disabled={saving}>
-                {saving ? `⏳ ${t('saving')}` : `💾 ${t('save')}`}
-              </button>
+                    <FormInput
+                      label={t('passportIssueDate')}
+                      name="date_emission_passport"
+                      type="date"
+                      value={formatDateForInput(formData.date_emission_passport)}
+                      onChange={handleInputChange}
+                      placeholder={t('optional')}
+                    />
+                    <FormInput
+                      label={t('passportExpiryDate')}
+                      name="date_expiration_passport"
+                      type="date"
+                      value={formatDateForInput(formData.date_expiration_passport)}
+                      onChange={handleInputChange}
+                      placeholder={t('optional')}
+                    />
+                    <FormInput
+                      label={t('birthDate')}
+                      name="date_naissance"
+                      type="date"
+                      value={formatDateForInput(formData.date_naissance)}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
 
-              <button
-                className="cancel-btn"
-                onClick={() => {
-                  setIsEditing(false);
-                  setFormData(employee);
-                  setSelectedFile(null);
-                  setPhotoPreview('');
-                }}
-                disabled={saving}
-              >
-                ❌ {t('cancel')}
-              </button>
-            </div>
-          )}
+                <div className="form-section">
+                  <h4>💼 {t('professionalInfo')}</h4>
+                  <div className="form-grid">
+                    <FormInput label={t('position')} name="poste" value={formData.poste} onChange={handleInputChange} required />
+
+                    <FormSelect
+                      t={t}
+                      label={t('department')}
+                      name="site_dep"
+                      value={formData.site_dep}
+                      onChange={handleInputChange}
+                      options={[
+                        t('Commerce'),
+                        t('Finance'),
+                        t('Chiffrage'),
+                        t('Digitale'),
+                        t('Général'),
+                        t('Logistique Germany'),
+                        t('Logistique Groupe'),
+                        t('Achat'),
+                        t('Qualité')
+                      ]}
+                      required
+                    />
+
+                    <FormSelect
+                      t={t}
+                      label={t('contractType')}
+                      name="type_contrat"
+                      value={formData.type_contrat}
+                      onChange={handleInputChange}
+                      options={['CDI', 'CDD', 'CIVP']}
+                      required
+                    />
+
+                    <FormInput
+                      label={t('hireDate')}
+                      name="date_debut"
+                      type="date"
+                      value={formatDateForInput(formData.date_debut)}
+                      onChange={handleInputChange}
+                      required
+                    />
+
+                    <FormInput
+                      label={t('grossSalary')}
+                      name="salaire_brute"
+                      type="number"
+                      step="0.01"
+                      value={formData.salaire_brute}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-section">
+                  <h4>📧 {t('emailContacts')}</h4>
+                  <div className="form-grid">
+                    <FormInput
+                      label={t('employeeEmail')}
+                      name="adresse_mail"
+                      type="email"
+                      value={formData.adresse_mail}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="exemple@entreprise.com"
+                    />
+                    <FormInput
+                      label={t('supervisor1Email')}
+                      name="mail_responsable1"
+                      type="email"
+                      value={formData.mail_responsable1}
+                      onChange={handleInputChange}
+                      placeholder="responsable1@entreprise.com"
+                    />
+                    <FormInput
+                      label={t('supervisor2Email')}
+                      name="mail_responsable2"
+                      type="email"
+                      value={formData.mail_responsable2}
+                      onChange={handleInputChange}
+                      placeholder="responsable2@entreprise.com"
+                    />
+                  </div>
+                </div>
+
+                {/* Date départ + bouton archiver */}
+                <div className="archive-section">
+                  <div className="form-grid">
+                    <FormInput
+                      label={t('departureDate')}
+                      name="date_depart"
+                      type="date"
+                      value={formatDateForInput(formData.date_depart)}
+                      onChange={handleInputChange}
+                      placeholder={t('optional')}
+                    />
+
+                    <div className="archive-row">
+                      <button
+                        type="button"
+                        className={`archive-btn ${!hasDepartureDate ? 'archive-btn-disabled' : ''}`}
+                        onClick={() => hasDepartureDate && setShowArchiveModal(true)}
+                        disabled={!hasDepartureDate}
+                        title={!hasDepartureDate ? t('addDepartureDateFirst') : t('archiveEmployee')}
+                      >
+                        📁 {t('archiveEmployee')}
+                      </button>
+                    </div>
+                  </div>
+
+                  <p className="archive-hint">{t('archiveHint')}</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="employee-modal-footer">
+            {!isEditing ? (
+              <div className="view-actions">
+                <button className="edit-btn" onClick={() => setIsEditing(true)}>
+                  ✏️ {t('editInfo')}
+                </button>
+              </div>
+            ) : (
+              <div className="edit-actions">
+                <button className="save-btn" onClick={handleSave} disabled={saving}>
+                  {saving ? `⏳ ${t('saving')}` : `💾 ${t('save')}`}
+                </button>
+
+                <button
+                  className="cancel-btn"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setFormData(employee);
+                    setSelectedFile(null);
+                    setPhotoPreview('');
+                  }}
+                  disabled={saving}
+                >
+                  ❌ {t('cancel')}
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -746,10 +867,21 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
         onClose={() => setShowDossierModal(false)}
         onSuccess={(updatedEmployee) => {
           setFormData(updatedEmployee);
-          onUpdate(updatedEmployee);
+          if (onUpdate) onUpdate(updatedEmployee);
         }}
       />
-    </div>
+
+      {/* Modal de confirmation de suppression */}
+      <DeleteConfirmationModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={confirmDeleteDossier}
+        employeeName={`${employee.prenom} ${employee.nom}`}
+        employeeId={employee.matricule}
+        deleting={deletingDossier}
+        t={t}
+      />
+    </>
   );
 };
 
