@@ -1292,169 +1292,180 @@ export const LanguageProvider = ({ children }) => {
       oganesson: 'Oganesson',
       employee_ID: "matricule d'employé",
 
-      // Generic
+      /* ===== GLOBAL ===== */
       loading: "Chargement...",
-      
-      // Visa - Titles
-      visaTitle: "Dossiers Visa France",
-      visaSubtitleDashboard: "Gestion des demandes de visa professionnel - Tableau de bord",
-      visaSubtitleDetail: "Suivi détaillé du dossier visa",
-      visaBackToDashboard: "Retour au dashboard",
-      
-      // Visa - Toolbar / Search
-      visaSearchPlaceholder: "Rechercher un employé ou un motif...",
-      visaOneFileFound: "dossier trouvé",
-      visaFilesFound: "dossiers trouvés",
-      visaFilterStatus: "Statut",
-      visaNewFile: "Nouveau dossier",
-      
-      // Visa - Status values (dossiers)
+    
+      /* ===== TITRES & SUBTITRES ===== */
+      visaTitle: "Gestion des visas",
+      visaSubtitleDashboard: "Suivi des dossiers de visa",
+      visaSubtitleDetail: "Détail du dossier visa",
+    
+      /* ===== STEPPER ===== */
+      visaStepsDocsValidated: "Documents validés",
+      visaStepsReadyToSubmit: "Prêt pour dépôt",
+      visaStepsResult: "Résultat",
+    
+      /* ===== STATUTS ===== */
       visaStatusInProgress: "En cours",
       visaStatusReadyToSubmit: "Prêt pour dépôt",
       visaStatusGranted: "Visa accordé",
       visaStatusRefused: "Visa refusé",
-      
-      // Visa - Section titles
-      visaSectionInProgress: "📋 Dossiers en cours",
-      visaSectionReadyToSubmit: "✅ Dossiers prêts pour dépôt",
-      visaSectionGranted: "🎉 Visa accordé",
-      visaSectionRefused: "❌ Visa refusé",
-      
-      // Visa - KPIs
-      visaKpiInProgress: "Dossiers en cours",
+    
+      visaFileStatus: "Statut du dossier",
+      visaFileClosed: "Dossier clôturé",
+      visaFileClosedHint: "Ce dossier est clôturé",
+      visaResultLockedHint: "Le résultat est verrouillé",
+    
+      /* ===== KPI ===== */
+      visaKpiInProgress: "En cours",
       visaKpiReadyToSubmit: "Prêts pour dépôt",
-      visaKpiGranted: "Visa accordé",
-      visaKpiRefused: "Visa refusé",
-      
-      // Visa - Table headers
+      visaKpiGranted: "Visas accordés",
+      visaKpiRefused: "Visas refusés",
+    
+      /* ===== TABLE / DASHBOARD ===== */
       visaEmployee: "Employé",
-      visaStatus: "Statut",
       visaReason: "Motif",
       visaDeparture: "Départ",
       visaReturn: "Retour",
-      visaProgress: "Progress",
+      visaProgress: "Avancement",
       visaActions: "Actions",
-      visaConsult: "Consulter",
-      visaVisaNumberShort: "N° Visa",
       visaValidity: "Validité",
-      
-      // Visa - Empty list
+      visaVisaNumberShort: "N° Visa",
+    
+      visaConsult: "Consulter",
       visaOneFile: "dossier",
       visaManyFiles: "dossiers",
-      visaNoFileInList: "Aucun dossier dans cette liste",
+    
+      visaNoFileInList: "Aucun dossier dans cette section",
       visaCreateNewToStart: "Créez un nouveau dossier pour commencer",
-      
-      // Visa - Create modal
-      visaCreateNewFile: "Créer un nouveau dossier visa",
-      visaFullName: "Nom & Prénom",
-      visaEmployeesGroupLabel: "Employees - STS",
+    
+      /* ===== RECHERCHE & FILTRES ===== */
+      visaSearchPlaceholder: "Rechercher par employé ou motif",
+      visaFilterStatus: "Filtrer par statut",
+      visaOneFileFound: "dossier trouvé",
+      visaFilesFound: "dossiers trouvés",
+    
+      /* ===== CREATION ===== */
+      visaNewFile: "Nouveau dossier",
+      visaCreateNewFile: "Créer un nouveau dossier",
       visaCreateFile: "Créer le dossier",
-      visaCancel: "Annuler",
-      
-      // Visa - Steps
-      visaStepsDocsValidated: "Documents validés",
-      visaStepsReadyToSubmit: "Prêt pour dépôt",
-      visaStepsResult: "Résultat visa",
-      
-      // Docs table
+      visaBackToDashboard: "Retour au tableau de bord",
+    
+      visaFullName: "Nom & prénom",
+      visaEmployeesGroupLabel: "Employés",
+      visaEmployeeGeneric: "Employé",
+    
+      visaFillAllRequired: "Veuillez remplir tous les champs obligatoires",
+      visaReturnDateAfterDeparture: "La date de retour doit être après la date de départ",
+    
+      visaCreateFileLoading: "Création du dossier...",
+      visaFileCreatedEmailSent: "Dossier créé et email envoyé à",
+      visaFileCreatedEmailNotSent: "Dossier créé mais email non envoyé à",
+      visaCreateError: "Erreur lors de la création du dossier",
+    
+      /* ===== DOCUMENTS ===== */
+      visaFileDocs: "Documents du dossier",
       visaDoc: "Document",
       visaType: "Type",
-      
-      // Document status labels
+      visaStatus: "Statut",
+    
+      visaDocsProvidedPct: "% des documents fournis",
+      visaDocsProvidedCountLine: "documents fournis",
+      visaMissingDocs: "manquants",
+      visaPhysicalToBring: "documents physiques à apporter",
+    
+      visaNoEmployeeFound: "Aucun employé trouvé",
+    
+      /* ===== TYPES DE DOCUMENTS ===== */
+      visaDocTypeBring: "À apporter",
+      visaDocTypeSpecificEmail: "Email spécifique",
+      visaDocTypeBooking: "Booking.com",
+      visaDocTypeFranceVisas: "France-Visas",
+      visaDocTypePdfGeneration: "Génération PDF",
+      visaDocTypeUploadPdf: "Upload PDF",
+    
+      /* ===== STATUT DOCUMENT ===== */
       docStatusMissing: "Manquant",
       docStatusUploaded: "Uploadé",
-      docStatusRejected: "Refusé",
-      docStatusReceivedPhysical: "Reçu physiquement",
-      
-      // Dossier detail
-      visaFileSummary: "Résumé du dossier",
-      visaFileDocs: "Documents du dossier",
-      visaTripReason: "Motif du déplacement",
-      visaFileStatus: "Statut dossier",
-      visaDocsProvidedPct: "% des documents requis sont fournis",
-      visaDocsProvidedCountLine: "documents requis fournis",
-      visaMissingDocs: "manquants",
-      visaPhysicalToBring: "à apporter physiquement",
-      
-      visaReadyToSubmitBtn: "Prêt pour dépôt",
-      visaDecisionTitle: "Décision visa",
-      visaGrantedBtn: "Visa accordé",
-      visaRefusedBtn: "Visa refusé",
-      visaResultLockedHint: "Le résultat du visa est disponible après “Prêt pour dépôt”.",
-      visaFileClosedHint: "Dossier clôturé : résultat final verrouillé.",
-      visaFileClosed: "Dossier clôturé",
-      
-      // Modals
-      visaGrantedModalTitle: "Visa Accordé - Dossier de",
-      visaVisaNumber: "Numéro de visa",
-      visaValidityStart: "Date début validité",
-      visaValidityEnd: "Date fin validité",
-      visaConfirmGranted: "Confirmer Visa Accordé",
-      visaMustBeReadyToSubmitFirst: "Vous devez d’abord marquer le dossier comme “Prêt pour dépôt”.",
-      
-      visaReadyDocsModalTitle: "Documents Prêts pour Dépôt -",
-      visaProvidedDocsList: "Liste des documents fournis :",
-      visaPrintDocs: "🖨 Imprimer les documents",
-      visaConfirmReadyToSubmit: "Confirmer Prêt pour Dépôt",
-      
-      visaRefusedModalTitle: "Visa Refusé - Dossier de",
-      visaRefusedFinalWarning: "Cette action est définitive. Le dossier sera clôturé.",
-      visaConfirmRefusal: "Confirmer le refus",
-      
-      // Doc action buttons
-      visaReceivedBtn: "Reçu",
-      visaSendEmailBtn: "Envoi mail",
-      visaUploadPdfBtn: "Upload PDF",
+      docStatusRejected: "Rejeté",
+      docStatusReceivedPhysical: "Reçu (physique)",
+    
+      /* ===== ACTIONS DOCUMENTS ===== */
+      visaUploadPdfBtn: "Uploader PDF",
+      visaUploadReceiptBtn: "Uploader le reçu",
       visaPreviewBtn: "Aperçu",
       visaPreviewPdfBtn: "Aperçu PDF",
-      visaFillFormBtn: "Remplir formulaire",
-      visaUploadReceiptBtn: "Upload récépissé",
-      visaBookHotelBtn: "Réserver hôtel",
       visaGeneratePdfBtn: "Générer PDF",
-      
-      // Toasts / Errors
-      docMarkedReceivedPhysical: "Document marqué comme reçu physiquement.",
-      visaAllDocsRequiredBeforeReady: "Tous les documents requis doivent être fournis avant de marquer comme prêt pour dépôt.",
-      visaFillVisaNumberAndDates: "Merci de remplir numéro visa + dates de validité.",
-      visaGrantedSaved: "Visa accordé : informations enregistrées.",
-      visaReadyMarked: "Dossier marqué comme 'Prêt pour dépôt'.",
-      visaOpenPdfToPrint: "Ouverture du PDF pour impression…",
-      visaPrintPdfError: "Erreur impression PDF",
-      visaMissingPdf: "Aucun PDF uploadé.",
-      visaMissingReceiptPdf: "Aucun récépissé PDF uploadé.",
-      visaMissingBookingPdf: "Aucun PDF de réservation uploadé.",
-      visaNoGeneratedFile: "Aucun fichier généré.",
-      visaUnauthorized401: "Non autorisé (401). Merci de vous reconnecter.",
-      visaLoadingEmployeesError: "Erreur chargement employees",
-      visaLoadingFilesError: "Erreur chargement dossiers",
-      visaLoadingFiles: "Chargement des dossiers visa…",
-      visaOpenFileError: "Erreur ouverture dossier",
-      visaCreateFileLoading: "Création du dossier…",
-      visaFileCreatedEmailSent: "Dossier créé. Email envoyé à",
-      visaFileCreatedEmailNotSent: "Dossier créé, mais email NON envoyé à",
-      visaPdfUploading: "Upload du PDF…",
-      visaPdfUploadedSuccess: "PDF uploadé avec succès.",
-      visaUploadError: "Erreur upload",
-      visaGenerating: "Génération…",
-      visaGeneratedSuccess: "Fichier généré avec succès.",
-      visaGenerationError: "Erreur génération",
-      visaSendingEmail: "Envoi de l’email…",
-      visaEmailSent: "Email envoyé ✅",
-      visaEmailNotSent: "Email non envoyé ❌ :",
-      visaRefusedClosed: "Visa refusé : dossier clôturé.",
-      visaFillAllRequired: "Merci de remplir tous les champs obligatoires.",
-      visaReturnDateAfterDeparture: "La date de retour doit être >= date de départ.",
-      visaEmployeeGeneric: "Employé",
-      visaCreateError: "Erreur création dossier",
-      visaUpdateDocError: "Erreur mise à jour document",
-      visaUpdateFileError: "Erreur mise à jour dossier",
-      visaEmployeeNotFoundInFile: "Employé introuvable dans le dossier.",
-      visaGenerationNotAvailable: "Génération non disponible pour ce document.",
-      visaEmailNotAvailable: "Envoi mail non disponible pour ce document.",
-      visaMissingApiEnv: "REACT_APP_API_URL manquant (.env)",
-      visaMissingFileUrl: "URL fichier manquante.",
-      visaInvalidUrl: "URL invalide.",
-      visaNoEmployeeFound: "Aucun employé trouvé"
+      visaSendEmailBtn: "Envoyer email",
+      visaReceivedBtn: "Reçu",
+      visaBookHotelBtn: "Réserver hôtel",
+      visaFillFormBtn: "Remplir le formulaire",
+    
+      visaMissingPdf: "PDF manquant",
+      visaMissingBookingPdf: "PDF Booking manquant",
+      visaMissingReceiptPdf: "Reçu PDF manquant",
+      visaNoGeneratedFile: "Aucun fichier généré",
+    
+      /* ===== PRET POUR DEPOT ===== */
+      visaReadyToSubmitBtn: "Marquer prêt pour dépôt",
+      visaReadyDocsModalTitle: "Documents prêts",
+      visaProvidedDocsList: "Liste des documents fournis",
+      visaConfirmReadyToSubmit: "Confirmer prêt pour dépôt",
+      visaReadyMarked: "Dossier marqué prêt pour dépôt",
+      visaAllDocsRequiredBeforeReady: "Tous les documents sont requis",
+    
+      visaPrintDocs: "Imprimer les documents",
+      visaOpenPdfToPrint: "PDF ouvert pour impression",
+      visaPrintPdfError: "Erreur lors de l'ouverture du PDF",
+    
+      /* ===== DECISION ===== */
+      visaDecisionTitle: "Décision",
+      visaGrantedBtn: "Accorder le visa",
+      visaRefusedBtn: "Refuser le visa",
+    
+      visaGrantedModalTitle: "Visa accordé pour",
+      visaVisaNumber: "Numéro de visa",
+      visaValidityStart: "Début de validité",
+      visaValidityEnd: "Fin de validité",
+    
+      visaFillVisaNumberAndDates: "Veuillez remplir le numéro et les dates du visa",
+      visaConfirmGranted: "Confirmer",
+      visaGrantedSaved: "Visa accordé et enregistré",
+    
+      visaRefusedModalTitle: "Visa refusé pour",
+      visaRefusedFinalWarning: "Cette action est définitive",
+      visaConfirmRefusal: "Confirmer le refus",
+      visaRefusedClosed: "Dossier clôturé (refus)",
+    
+      visaCancel: "Annuler",
+    
+      /* ===== ERRORS / API ===== */
+      visaUnauthorized401: "Session expirée, veuillez vous reconnecter",
+      visaLoadingFiles: "Chargement des dossiers...",
+      visaLoadingFilesError: "Erreur lors du chargement des dossiers",
+      visaLoadingEmployeesError: "Erreur lors du chargement des employés",
+      visaMissingApiEnv: "URL API manquante",
+      visaOpenFileError: "Erreur lors de l'ouverture du dossier",
+      visaUpdateFileError: "Erreur lors de la mise à jour du dossier",
+      visaUpdateDocError: "Erreur lors de la mise à jour du document",
+    
+      visaPdfUploading: "Upload du PDF...",
+      visaPdfUploadedSuccess: "PDF uploadé avec succès",
+      visaUploadError: "Erreur lors de l'upload du PDF",
+    
+      visaGenerating: "Génération du document...",
+      visaGeneratedSuccess: "Document généré avec succès",
+      visaGenerationError: "Erreur lors de la génération",
+      visaGenerationNotAvailable: "Génération non disponible",
+    
+      visaSendingEmail: "Envoi de l'email...",
+      visaEmailSent: "Email envoyé avec succès",
+      visaEmailNotSent: "Email non envoyé",
+      visaEmailNotAvailable: "Email non disponible",
+    
+      visaEmployeeNotFoundInFile: "Employé introuvable dans le dossier",
+      visaMissingFileUrl: "URL du fichier manquante",
+      visaInvalidUrl: "URL invalide"
     },
     en: {
       // Navigation
@@ -1865,170 +1876,181 @@ export const LanguageProvider = ({ children }) => {
       contactInfo: 'Contact information',
       financialInfo: 'Financial information',
       legalInfo: 'Legal information',
-      
-      // Generic
+
+      /* ===== GLOBAL ===== */
       loading: "Loading...",
     
-      // Visa - Titles
-      visaTitle: "France Visa Files",
-      visaSubtitleDashboard: "Business visa request management - Dashboard",
-      visaSubtitleDetail: "Detailed visa file tracking",
-      visaBackToDashboard: "Back to dashboard",
+      /* ===== TITLES & SUBTITLES ===== */
+      visaTitle: "Visa Management",
+      visaSubtitleDashboard: "Visa application tracking",
+      visaSubtitleDetail: "Visa application details",
     
-      // Visa - Toolbar / Search
-      visaSearchPlaceholder: "Search an employee or a reason...",
-      visaOneFileFound: "file found",
-      visaFilesFound: "files found",
-      visaFilterStatus: "Status",
-      visaNewFile: "New file",
+      /* ===== STEPPER ===== */
+      visaStepsDocsValidated: "Documents validated",
+      visaStepsReadyToSubmit: "Ready to submit",
+      visaStepsResult: "Result",
     
-      // Visa - Status values (dossiers)
+      /* ===== STATUSES ===== */
       visaStatusInProgress: "In progress",
       visaStatusReadyToSubmit: "Ready to submit",
       visaStatusGranted: "Visa granted",
       visaStatusRefused: "Visa refused",
     
-      // Visa - Section titles
-      visaSectionInProgress: "📋 Files in progress",
-      visaSectionReadyToSubmit: "✅ Files ready to submit",
-      visaSectionGranted: "🎉 Visa granted",
-      visaSectionRefused: "❌ Visa refused",
+      visaFileStatus: "Application status",
+      visaFileClosed: "File closed",
+      visaFileClosedHint: "This file is closed",
+      visaResultLockedHint: "Result is locked",
     
-      // Visa - KPIs
-      visaKpiInProgress: "Files in progress",
+      /* ===== KPI ===== */
+      visaKpiInProgress: "In progress",
       visaKpiReadyToSubmit: "Ready to submit",
-      visaKpiGranted: "Visa granted",
-      visaKpiRefused: "Visa refused",
+      visaKpiGranted: "Granted visas",
+      visaKpiRefused: "Refused visas",
     
-      // Visa - Table headers
+      /* ===== TABLE / DASHBOARD ===== */
       visaEmployee: "Employee",
-      visaStatus: "Status",
       visaReason: "Reason",
       visaDeparture: "Departure",
       visaReturn: "Return",
       visaProgress: "Progress",
       visaActions: "Actions",
-      visaConsult: "View",
-      visaVisaNumberShort: "Visa No.",
       visaValidity: "Validity",
+      visaVisaNumberShort: "Visa No.",
     
-      // Visa - Empty list
+      visaConsult: "View",
       visaOneFile: "file",
       visaManyFiles: "files",
-      visaNoFileInList: "No files in this list",
+    
+      visaNoFileInList: "No files in this section",
       visaCreateNewToStart: "Create a new file to get started",
     
-      // Visa - Create modal
-      visaCreateNewFile: "Create a new visa file",
-      visaFullName: "First & Last name",
-      visaEmployeesGroupLabel: "Employees - STS",
+      /* ===== SEARCH & FILTER ===== */
+      visaSearchPlaceholder: "Search by employee or reason",
+      visaFilterStatus: "Filter by status",
+      visaOneFileFound: "file found",
+      visaFilesFound: "files found",
+    
+      /* ===== CREATION ===== */
+      visaNewFile: "New file",
+      visaCreateNewFile: "Create new file",
       visaCreateFile: "Create file",
-      visaCancel: "Cancel",
+      visaBackToDashboard: "Back to dashboard",
     
-      // Visa - Steps
-      visaStepsDocsValidated: "Documents validated",
-      visaStepsReadyToSubmit: "Ready to submit",
-      visaStepsResult: "Visa result",
+      visaFullName: "Full name",
+      visaEmployeesGroupLabel: "Employees",
+      visaEmployeeGeneric: "Employee",
     
-      // Docs table
+      visaFillAllRequired: "Please fill in all required fields",
+      visaReturnDateAfterDeparture: "Return date must be after departure date",
+    
+      visaCreateFileLoading: "Creating file...",
+      visaFileCreatedEmailSent: "File created and email sent to",
+      visaFileCreatedEmailNotSent: "File created but email not sent to",
+      visaCreateError: "Error while creating file",
+    
+      /* ===== DOCUMENTS ===== */
+      visaFileDocs: "File documents",
       visaDoc: "Document",
       visaType: "Type",
+      visaStatus: "Status",
     
-      // Document status labels
+      visaDocsProvidedPct: "% of documents provided",
+      visaDocsProvidedCountLine: "documents provided",
+      visaMissingDocs: "missing",
+      visaPhysicalToBring: "physical documents to bring",
+    
+      visaNoEmployeeFound: "No employee found",
+    
+      /* ===== DOCUMENT TYPES ===== */
+      visaDocTypeBring: "To bring",
+      visaDocTypeSpecificEmail: "Specific email",
+      visaDocTypeBooking: "Booking.com",
+      visaDocTypeFranceVisas: "France-Visas",
+      visaDocTypePdfGeneration: "PDF generation",
+      visaDocTypeUploadPdf: "Upload PDF",
+    
+      /* ===== DOCUMENT STATUS ===== */
       docStatusMissing: "Missing",
       docStatusUploaded: "Uploaded",
       docStatusRejected: "Rejected",
       docStatusReceivedPhysical: "Received (physical)",
     
-      // Dossier detail
-      visaFileSummary: "File summary",
-      visaFileDocs: "File documents",
-      visaTripReason: "Trip purpose",
-      visaFileStatus: "File status",
-      visaDocsProvidedPct: "% of required documents provided",
-      visaDocsProvidedCountLine: "required documents provided",
-      visaMissingDocs: "missing",
-      visaPhysicalToBring: "to bring physically",
-    
-      visaReadyToSubmitBtn: "Ready to submit",
-      visaDecisionTitle: "Visa decision",
-      visaGrantedBtn: "Visa granted",
-      visaRefusedBtn: "Visa refused",
-      visaResultLockedHint: "Visa result is available after “Ready to submit”.",
-      visaFileClosedHint: "File closed: final result locked.",
-      visaFileClosed: "File closed",
-    
-      // Modals
-      visaGrantedModalTitle: "Visa Granted - File of",
-      visaVisaNumber: "Visa number",
-      visaValidityStart: "Validity start date",
-      visaValidityEnd: "Validity end date",
-      visaConfirmGranted: "Confirm visa granted",
-      visaMustBeReadyToSubmitFirst: "You must first mark the file as “Ready to submit”.",
-    
-      visaReadyDocsModalTitle: "Documents ready to submit -",
-      visaProvidedDocsList: "List of provided documents:",
-      visaPrintDocs: "🖨 Print documents",
-      visaConfirmReadyToSubmit: "Confirm ready to submit",
-    
-      visaRefusedModalTitle: "Visa Refused - File of",
-      visaRefusedFinalWarning: "This action is final. The file will be closed.",
-      visaConfirmRefusal: "Confirm refusal",
-    
-      // Doc action buttons
-      visaReceivedBtn: "Received",
-      visaSendEmailBtn: "Send email",
+      /* ===== DOCUMENT ACTIONS ===== */
       visaUploadPdfBtn: "Upload PDF",
+      visaUploadReceiptBtn: "Upload receipt",
       visaPreviewBtn: "Preview",
       visaPreviewPdfBtn: "Preview PDF",
-      visaFillFormBtn: "Fill form",
-      visaUploadReceiptBtn: "Upload receipt",
-      visaBookHotelBtn: "Book hotel",
       visaGeneratePdfBtn: "Generate PDF",
+      visaSendEmailBtn: "Send email",
+      visaReceivedBtn: "Received",
+      visaBookHotelBtn: "Book hotel",
+      visaFillFormBtn: "Fill form",
     
-      // Toasts / Errors
-      docMarkedReceivedPhysical: "Document marked as received (physical).",
-      visaAllDocsRequiredBeforeReady: "All required documents must be provided before marking as ready to submit.",
-      visaFillVisaNumberAndDates: "Please fill in the visa number and validity dates.",
-      visaGrantedSaved: "Visa granted: information saved.",
-      visaReadyMarked: "File marked as 'Ready to submit'.",
-      visaOpenPdfToPrint: "Opening PDF for printing…",
-      visaPrintPdfError: "PDF printing error",
-      visaMissingPdf: "No PDF uploaded.",
-      visaMissingReceiptPdf: "No receipt PDF uploaded.",
-      visaMissingBookingPdf: "No booking PDF uploaded.",
-      visaNoGeneratedFile: "No generated file.",
-      visaUnauthorized401: "Unauthorized (401). Please log in again.",
+      visaMissingPdf: "Missing PDF",
+      visaMissingBookingPdf: "Missing booking PDF",
+      visaMissingReceiptPdf: "Missing receipt PDF",
+      visaNoGeneratedFile: "No generated file",
+    
+      /* ===== READY TO SUBMIT ===== */
+      visaReadyToSubmitBtn: "Mark as ready to submit",
+      visaReadyDocsModalTitle: "Ready documents",
+      visaProvidedDocsList: "Provided documents list",
+      visaConfirmReadyToSubmit: "Confirm ready to submit",
+      visaReadyMarked: "File marked as ready to submit",
+      visaAllDocsRequiredBeforeReady: "All documents are required",
+    
+      visaPrintDocs: "Print documents",
+      visaOpenPdfToPrint: "PDF opened for printing",
+      visaPrintPdfError: "Error opening PDF",
+    
+      /* ===== DECISION ===== */
+      visaDecisionTitle: "Decision",
+      visaGrantedBtn: "Grant visa",
+      visaRefusedBtn: "Refuse visa",
+    
+      visaGrantedModalTitle: "Visa granted for",
+      visaVisaNumber: "Visa number",
+      visaValidityStart: "Validity start",
+      visaValidityEnd: "Validity end",
+    
+      visaFillVisaNumberAndDates: "Please fill visa number and dates",
+      visaConfirmGranted: "Confirm",
+      visaGrantedSaved: "Visa granted and saved",
+    
+      visaRefusedModalTitle: "Visa refused for",
+      visaRefusedFinalWarning: "This action is final",
+      visaConfirmRefusal: "Confirm refusal",
+      visaRefusedClosed: "File closed (refused)",
+    
+      visaCancel: "Cancel",
+    
+      /* ===== ERRORS / API ===== */
+      visaUnauthorized401: "Session expired, please log in again",
+      visaLoadingFiles: "Loading files...",
+      visaLoadingFilesError: "Error loading files",
       visaLoadingEmployeesError: "Error loading employees",
-      visaLoadingFilesError: "Error loading visa files",
-      visaLoadingFiles: "Loading visa files…",
+      visaMissingApiEnv: "Missing API URL",
       visaOpenFileError: "Error opening file",
-      visaCreateFileLoading: "Creating file…",
-      visaFileCreatedEmailSent: "File created. Email sent to",
-      visaFileCreatedEmailNotSent: "File created, but email NOT sent to",
-      visaPdfUploading: "Uploading PDF…",
-      visaPdfUploadedSuccess: "PDF uploaded successfully.",
-      visaUploadError: "Upload error",
-      visaGenerating: "Generating…",
-      visaGeneratedSuccess: "File generated successfully.",
-      visaGenerationError: "Generation error",
-      visaSendingEmail: "Sending email…",
-      visaEmailSent: "Email sent ✅",
-      visaEmailNotSent: "Email not sent ❌ :",
-      visaRefusedClosed: "Visa refused: file closed.",
-      visaFillAllRequired: "Please fill in all required fields.",
-      visaReturnDateAfterDeparture: "Return date must be >= departure date.",
-      visaEmployeeGeneric: "Employee",
-      visaCreateError: "File creation error",
-      visaUpdateDocError: "Error updating document",
       visaUpdateFileError: "Error updating file",
-      visaEmployeeNotFoundInFile: "Employee not found in this file.",
-      visaGenerationNotAvailable: "Generation is not available for this document.",
-      visaEmailNotAvailable: "Email sending is not available for this document.",
-      visaMissingApiEnv: "Missing REACT_APP_API_URL (.env)",
-      visaMissingFileUrl: "Missing file URL.",
-      visaInvalidUrl: "Invalid URL.",
-      visaNoEmployeeFound: "No employee found"
+      visaUpdateDocError: "Error updating document",
+    
+      visaPdfUploading: "Uploading PDF...",
+      visaPdfUploadedSuccess: "PDF uploaded successfully",
+      visaUploadError: "PDF upload error",
+    
+      visaGenerating: "Generating document...",
+      visaGeneratedSuccess: "Document generated successfully",
+      visaGenerationError: "Generation error",
+      visaGenerationNotAvailable: "Generation not available",
+    
+      visaSendingEmail: "Sending email...",
+      visaEmailSent: "Email sent successfully",
+      visaEmailNotSent: "Email not sent",
+      visaEmailNotAvailable: "Email not available",
+    
+      visaEmployeeNotFoundInFile: "Employee not found in file",
+      visaMissingFileUrl: "Missing file URL",
+      visaInvalidUrl: "Invalid URL"
     },
     zh: {
       // Navigation
@@ -2440,169 +2462,180 @@ export const LanguageProvider = ({ children }) => {
       financialInfo: '财务信息',
       legalInfo: '法律信息',
 
-      // Generic
+      /* ===== GLOBAL ===== */
       loading: "加载中...",
     
-      // Visa - Titles
-      visaTitle: "法国签证档案",
-      visaSubtitleDashboard: "商务签证申请管理 - 仪表盘",
-      visaSubtitleDetail: "签证档案详细跟踪",
-      visaBackToDashboard: "返回仪表盘",
+      /* ===== TITLES & SUBTITLES ===== */
+      visaTitle: "签证管理",
+      visaSubtitleDashboard: "签证申请跟踪",
+      visaSubtitleDetail: "签证申请详情",
     
-      // Visa - Toolbar / Search
-      visaSearchPlaceholder: "搜索员工或出行原因...",
-      visaOneFileFound: "找到 1 个档案",
-      visaFilesFound: "个档案",
-      visaFilterStatus: "状态",
-      visaNewFile: "新建档案",
+      /* ===== STEPPER ===== */
+      visaStepsDocsValidated: "文件已验证",
+      visaStepsReadyToSubmit: "可提交",
+      visaStepsResult: "结果",
     
-      // Visa - Status values (dossiers)
+      /* ===== STATUSES ===== */
       visaStatusInProgress: "处理中",
       visaStatusReadyToSubmit: "可提交",
-      visaStatusGranted: "签证已获批",
+      visaStatusGranted: "签证已批准",
       visaStatusRefused: "签证被拒",
     
-      // Visa - Section titles
-      visaSectionInProgress: "📋 处理中档案",
-      visaSectionReadyToSubmit: "✅ 可提交档案",
-      visaSectionGranted: "🎉 签证已获批",
-      visaSectionRefused: "❌ 签证被拒",
+      visaFileStatus: "申请状态",
+      visaFileClosed: "档案已关闭",
+      visaFileClosedHint: "该档案已关闭",
+      visaResultLockedHint: "结果已锁定",
     
-      // Visa - KPIs
+      /* ===== KPI ===== */
       visaKpiInProgress: "处理中",
       visaKpiReadyToSubmit: "可提交",
-      visaKpiGranted: "已获批",
-      visaKpiRefused: "被拒",
+      visaKpiGranted: "已批准",
+      visaKpiRefused: "已拒绝",
     
-      // Visa - Table headers
+      /* ===== TABLE / DASHBOARD ===== */
       visaEmployee: "员工",
-      visaStatus: "状态",
-      visaReason: "出行原因",
-      visaDeparture: "出发日期",
-      visaReturn: "返回日期",
+      visaReason: "原因",
+      visaDeparture: "出发",
+      visaReturn: "返回",
       visaProgress: "进度",
       visaActions: "操作",
-      visaConsult: "查看",
-      visaVisaNumberShort: "签证号",
       visaValidity: "有效期",
+      visaVisaNumberShort: "签证号",
     
-      // Visa - Empty list
+      visaConsult: "查看",
       visaOneFile: "档案",
       visaManyFiles: "档案",
-      visaNoFileInList: "此列表中暂无档案",
-      visaCreateNewToStart: "请创建新档案以开始",
     
-      // Visa - Create modal
-      visaCreateNewFile: "创建新的签证档案",
-      visaFullName: "姓名",
-      visaEmployeesGroupLabel: "员工 - STS",
+      visaNoFileInList: "此部分暂无档案",
+      visaCreateNewToStart: "创建新档案以开始",
+    
+      /* ===== SEARCH & FILTER ===== */
+      visaSearchPlaceholder: "按员工或原因搜索",
+      visaFilterStatus: "按状态筛选",
+      visaOneFileFound: "找到档案",
+      visaFilesFound: "找到档案",
+    
+      /* ===== CREATION ===== */
+      visaNewFile: "新档案",
+      visaCreateNewFile: "创建新档案",
       visaCreateFile: "创建档案",
-      visaCancel: "取消",
+      visaBackToDashboard: "返回仪表板",
     
-      // Visa - Steps
-      visaStepsDocsValidated: "文件已确认",
-      visaStepsReadyToSubmit: "可提交",
-      visaStepsResult: "签证结果",
+      visaFullName: "姓名",
+      visaEmployeesGroupLabel: "员工",
+      visaEmployeeGeneric: "员工",
     
-      // Docs table
-      visaDoc: "文件",
-      visaType: "类型",
+      visaFillAllRequired: "请填写所有必填字段",
+      visaReturnDateAfterDeparture: "返回日期必须晚于出发日期",
     
-      // Document status labels
-      docStatusMissing: "缺失",
-      docStatusUploaded: "已上传",
-      docStatusRejected: "被拒绝",
-      docStatusReceivedPhysical: "已收到（纸质）",
-    
-      // Dossier detail
-      visaFileSummary: "档案摘要",
-      visaFileDocs: "档案文件",
-      visaTripReason: "出行目的",
-      visaFileStatus: "档案状态",
-      visaDocsProvidedPct: "所需文件已提供百分比",
-      visaDocsProvidedCountLine: "份所需文件已提供",
-      visaMissingDocs: "缺失",
-      visaPhysicalToBring: "需线下提交",
-    
-      visaReadyToSubmitBtn: "标记为可提交",
-      visaDecisionTitle: "签证决定",
-      visaGrantedBtn: "签证获批",
-      visaRefusedBtn: "签证拒绝",
-      visaResultLockedHint: "签证结果将在“可提交”后显示。",
-      visaFileClosedHint: "档案已关闭：最终结果已锁定。",
-      visaFileClosed: "档案已关闭",
-    
-      // Modals
-      visaGrantedModalTitle: "签证已获批 - 员工",
-      visaVisaNumber: "签证号码",
-      visaValidityStart: "有效期开始日期",
-      visaValidityEnd: "有效期结束日期",
-      visaConfirmGranted: "确认签证获批",
-      visaMustBeReadyToSubmitFirst: "请先将档案标记为“可提交”。",
-    
-      visaReadyDocsModalTitle: "可提交的文件 -",
-      visaProvidedDocsList: "已提供文件列表：",
-      visaPrintDocs: "🖨 打印文件",
-      visaConfirmReadyToSubmit: "确认可提交",
-    
-      visaRefusedModalTitle: "签证被拒 - 员工",
-      visaRefusedFinalWarning: "此操作不可撤销，档案将被关闭。",
-      visaConfirmRefusal: "确认拒签",
-    
-      // Doc action buttons
-      visaReceivedBtn: "已收到",
-      visaSendEmailBtn: "发送邮件",
-      visaUploadPdfBtn: "上传 PDF",
-      visaPreviewBtn: "预览",
-      visaPreviewPdfBtn: "预览 PDF",
-      visaFillFormBtn: "填写表格",
-      visaUploadReceiptBtn: "上传回执",
-      visaBookHotelBtn: "预订酒店",
-      visaGeneratePdfBtn: "生成 PDF",
-    
-      // Toasts / Errors
-      docMarkedReceivedPhysical: "文件已标记为纸质收到。",
-      visaAllDocsRequiredBeforeReady: "在标记为可提交前，必须提供所有必需文件。",
-      visaFillVisaNumberAndDates: "请填写签证号码和有效期日期。",
-      visaGrantedSaved: "签证已获批，信息已保存。",
-      visaReadyMarked: "档案已标记为“可提交”。",
-      visaOpenPdfToPrint: "正在打开 PDF 以打印…",
-      visaPrintPdfError: "PDF 打印错误",
-      visaMissingPdf: "尚未上传 PDF。",
-      visaMissingReceiptPdf: "尚未上传回执 PDF。",
-      visaMissingBookingPdf: "尚未上传预订 PDF。",
-      visaNoGeneratedFile: "尚未生成文件。",
-      visaUnauthorized401: "未授权 (401)，请重新登录。",
-      visaLoadingEmployeesError: "加载员工失败",
-      visaLoadingFilesError: "加载签证档案失败",
-      visaLoadingFiles: "正在加载签证档案…",
-      visaOpenFileError: "打开档案失败",
-      visaCreateFileLoading: "正在创建档案…",
+      visaCreateFileLoading: "正在创建档案...",
       visaFileCreatedEmailSent: "档案已创建，邮件已发送至",
       visaFileCreatedEmailNotSent: "档案已创建，但邮件未发送至",
-      visaPdfUploading: "正在上传 PDF…",
-      visaPdfUploadedSuccess: "PDF 上传成功。",
-      visaUploadError: "上传错误",
-      visaGenerating: "正在生成…",
-      visaGeneratedSuccess: "文件生成成功。",
-      visaGenerationError: "生成错误",
-      visaSendingEmail: "正在发送邮件…",
-      visaEmailSent: "邮件发送成功 ✅",
-      visaEmailNotSent: "邮件发送失败 ❌：",
-      visaRefusedClosed: "签证被拒，档案已关闭。",
-      visaFillAllRequired: "请填写所有必填字段。",
-      visaReturnDateAfterDeparture: "返回日期必须晚于或等于出发日期。",
-      visaEmployeeGeneric: "员工",
-      visaCreateError: "创建档案失败",
-      visaUpdateDocError: "更新文件失败",
-      visaUpdateFileError: "更新档案失败",
-      visaEmployeeNotFoundInFile: "档案中未找到员工。",
-      visaGenerationNotAvailable: "该文件不支持生成。",
-      visaEmailNotAvailable: "该文件不支持发送邮件。",
-      visaMissingApiEnv: "缺少 REACT_APP_API_URL（.env）",
-      visaMissingFileUrl: "缺少文件链接。",
-      visaInvalidUrl: "无效的链接。",
-      visaNoEmployeeFound: "未找到员工"
+      visaCreateError: "创建档案时出错",
+    
+      /* ===== DOCUMENTS ===== */
+      visaFileDocs: "档案文件",
+      visaDoc: "文件",
+      visaType: "类型",
+      visaStatus: "状态",
+    
+      visaDocsProvidedPct: "已提供文件百分比",
+      visaDocsProvidedCountLine: "已提供文件",
+      visaMissingDocs: "缺失",
+      visaPhysicalToBring: "需携带纸质文件",
+    
+      visaNoEmployeeFound: "未找到员工",
+    
+      /* ===== DOCUMENT TYPES ===== */
+      visaDocTypeBring: "需携带",
+      visaDocTypeSpecificEmail: "指定邮件",
+      visaDocTypeBooking: "Booking.com",
+      visaDocTypeFranceVisas: "France-Visas",
+      visaDocTypePdfGeneration: "生成 PDF",
+      visaDocTypeUploadPdf: "上传 PDF",
+    
+      /* ===== DOCUMENT STATUS ===== */
+      docStatusMissing: "缺失",
+      docStatusUploaded: "已上传",
+      docStatusRejected: "已拒绝",
+      docStatusReceivedPhysical: "已接收（纸质）",
+    
+      /* ===== DOCUMENT ACTIONS ===== */
+      visaUploadPdfBtn: "上传 PDF",
+      visaUploadReceiptBtn: "上传收据",
+      visaPreviewBtn: "预览",
+      visaPreviewPdfBtn: "预览 PDF",
+      visaGeneratePdfBtn: "生成 PDF",
+      visaSendEmailBtn: "发送邮件",
+      visaReceivedBtn: "已接收",
+      visaBookHotelBtn: "预订酒店",
+      visaFillFormBtn: "填写表格",
+    
+      visaMissingPdf: "缺少 PDF",
+      visaMissingBookingPdf: "缺少 Booking PDF",
+      visaMissingReceiptPdf: "缺少收据 PDF",
+      visaNoGeneratedFile: "没有生成的文件",
+    
+      /* ===== READY TO SUBMIT ===== */
+      visaReadyToSubmitBtn: "标记为可提交",
+      visaReadyDocsModalTitle: "可提交文件",
+      visaProvidedDocsList: "已提供文件列表",
+      visaConfirmReadyToSubmit: "确认可提交",
+      visaReadyMarked: "档案已标记为可提交",
+      visaAllDocsRequiredBeforeReady: "需要所有文件",
+    
+      visaPrintDocs: "打印文件",
+      visaOpenPdfToPrint: "PDF 已打开用于打印",
+      visaPrintPdfError: "打开 PDF 出错",
+    
+      /* ===== DECISION ===== */
+      visaDecisionTitle: "决定",
+      visaGrantedBtn: "批准签证",
+      visaRefusedBtn: "拒绝签证",
+    
+      visaGrantedModalTitle: "签证批准给",
+      visaVisaNumber: "签证号码",
+      visaValidityStart: "有效期开始",
+      visaValidityEnd: "有效期结束",
+    
+      visaFillVisaNumberAndDates: "请填写签证号码和日期",
+      visaConfirmGranted: "确认",
+      visaGrantedSaved: "签证已批准并保存",
+    
+      visaRefusedModalTitle: "签证拒绝给",
+      visaRefusedFinalWarning: "此操作不可撤销",
+      visaConfirmRefusal: "确认拒绝",
+      visaRefusedClosed: "档案已关闭（拒绝）",
+    
+      visaCancel: "取消",
+    
+      /* ===== ERRORS / API ===== */
+      visaUnauthorized401: "会话已过期，请重新登录",
+      visaLoadingFiles: "正在加载档案...",
+      visaLoadingFilesError: "加载档案时出错",
+      visaLoadingEmployeesError: "加载员工时出错",
+      visaMissingApiEnv: "缺少 API 地址",
+      visaOpenFileError: "打开档案时出错",
+      visaUpdateFileError: "更新档案时出错",
+      visaUpdateDocError: "更新文件时出错",
+    
+      visaPdfUploading: "正在上传 PDF...",
+      visaPdfUploadedSuccess: "PDF 上传成功",
+      visaUploadError: "PDF 上传失败",
+    
+      visaGenerating: "正在生成文件...",
+      visaGeneratedSuccess: "文件生成成功",
+      visaGenerationError: "生成文件出错",
+      visaGenerationNotAvailable: "无法生成文件",
+    
+      visaSendingEmail: "正在发送邮件...",
+      visaEmailSent: "邮件发送成功",
+      visaEmailNotSent: "邮件发送失败",
+      visaEmailNotAvailable: "邮件不可用",
+    
+      visaEmployeeNotFoundInFile: "档案中未找到员工",
+      visaMissingFileUrl: "缺少文件链接",
+      visaInvalidUrl: "无效链接"
     }
   };
 
