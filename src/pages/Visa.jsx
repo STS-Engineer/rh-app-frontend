@@ -2,31 +2,9 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import Sidebar from "../components/Sidebar";
 import "./Visa.css";
 import toast, { Toaster } from "react-hot-toast";
+import { useLanguage } from "../contexts/LanguageContext";
 
 const API = process.env.REACT_APP_API_URL || "https://backend-rh.azurewebsites.net";
-
-/** -------------------------------------------------------
- * Constantes UI
- * ------------------------------------------------------ */
-const STEPS = [
-  { key: "DOCS", label: "Documents validés" },
-  { key: "PRET", label: "Prêt pour dépôt" },
-  { key: "RESULT", label: "Résultat visa" },
-];
-
-const DOCUMENT_STATUS_LABEL = {
-  MISSING: "Manquant",
-  UPLOADED: "Uploadé",
-  REJECTED: "Refusé",
-  RECEIVED_PHYSICAL: "Reçu physiquement",
-};
-
-const EMPTY_FORM = {
-  employeeId: "",
-  departureDate: "",
-  returnDate: "",
-  motif: "",
-};
 
 /** -------------------------------------------------------
  * Helpers
@@ -78,16 +56,44 @@ function isValidHttpUrl(u) {
 }
 
 /** -------------------------------------------------------
+ * i18n maps
+ * ------------------------------------------------------ */
+const getSteps = (t) => [
+  { key: "DOCS", label: t("visaStepsDocsValidated") },
+  { key: "PRET", label: t("visaStepsReadyToSubmit") },
+  { key: "RESULT", label: t("visaStepsResult") },
+];
+
+const getDocumentStatusLabel = (t) => ({
+  MISSING: t("docStatusMissing"),
+  UPLOADED: t("docStatusUploaded"),
+  REJECTED: t("docStatusRejected"),
+  RECEIVED_PHYSICAL: t("docStatusReceivedPhysical"),
+});
+
+/** -------------------------------------------------------
  * UI Components
  * ------------------------------------------------------ */
-function StatusPill({ status }) {
+function StatusPill({ status, t }) {
   let cls = "status-pill";
   if (status === "EN_COURS") cls += " status-warning";
   else if (status === "PRET_POUR_DEPOT") cls += " status-info";
   else if (status === "VISA_ACCORDE") cls += " status-success";
   else if (status === "VISA_REFUSE") cls += " status-danger";
   else cls += " status-info";
-  return <span className={cls}>{status}</span>;
+
+  const label =
+    status === "EN_COURS"
+      ? t("visaStatusInProgress")
+      : status === "PRET_POUR_DEPOT"
+      ? t("visaStatusReadyToSubmit")
+      : status === "VISA_ACCORDE"
+      ? t("visaStatusGranted")
+      : status === "VISA_REFUSE"
+      ? t("visaStatusRefused")
+      : status;
+
+  return <span className={cls}>{label}</span>;
 }
 
 function KpiCard({ label, value, type }) {
@@ -99,18 +105,16 @@ function KpiCard({ label, value, type }) {
   );
 }
 
-function Stepper({ stepIndex }) {
+function Stepper({ stepIndex, steps }) {
   return (
     <div className="visa-stepper">
-      {STEPS.map((s, idx) => {
+      {steps.map((s, idx) => {
         const state = idx < stepIndex ? "done" : idx === stepIndex ? "active" : "future";
         return (
           <div className={`visa-step ${state}`} key={s.key}>
             <div className="visa-step-dot">{idx < stepIndex ? "✓" : idx + 1}</div>
             <div className="visa-step-label">{s.label}</div>
-            {idx < STEPS.length - 1 && (
-              <div className={`visa-step-line ${idx < stepIndex ? "done" : ""}`} />
-            )}
+            {idx < steps.length - 1 && <div className={`visa-step-line ${idx < stepIndex ? "done" : ""}`} />}
           </div>
         );
       })}
@@ -130,13 +134,14 @@ function LockedHint({ text }) {
  * ✅ EmployeeSearchSelect (filtre PRENOM/NOM)
  * ------------------------------------------------------ */
 function EmployeeSearchSelect({
-  label = "Nom & Prénom",
-  required = false, 
+  t,
+  label,
+  required = false,
   employees = [],
   loading = false,
   value,
   onChange,
-  groupLabel = "Employees - STS",
+  groupLabel,
 }) {
   const rootRef = useRef(null);
   const [query, setQuery] = useState("");
@@ -214,7 +219,7 @@ function EmployeeSearchSelect({
           className="emp-input"
           type="text"
           value={query}
-          placeholder={loading ? "Chargement..." : ""}
+          placeholder={loading ? t("loading") : ""}
           onFocus={() => setOpen(true)}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -233,12 +238,7 @@ function EmployeeSearchSelect({
               stroke="currentColor"
               strokeWidth="2"
             />
-            <path
-              d="M16.5 16.5 21 21"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-            />
+            <path d="M16.5 16.5 21 21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
           </svg>
         </span>
       </div>
@@ -249,7 +249,7 @@ function EmployeeSearchSelect({
 
           <div className="emp-list">
             {filtered.length === 0 ? (
-              <div className="emp-empty">Aucun employé trouvé</div>
+              <div className="emp-empty">{t("visaNoEmployeeFound")}</div>
             ) : (
               filtered.map((emp, idx) => {
                 const name = `${emp.prenom ?? ""} ${emp.nom ?? ""}`.trim();
@@ -280,7 +280,7 @@ function EmployeeSearchSelect({
 /** -------------------------------------------------------
  * Section Dashboard (liste de dossiers par statut)
  * ------------------------------------------------------ */
-function Section({ title, sectionStatus, innerRef, dossiers, onOpen }) {
+function Section({ t, title, sectionStatus, innerRef, dossiers, onOpen }) {
   const isAccorde = sectionStatus === "VISA_ACCORDE";
   const showProgress = sectionStatus === "EN_COURS" || sectionStatus === "PRET_POUR_DEPOT";
   const colCount = 5 + (showProgress ? 1 : 0) + (isAccorde ? 2 : 0) + 1;
@@ -290,26 +290,26 @@ function Section({ title, sectionStatus, innerRef, dossiers, onOpen }) {
       <div className="dossier-section-header">
         <h2>{title}</h2>
         <span className="dossier-count-badge">
-          {dossiers.length} {dossiers.length === 1 ? "dossier" : "dossiers"}
+          {dossiers.length} {dossiers.length === 1 ? t("visaOneFile") : t("visaManyFiles")}
         </span>
       </div>
 
       <table className="visa-table">
         <thead>
           <tr>
-            <th>Employé</th>
-            <th>Statut</th>
-            <th>Motif</th>
-            <th>Départ</th>
-            <th>Retour</th>
-            {showProgress && <th>Progress</th>}
+            <th>{t("visaEmployee")}</th>
+            <th>{t("visaStatus")}</th>
+            <th>{t("visaReason")}</th>
+            <th>{t("visaDeparture")}</th>
+            <th>{t("visaReturn")}</th>
+            {showProgress && <th>{t("visaProgress")}</th>}
             {isAccorde && (
               <>
-                <th>N° Visa</th>
-                <th>Validité</th>
+                <th>{t("visaVisaNumberShort")}</th>
+                <th>{t("visaValidity")}</th>
               </>
             )}
-            <th>Actions</th>
+            <th>{t("visaActions")}</th>
           </tr>
         </thead>
 
@@ -324,13 +324,11 @@ function Section({ title, sectionStatus, innerRef, dossiers, onOpen }) {
                 <td>
                   <div className="emp-cell-name">{d.employee?.name}</div>
                   <div className="emp-cell-role">{d.employee?.poste}</div>
-                  {d.employee?.department && (
-                    <div className="emp-cell-dept">{d.employee.department}</div>
-                  )}
+                  {d.employee?.department && <div className="emp-cell-dept">{d.employee.department}</div>}
                 </td>
 
                 <td>
-                  <StatusPill status={d.status} />
+                  <StatusPill status={d.status} t={t} />
                 </td>
 
                 <td>{d.motif || "—"}</td>
@@ -358,16 +356,14 @@ function Section({ title, sectionStatus, innerRef, dossiers, onOpen }) {
                   <>
                     <td>{d.visa?.numero || "—"}</td>
                     <td>
-                      {d.visa?.dateDebut && d.visa?.dateFin
-                        ? `${d.visa.dateDebut} → ${d.visa.dateFin}`
-                        : "—"}
+                      {d.visa?.dateDebut && d.visa?.dateFin ? `${d.visa.dateDebut} → ${d.visa.dateFin}` : "—"}
                     </td>
                   </>
                 )}
 
                 <td>
                   <button className="btn-link" onClick={() => onOpen(d.id)}>
-                    Consulter
+                    {t("visaConsult")}
                   </button>
                 </td>
               </tr>
@@ -378,8 +374,8 @@ function Section({ title, sectionStatus, innerRef, dossiers, onOpen }) {
             <tr>
               <td colSpan={colCount} className="empty">
                 <div>📁</div>
-                <div>Aucun dossier dans cette liste</div>
-                <div>Créez un nouveau dossier pour commencer</div>
+                <div>{t("visaNoFileInList")}</div>
+                <div>{t("visaCreateNewToStart")}</div>
               </td>
             </tr>
           )}
@@ -393,14 +389,17 @@ function Section({ title, sectionStatus, innerRef, dossiers, onOpen }) {
  * Détail d’un dossier visa
  * ------------------------------------------------------ */
 function DossierDetail({
+  t,
   dossier,
   onUpdateDocStatus,
   onUpdateDossierStatus,
   onUploadPdf,
   onGeneratePdf,
   onSendSpecificEmail,
-  onOpenProtectedFile,     // ✅ NEW
-  onOpenDossierPdf,        // ✅ NEW
+  onOpenProtectedFile,
+  onOpenDossierPdf,
+  steps,
+  docStatusLabelMap,
 }) {
   const [showVisaAccordeModal, setShowVisaAccordeModal] = useState(false);
   const [showPretDepotModal, setShowPretDepotModal] = useState(false);
@@ -431,25 +430,22 @@ function DossierDetail({
   const isFinal = dossier.status === "VISA_ACCORDE" || dossier.status === "VISA_REFUSE";
 
   const canOpenPretDepotModal =
-    (dossier.status === "EN_COURS" || dossier.status === "PRET_POUR_DEPOT") &&
-    allDocumentsProvided &&
-    !isFinal;
+    (dossier.status === "EN_COURS" || dossier.status === "PRET_POUR_DEPOT") && allDocumentsProvided && !isFinal;
 
-  const canConfirmPretDepot =
-    dossier.status === "EN_COURS" && allDocumentsProvided && !isFinal;
+  const canConfirmPretDepot = dossier.status === "EN_COURS" && allDocumentsProvided && !isFinal;
 
   const canDecideVisa = dossier.status === "PRET_POUR_DEPOT" && !isFinal;
 
   const stepIndex = useMemo(() => {
     const isFinalLocal = dossier.status === "VISA_ACCORDE" || dossier.status === "VISA_REFUSE";
-    if (isFinalLocal) return STEPS.length;
+    if (isFinalLocal) return steps.length;
     if (dossier.status === "PRET_POUR_DEPOT") return 2;
     return 0;
-  }, [dossier.status]);
+  }, [dossier.status, steps.length]);
 
   const handlePretDepotClick = () => {
     if (!allDocumentsProvided) {
-      toast.error("Tous les documents requis doivent être fournis avant de marquer comme prêt pour dépôt.");
+      toast.error(t("visaAllDocsRequiredBeforeReady"));
       return;
     }
     setShowPretDepotModal(true);
@@ -458,15 +454,15 @@ function DossierDetail({
   const handlePrintDocuments = async () => {
     try {
       await onOpenDossierPdf(dossier.id);
-      toast("Ouverture du PDF pour impression…");
+      toast(t("visaOpenPdfToPrint"));
     } catch (e) {
-      toast.error(e.message || "Erreur impression PDF");
+      toast.error(e.message || t("visaPrintPdfError"));
     }
   };
 
   const handleVisaAccordeSubmit = () => {
     if (!visaAccordeData.numeroVisa || !visaAccordeData.dateDebut || !visaAccordeData.dateFin) {
-      toast.error("Merci de remplir numéro visa + dates de validité.");
+      toast.error(t("visaFillVisaNumberAndDates"));
       return;
     }
 
@@ -476,7 +472,7 @@ function DossierDetail({
       visaDateFin: visaAccordeData.dateFin,
     });
 
-    toast.success("Visa accordé : informations enregistrées.");
+    toast.success(t("visaGrantedSaved"));
     setShowVisaAccordeModal(false);
     setVisaAccordeData({ numeroVisa: "", dateDebut: "", dateFin: "" });
   };
@@ -486,50 +482,52 @@ function DossierDetail({
     setShowVisaRefuseModal(true);
   };
 
-
   return (
     <>
       <section className="detail-grid">
         {/* LEFT */}
         <section className="card-detail">
           <div className="section-header">
-            <h2>Résumé du dossier</h2>
+            <h2>{t("visaFileSummary")}</h2>
           </div>
 
           <div className="detail-inner">
-            <Stepper stepIndex={stepIndex} />
+            <Stepper stepIndex={stepIndex} steps={steps} />
 
             <p className="detail-strong-line">
               <strong>{dossier.employee?.name}</strong> – {dossier.employee?.poste}
             </p>
 
             <p>
-              Motif du déplacement : <strong>{dossier.motif || "—"}</strong>
+              {t("visaTripReason")} : <strong>{dossier.motif || "—"}</strong>
             </p>
 
             <p>
-              Date de départ : <strong>{dossier.departureDate}</strong>
+              {t("visaDeparture")} : <strong>{dossier.departureDate}</strong>
             </p>
 
             <p>
-              Date de retour : <strong>{dossier.returnDate}</strong>
+              {t("visaReturn")} : <strong>{dossier.returnDate}</strong>
             </p>
 
             <div className="status-block">
-              <span className="label">Statut dossier :</span>
-              <StatusPill status={dossier.status} />
+              <span className="label">{t("visaFileStatus")} :</span>
+              <StatusPill status={dossier.status} t={t} />
             </div>
 
             <div className="progress">
               <div className="progress-bar">
                 <div className="progress-fill" style={{ width: `${summary.progressPercent}%` }} />
               </div>
-              <span className="progress-text">{summary.progressPercent}% des documents requis sont fournis</span>
+              <span className="progress-text">
+                {summary.progressPercent}
+                {t("visaDocsProvidedPct")}
+              </span>
             </div>
 
             <p className="muted">
-              {summary.ok}/{summary.totalRequired} documents requis fournis – {summary.missing} manquants (
-              {summary.physicalDocs} à apporter physiquement).
+              {summary.ok}/{summary.totalRequired} {t("visaDocsProvidedCountLine")} – {summary.missing}{" "}
+              {t("visaMissingDocs")} ({summary.physicalDocs} {t("visaPhysicalToBring")}).
             </p>
 
             <div className="actions-stack">
@@ -539,27 +537,27 @@ function DossierDetail({
                   disabled={!canOpenPretDepotModal}
                   title={
                     isFinal
-                      ? "Dossier clôturé"
+                      ? t("visaFileClosed")
                       : !allDocumentsProvided
-                      ? "Tous les documents requis doivent être fournis"
+                      ? t("visaAllDocsRequiredBeforeReady")
                       : ""
                   }
                   onClick={handlePretDepotClick}
                 >
-                  Prêt pour dépôt
+                  {t("visaReadyToSubmitBtn")}
                 </button>
               </div>
 
               <div className="decision-block">
-                <div className="decision-title">Décision visa</div>
+                <div className="decision-title">{t("visaDecisionTitle")}</div>
 
                 <div className="decision-actions">
                   <button className="btn-success" disabled={!canDecideVisa} onClick={() => setShowVisaAccordeModal(true)}>
-                    Visa accordé
+                    {t("visaGrantedBtn")}
                   </button>
 
                   <button className="btn-danger" disabled={!canDecideVisa} onClick={handleVisaRefuseClick}>
-                    Visa refusé
+                    {t("visaRefusedBtn")}
                   </button>
                 </div>
               </div>
@@ -567,13 +565,13 @@ function DossierDetail({
 
             {!canDecideVisa && !isFinal && (
               <div className="detail-hint">
-                <LockedHint text="Le résultat du visa est disponible après “Prêt pour dépôt”." />
+                <LockedHint text={t("visaResultLockedHint")} />
               </div>
             )}
 
             {isFinal && (
               <div className="detail-hint">
-                <LockedHint text="Dossier clôturé : résultat final verrouillé." />
+                <LockedHint text={t("visaFileClosedHint")} />
               </div>
             )}
           </div>
@@ -581,16 +579,16 @@ function DossierDetail({
 
         <section className="card-detail">
           <div className="section-header">
-            <h2>Documents du dossier</h2>
+            <h2>{t("visaFileDocs")}</h2>
           </div>
 
           <table className="docs-table">
             <thead>
               <tr>
-                <th>Document</th>
-                <th>Type</th>
-                <th>Statut</th>
-                <th>Actions</th>
+                <th>{t("visaDoc")}</th>
+                <th>{t("visaType")}</th>
+                <th>{t("visaStatus")}</th>
+                <th>{t("visaActions")}</th>
               </tr>
             </thead>
 
@@ -613,13 +611,13 @@ function DossierDetail({
 
                     <td>
                       <span className={`doc-status doc-${doc.status}`}>
-                        {DOCUMENT_STATUS_LABEL[doc.status] || doc.status}
+                        {docStatusLabelMap[doc.status] || doc.status}
                       </span>
                     </td>
 
                     <td className="doc-actions">
                       {isFinal ? (
-                        <span className="muted">Dossier clôturé</span>
+                        <span className="muted">{t("visaFileClosed")}</span>
                       ) : (
                         <>
                           {doc.mode === "PHYSICAL" && (
@@ -627,24 +625,24 @@ function DossierDetail({
                               className="btn-physical"
                               onClick={() => {
                                 onUpdateDocStatus(doc.id, "RECEIVED_PHYSICAL");
-                                toast.success("Document marqué comme reçu physiquement.");
+                                toast.success(t("docMarkedReceivedPhysical"));
                               }}
                             >
-                              Reçu
+                              {t("visaReceivedBtn")}
                             </button>
                           )}
 
                           {(doc.code === "ASSURANCE" || doc.code === "BILLET_AVION") && (
                             <>
-                              <button onClick={() => onSendSpecificEmail(doc)}>Envoi mail</button>
-                              <button onClick={() => onUploadPdf(doc)}>Upload PDF</button>
+                              <button onClick={() => onSendSpecificEmail(doc)}>{t("visaSendEmailBtn")}</button>
+                              <button onClick={() => onUploadPdf(doc)}>{t("visaUploadPdfBtn")}</button>
                               <button
                                 onClick={() => {
-                                  if (!doc.fileUrl) return toast.error("Aucun PDF uploadé.");
+                                  if (!doc.fileUrl) return toast.error(t("visaMissingPdf"));
                                   onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
                                 }}
                               >
-                                Aperçu
+                                {t("visaPreviewBtn")}
                               </button>
                             </>
                           )}
@@ -660,16 +658,16 @@ function DossierDetail({
                                   )
                                 }
                               >
-                                Remplir formulaire
+                                {t("visaFillFormBtn")}
                               </button>
-                              <button onClick={() => onUploadPdf(doc)}>Upload récépissé</button>
+                              <button onClick={() => onUploadPdf(doc)}>{t("visaUploadReceiptBtn")}</button>
                               <button
                                 onClick={() => {
-                                  if (!doc.fileUrl) return toast.error("Aucun récépissé PDF uploadé.");
+                                  if (!doc.fileUrl) return toast.error(t("visaMissingReceiptPdf"));
                                   onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
                                 }}
                               >
-                                Aperçu PDF
+                                {t("visaPreviewPdfBtn")}
                               </button>
                             </>
                           )}
@@ -678,36 +676,32 @@ function DossierDetail({
                             <>
                               <button
                                 className="btn-booking"
-                                onClick={() =>
-                                  window.open("https://www.booking.com", "_blank", "noopener,noreferrer")
-                                }
+                                onClick={() => window.open("https://www.booking.com", "_blank", "noopener,noreferrer")}
                               >
-                                Réserver hôtel
+                                {t("visaBookHotelBtn")}
                               </button>
-                              <button onClick={() => onUploadPdf(doc)}>Upload PDF</button>
+                              <button onClick={() => onUploadPdf(doc)}>{t("visaUploadPdfBtn")}</button>
                               <button
                                 onClick={() => {
-                                  if (!doc.fileUrl) return toast.error("Aucun PDF de réservation uploadé.");
+                                  if (!doc.fileUrl) return toast.error(t("visaMissingBookingPdf"));
                                   onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
                                 }}
                               >
-                                Aperçu
+                                {t("visaPreviewBtn")}
                               </button>
                             </>
                           )}
 
-                          {(doc.code === "ATTESTATION_TRAVAIL" ||
-                            doc.code === "INVITATION" ||
-                            doc.code === "ORDRE_MISSION") && (
+                          {(doc.code === "ATTESTATION_TRAVAIL" || doc.code === "INVITATION" || doc.code === "ORDRE_MISSION") && (
                             <>
-                              <button onClick={() => onGeneratePdf(doc)}>Générer PDF</button>
+                              <button onClick={() => onGeneratePdf(doc)}>{t("visaGeneratePdfBtn")}</button>
                               <button
                                 onClick={() => {
-                                  if (!doc.fileUrl) return toast.error("Aucun fichier généré.");
+                                  if (!doc.fileUrl) return toast.error(t("visaNoGeneratedFile"));
                                   onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
                                 }}
                               >
-                                Aperçu
+                                {t("visaPreviewBtn")}
                               </button>
                             </>
                           )}
@@ -723,14 +717,14 @@ function DossierDetail({
                               "BILLET_AVION",
                             ].includes(doc.code) && (
                               <>
-                                <button onClick={() => onUploadPdf(doc)}>Upload PDF</button>
+                                <button onClick={() => onUploadPdf(doc)}>{t("visaUploadPdfBtn")}</button>
                                 <button
                                   onClick={() => {
-                                    if (!doc.fileUrl) return toast.error("Aucun PDF uploadé.");
+                                    if (!doc.fileUrl) return toast.error(t("visaMissingPdf"));
                                     onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
                                   }}
                                 >
-                                  Aperçu
+                                  {t("visaPreviewBtn")}
                                 </button>
                               </>
                             )}
@@ -750,7 +744,9 @@ function DossierDetail({
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Visa Accordé - Dossier de {dossier.employee?.name}</h2>
+              <h2>
+                {t("visaGrantedModalTitle")} {dossier.employee?.name}
+              </h2>
               <button className="modal-close" onClick={() => setShowVisaAccordeModal(false)}>
                 ✕
               </button>
@@ -758,12 +754,12 @@ function DossierDetail({
 
             <div className="create-form">
               {!canDecideVisa ? (
-                <p className="error-text">Vous devez d’abord marquer le dossier comme “Prêt pour dépôt”.</p>
+                <p className="error-text">{t("visaMustBeReadyToSubmitFirst")}</p>
               ) : (
                 <>
                   <div className="form-row">
                     <div>
-                      <label>Numéro de visa</label>
+                      <label>{t("visaVisaNumber")}</label>
                       <input
                         type="text"
                         value={visaAccordeData.numeroVisa}
@@ -775,7 +771,7 @@ function DossierDetail({
 
                   <div className="form-row">
                     <div>
-                      <label>Date début validité</label>
+                      <label>{t("visaValidityStart")}</label>
                       <input
                         type="date"
                         value={visaAccordeData.dateDebut}
@@ -784,7 +780,7 @@ function DossierDetail({
                     </div>
 
                     <div>
-                      <label>Date fin validité</label>
+                      <label>{t("visaValidityEnd")}</label>
                       <input
                         type="date"
                         value={visaAccordeData.dateFin}
@@ -795,7 +791,7 @@ function DossierDetail({
 
                   <div className="form-actions">
                     <button type="button" className="btn-outline" onClick={() => setShowVisaAccordeModal(false)}>
-                      Annuler
+                      {t("visaCancel")}
                     </button>
 
                     <button
@@ -804,7 +800,7 @@ function DossierDetail({
                       onClick={handleVisaAccordeSubmit}
                       disabled={!visaAccordeData.numeroVisa || !visaAccordeData.dateDebut || !visaAccordeData.dateFin}
                     >
-                      Confirmer Visa Accordé
+                      {t("visaConfirmGranted")}
                     </button>
                   </div>
                 </>
@@ -819,7 +815,9 @@ function DossierDetail({
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Documents Prêts pour Dépôt - {dossier.employee?.name}</h2>
+              <h2>
+                {t("visaReadyDocsModalTitle")} {dossier.employee?.name}
+              </h2>
               <button className="modal-close" onClick={() => setShowPretDepotModal(false)}>
                 ✕
               </button>
@@ -828,7 +826,7 @@ function DossierDetail({
             <div className="create-form">
               <div className="form-row">
                 <div className="ready-docs-wrap">
-                  <h3>Liste des documents fournis :</h3>
+                  <h3>{t("visaProvidedDocsList")}</h3>
 
                   <ul className="ready-docs-list">
                     {(dossier.documents || [])
@@ -837,7 +835,8 @@ function DossierDetail({
                         <li key={doc.id} className="ready-doc-item">
                           <strong>{doc.label}</strong>
                           <div className="ready-doc-meta">
-                            Type: {getDocumentType(doc.code)} | Statut: {DOCUMENT_STATUS_LABEL[doc.status] || doc.status}
+                            {t("visaType")}: {getDocumentType(doc.code)} | {t("visaStatus")}:{" "}
+                            {docStatusLabelMap[doc.status] || doc.status}
                           </div>
                         </li>
                       ))}
@@ -847,11 +846,11 @@ function DossierDetail({
 
               <div className="form-actions">
                 <button type="button" className="btn-outline" onClick={handlePrintDocuments}>
-                  🖨 Imprimer les documents
+                  {t("visaPrintDocs")}
                 </button>
 
                 <button type="button" className="btn-outline" onClick={() => setShowPretDepotModal(false)}>
-                  Annuler
+                  {t("visaCancel")}
                 </button>
 
                 <button
@@ -860,12 +859,12 @@ function DossierDetail({
                   onClick={() => {
                     if (!canConfirmPretDepot) return;
                     onUpdateDossierStatus(dossier.id, "PRET_POUR_DEPOT");
-                    toast.success("Dossier marqué comme 'Prêt pour dépôt'.");
+                    toast.success(t("visaReadyMarked"));
                     setShowPretDepotModal(false);
                   }}
                   disabled={!canConfirmPretDepot}
                 >
-                  Confirmer Prêt pour Dépôt
+                  {t("visaConfirmReadyToSubmit")}
                 </button>
               </div>
             </div>
@@ -878,32 +877,34 @@ function DossierDetail({
         <div className="modal-overlay" onMouseDown={() => setShowVisaRefuseModal(false)}>
           <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Visa Refusé - Dossier de {dossier.employee?.name}</h2>
+              <h2>
+                {t("visaRefusedModalTitle")} {dossier.employee?.name}
+              </h2>
               <button className="modal-close" onClick={() => setShowVisaRefuseModal(false)}>
                 ✕
               </button>
             </div>
-      
+
             <div className="create-form">
               <p className="toast-refuse-text" style={{ marginTop: 0 }}>
-                Cette action est définitive. Le dossier sera clôturé.
+                {t("visaRefusedFinalWarning")}
               </p>
-      
+
               <div className="form-actions">
                 <button type="button" className="btn-outline" onClick={() => setShowVisaRefuseModal(false)}>
-                  Annuler
+                  {t("visaCancel")}
                 </button>
-      
+
                 <button
                   type="button"
                   className="btn-danger"
                   onClick={() => {
                     onUpdateDossierStatus(dossier.id, "VISA_REFUSE");
-                    toast.success("Visa refusé : dossier clôturé.", { position: "top-right" });
+                    toast.success(t("visaRefusedClosed"), { position: "top-right" });
                     setShowVisaRefuseModal(false);
                   }}
                 >
-                  Confirmer le refus
+                  {t("visaConfirmRefusal")}
                 </button>
               </div>
             </div>
@@ -917,7 +918,16 @@ function DossierDetail({
 /** -------------------------------------------------------
  * ✅ Page principale Visa
  * ------------------------------------------------------ */
+const EMPTY_FORM = {
+  employeeId: "",
+  departureDate: "",
+  returnDate: "",
+  motif: "",
+};
+
 export default function Visa() {
+  const { t } = useLanguage();
+
   const [dossiers, setDossiers] = useState([]);
   const [selectedDossierId, setSelectedDossierId] = useState(null);
   const [selectedDossier, setSelectedDossier] = useState(null);
@@ -937,6 +947,9 @@ export default function Visa() {
   const visaAccordeRef = useRef(null);
   const visaRefuseRef = useRef(null);
 
+  const steps = useMemo(() => getSteps(t), [t]);
+  const docStatusLabelMap = useMemo(() => getDocumentStatusLabel(t), [t]);
+
   // ✅ token helpers
   const getToken = useCallback(() => localStorage.getItem("token"), []);
   const getAuthHeaders = useCallback(() => {
@@ -953,50 +966,38 @@ export default function Visa() {
           ...(options.headers || {}),
           ...getAuthHeaders(),
         },
-        // credentials: "include",
       });
 
       const data = await res.json().catch(() => ({}));
 
       if (res.status === 401) {
-        throw new Error("Non autorisé (401). Merci de vous reconnecter.");
+        throw new Error(t("visaUnauthorized401"));
       }
       if (!res.ok) {
         throw new Error(data?.message || `Erreur HTTP ${res.status}`);
       }
       return data;
     },
-    [getAuthHeaders]
+    [getAuthHeaders, t]
   );
 
-  /** ✅ ouvrir fichier (visa-pdfs / visa-generated) */
-  const openProtectedFile = useCallback(
-    async (fileUrl) => {
-      if (!fileUrl) throw new Error("URL fichier manquante.");
-  
-      if (!isValidHttpUrl(fileUrl)) {
-        throw new Error("URL invalide.");
-      }
-      
-      window.open(fileUrl, "_blank", "noopener,noreferrer");
-    },
-    []
-  );
+  /** ✅ ouvrir fichier */
+  const openProtectedFile = useCallback(async (fileUrl) => {
+    if (!fileUrl) throw new Error(t("visaMissingFileUrl"));
+    if (!isValidHttpUrl(fileUrl)) throw new Error(t("visaInvalidUrl"));
+    window.open(fileUrl, "_blank", "noopener,noreferrer");
+  }, [t]);
 
   /** ✅ ouvrir PDF complet dossier */
-  const openDossierPdf = useCallback(
-    (dossierId) => {
-      const url = `${API}/api/visa-dossiers/${dossierId}/dossier-pdf`;
-      window.open(url, "_blank", "noopener,noreferrer");
-    },
-    [API]
-  );
+  const openDossierPdf = useCallback((dossierId) => {
+    const url = `${API}/api/visa-dossiers/${dossierId}/dossier-pdf`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }, []);
 
-  
   /** ✅ Chargement employees */
   useEffect(() => {
     if (!API) {
-      toast.error("REACT_APP_API_URL manquant (.env)");
+      toast.error(t("visaMissingApiEnv"));
       return;
     }
 
@@ -1006,12 +1007,12 @@ export default function Visa() {
         const data = await fetchJson(`${API}/api/employee`);
         setEmployees(Array.isArray(data) ? data : []);
       } catch (e) {
-        toast.error(e.message || "Erreur chargement employees");
+        toast.error(e.message || t("visaLoadingEmployeesError"));
       } finally {
         setEmployeesLoading(false);
       }
     })();
-  }, [fetchJson]);
+  }, [fetchJson, t]);
 
   /** ✅ Refresh dossiers */
   const refreshDossiers = useCallback(async () => {
@@ -1021,11 +1022,11 @@ export default function Visa() {
       const data = await fetchJson(`${API}/api/visa-dossiers`);
       setDossiers(Array.isArray(data) ? data : []);
     } catch (e) {
-      toast.error(e.message || "Erreur chargement dossiers");
+      toast.error(e.message || t("visaLoadingFilesError"));
     } finally {
       setPageLoading(false);
     }
-  }, [fetchJson]);
+  }, [fetchJson, t]);
 
   useEffect(() => {
     refreshDossiers();
@@ -1039,10 +1040,10 @@ export default function Visa() {
         setSelectedDossierId(dossierId);
         setSelectedDossier(data);
       } catch (e) {
-        toast.error(e.message || "Erreur ouverture dossier");
+        toast.error(e.message || t("visaOpenFileError"));
       }
     },
-    [fetchJson]
+    [fetchJson, t]
   );
 
   /** ✅ Filtre dashboard */
@@ -1051,8 +1052,7 @@ export default function Visa() {
     if (!term) return dossiers;
     return dossiers.filter(
       (d) =>
-        (d.employee?.name || "").toLowerCase().includes(term) ||
-        (d.motif || "").toLowerCase().includes(term)
+        (d.employee?.name || "").toLowerCase().includes(term) || (d.motif || "").toLowerCase().includes(term)
     );
   }, [dossiers, search]);
 
@@ -1089,20 +1089,20 @@ export default function Visa() {
     const { employeeId, departureDate, returnDate, motif } = newDossierForm;
 
     if (!employeeId || !departureDate || !returnDate || !motif) {
-      setFormError("Merci de remplir tous les champs obligatoires.");
-      toast.error("Merci de remplir tous les champs obligatoires.");
+      setFormError(t("visaFillAllRequired"));
+      toast.error(t("visaFillAllRequired"));
       return;
     }
     if (returnDate < departureDate) {
-      setFormError("La date de retour doit être >= date de départ.");
-      toast.error("La date de retour doit être >= date de départ.");
+      setFormError(t("visaReturnDateAfterDeparture"));
+      toast.error(t("visaReturnDateAfterDeparture"));
       return;
     }
 
     const emp = employees.find((x) => String(x.id) === String(employeeId));
-    const employeeName = emp ? `${emp.prenom ?? ""} ${emp.nom ?? ""}`.trim() : "Employé";
+    const employeeName = emp ? `${emp.prenom ?? ""} ${emp.nom ?? ""}`.trim() : t("visaEmployeeGeneric");
 
-    const loadingId = toast.loading("Création du dossier…");
+    const loadingId = toast.loading(t("visaCreateFileLoading"));
     try {
       const data = await fetchJson(`${API}/api/visa-dossiers`, {
         method: "POST",
@@ -1118,12 +1118,10 @@ export default function Visa() {
       toast.dismiss(loadingId);
 
       if (data?.emailSent) {
-        toast.success(`Dossier créé. Email envoyé à ${employeeName} (instructions + liste des documents requis).`, {
-          duration: 9000,
-        });
+        toast.success(`${t("visaFileCreatedEmailSent")} ${employeeName}.`, { duration: 9000 });
       } else {
         toast.error(
-          `Dossier créé, mais email NON envoyé à ${employeeName}. ${data?.emailError ? `Raison : ${data.emailError}` : ""}`,
+          `${t("visaFileCreatedEmailNotSent")} ${employeeName}. ${data?.emailError ? `(${data.emailError})` : ""}`,
           { duration: 8000 }
         );
       }
@@ -1136,7 +1134,7 @@ export default function Visa() {
     } catch (err) {
       toast.dismiss(loadingId);
       setFormError(err.message);
-      toast.error(err.message || "Erreur création dossier");
+      toast.error(err.message || t("visaCreateError"));
     }
   }
 
@@ -1152,7 +1150,7 @@ export default function Visa() {
       if (selectedDossierId) await openDossier(selectedDossierId);
       else await refreshDossiers();
     } catch (e) {
-      toast.error(e.message || "Erreur mise à jour document");
+      toast.error(e.message || t("visaUpdateDocError"));
     }
   }
 
@@ -1168,7 +1166,7 @@ export default function Visa() {
       await refreshDossiers();
       await openDossier(dossierId);
     } catch (e) {
-      toast.error(e.message || "Erreur mise à jour dossier");
+      toast.error(e.message || t("visaUpdateFileError"));
     }
   }
 
@@ -1182,41 +1180,40 @@ export default function Visa() {
       if (!file) return;
 
       const form = new FormData();
-      form.append("pdfFile", file); // ✅ IMPORTANT
+      form.append("pdfFile", file);
 
-      const loadingId = toast.loading("Upload du PDF…");
+      const loadingId = toast.loading(t("visaPdfUploading"));
       try {
         const res = await fetch(`${API}/api/visa-documents/${doc.id}/upload`, {
           method: "POST",
           body: form,
-          headers: { ...getAuthHeaders() }, // ✅ IMPORTANT
-          // credentials: "include",
+          headers: { ...getAuthHeaders() },
         });
 
         const data = await res.json().catch(() => ({}));
         toast.dismiss(loadingId);
 
-        if (res.status === 401) throw new Error("Non autorisé (401). Merci de vous reconnecter.");
-        if (!res.ok) throw new Error(data?.message || "Erreur upload");
+        if (res.status === 401) throw new Error(t("visaUnauthorized401"));
+        if (!res.ok) throw new Error(data?.message || t("visaUploadError"));
 
-        toast.success("PDF uploadé avec succès.");
+        toast.success(t("visaPdfUploadedSuccess"));
         await openDossier(selectedDossierId);
       } catch (e) {
         toast.dismiss(loadingId);
-        toast.error(e.message || "Erreur upload");
+        toast.error(e.message || t("visaUploadError"));
       }
     };
     input.click();
   }
 
-  /** ✅ generate PDF (en réalité backend renvoie fileUrl doc/docx) */
+  /** ✅ generate PDF */
   async function generatePdf(doc) {
     const dossier = selectedDossier;
     if (!dossier) return;
 
     const employeId = dossier.employee?.id;
     if (!employeId) {
-      toast.error("Employé introuvable dans le dossier.");
+      toast.error(t("visaEmployeeNotFoundInFile"));
       return;
     }
 
@@ -1244,11 +1241,11 @@ export default function Visa() {
         docId: doc.id,
       };
     } else {
-      toast.error("Génération non disponible pour ce document.");
+      toast.error(t("visaGenerationNotAvailable"));
       return;
     }
 
-    const loadingId = toast.loading("Génération…");
+    const loadingId = toast.loading(t("visaGenerating"));
     try {
       const data = await fetchJson(url, {
         method: "POST",
@@ -1257,17 +1254,16 @@ export default function Visa() {
       });
       toast.dismiss(loadingId);
 
-      toast.success("Fichier généré avec succès.");
+      toast.success(t("visaGeneratedSuccess"));
 
       if (data?.fileUrl) {
-        // ✅ route protégée → ouvrir via blob
         await openProtectedFile(data.fileUrl);
       }
 
       await openDossier(selectedDossierId);
     } catch (e) {
       toast.dismiss(loadingId);
-      toast.error(e.message || "Erreur génération");
+      toast.error(e.message || t("visaGenerationError"));
     }
   }
 
@@ -1283,11 +1279,11 @@ export default function Visa() {
         : null;
 
     if (!endpoint) {
-      toast.error("Envoi mail non disponible pour ce document.");
+      toast.error(t("visaEmailNotAvailable"));
       return;
     }
 
-    const loadingId = toast.loading("Envoi de l’email…");
+    const loadingId = toast.loading(t("visaSendingEmail"));
     try {
       await fetchJson(endpoint, {
         method: "POST",
@@ -1295,10 +1291,10 @@ export default function Visa() {
         body: JSON.stringify({ dossierId: selectedDossierId }),
       });
       toast.dismiss(loadingId);
-      toast.success("Email envoyé ✅");
+      toast.success(t("visaEmailSent"));
     } catch (e) {
       toast.dismiss(loadingId);
-      toast.error(`Email non envoyé ❌ : ${e.message}`);
+      toast.error(`${t("visaEmailNotSent")} ${e.message}`);
     }
   }
 
@@ -1326,13 +1322,13 @@ export default function Visa() {
           <div className="page-header-card">
             <div className="page-header-icon">📋</div>
             <div className="page-header-text">
-              <h1 className="page-title">Dossiers Visa France</h1>
-              <p className="page-subtitle">Chargement…</p>
+              <h1 className="page-title">{t("visaTitle")}</h1>
+              <p className="page-subtitle">{t("loading")}</p>
             </div>
           </div>
           <div className="loading" style={{ padding: 24 }}>
             <div className="loading-spinner" />
-            <p>Chargement des dossiers visa…</p>
+            <p>{t("visaLoadingFiles")}</p>
           </div>
         </div>
       </div>
@@ -1357,27 +1353,15 @@ export default function Visa() {
             boxShadow: "0 16px 40px rgba(15, 23, 42, 0.25)",
           },
           success: {
-            style: {
-              background: "#ecfdf5",
-              color: "#065f46",
-              borderLeft: "7px solid #16a34a",
-            },
+            style: { background: "#ecfdf5", color: "#065f46", borderLeft: "7px solid #16a34a" },
             iconTheme: { primary: "#16a34a", secondary: "#ecfdf5" },
           },
           error: {
-            style: {
-              background: "#fef2f2",
-              color: "#7f1d1d",
-              borderLeft: "7px solid #dc2626",
-            },
+            style: { background: "#fef2f2", color: "#7f1d1d", borderLeft: "7px solid #dc2626" },
             iconTheme: { primary: "#dc2626", secondary: "#fef2f2" },
           },
           loading: {
-            style: {
-              background: "#eff6ff",
-              color: "#1e3a8a",
-              borderLeft: "7px solid #2563eb",
-            },
+            style: { background: "#eff6ff", color: "#1e3a8a", borderLeft: "7px solid #2563eb" },
           },
         }}
       />
@@ -1385,9 +1369,9 @@ export default function Visa() {
       <div className="main">
         <div className="page-header-card">
           <div className="page-header-text">
-            <h1 className="page-title">📋 Dossiers Visa France</h1>
+            <h1 className="page-title">📋 {t("visaTitle")}</h1>
             <p className="page-subtitle">
-              {selectedDossier ? "Suivi détaillé du dossier visa" : "Gestion des demandes de visa professionnel - Tableau de bord"}
+              {selectedDossier ? t("visaSubtitleDetail") : t("visaSubtitleDashboard")}
             </p>
           </div>
 
@@ -1400,7 +1384,7 @@ export default function Visa() {
                 refreshDossiers();
               }}
             >
-              ← Retour au dashboard
+              ← {t("visaBackToDashboard")}
             </button>
           )}
         </div>
@@ -1411,7 +1395,7 @@ export default function Visa() {
               <div className="search-wrapper">
                 <input
                   type="text"
-                  placeholder="Rechercher un employé ou un motif..."
+                  placeholder={t("visaSearchPlaceholder")}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
@@ -1421,23 +1405,24 @@ export default function Visa() {
 
             <div className="toolbar-center">
               <span className="toolbar-count">
-                {filteredDossiers.length} {filteredDossiers.length === 1 ? "dossier trouvé" : "dossiers trouvés"}
+                {filteredDossiers.length}{" "}
+                {filteredDossiers.length === 1 ? t("visaOneFileFound") : t("visaFilesFound")}
               </span>
             </div>
 
             <div className="toolbar-right">
               <div className="status-filter-wrapper">
                 <select defaultValue="" onChange={handleStatusJump}>
-                  <option value="">Statut</option>
-                  <option value="EN_COURS">En cours</option>
-                  <option value="PRET_POUR_DEPOT">Prêt pour dépôt</option>
-                  <option value="VISA_ACCORDE">Visa accordé</option>
-                  <option value="VISA_REFUSE">Visa refusé</option>
+                  <option value="">{t("visaFilterStatus")}</option>
+                  <option value="EN_COURS">{t("visaStatusInProgress")}</option>
+                  <option value="PRET_POUR_DEPOT">{t("visaStatusReadyToSubmit")}</option>
+                  <option value="VISA_ACCORDE">{t("visaStatusGranted")}</option>
+                  <option value="VISA_REFUSE">{t("visaStatusRefused")}</option>
                 </select>
               </div>
 
               <button className="btn-primary" onClick={handleOpenCreate}>
-                + Nouveau dossier
+                + {t("visaNewFile")}
               </button>
             </div>
           </div>
@@ -1447,7 +1432,7 @@ export default function Visa() {
           <div className="modal-overlay">
             <div className="modal">
               <div className="modal-header">
-                <h2>Créer un nouveau dossier visa</h2>
+                <h2>{t("visaCreateNewFile")}</h2>
                 <button className="modal-close" onClick={handleCancelCreate}>
                   ✕
                 </button>
@@ -1457,19 +1442,20 @@ export default function Visa() {
                 <div className="form-row">
                   <div>
                     <EmployeeSearchSelect
-                      label="Nom & Prénom"
+                      t={t}
+                      label={t("visaFullName")}
                       required
                       employees={employees}
                       loading={employeesLoading}
                       value={newDossierForm.employeeId}
                       onChange={(employeeId) => setNewDossierForm((p) => ({ ...p, employeeId }))}
-                      groupLabel="Employees - STS"
+                      groupLabel={t("visaEmployeesGroupLabel")}
                     />
                   </div>
 
                   <div>
                     <label>
-                      Motif du déplacement <span className="required">*</span>
+                      {t("visaReason")} <span className="required">*</span>
                     </label>
                     <input
                       type="text"
@@ -1483,7 +1469,7 @@ export default function Visa() {
                 <div className="form-row">
                   <div>
                     <label>
-                      Date de départ <span className="required">*</span>
+                      {t("visaDeparture")} <span className="required">*</span>
                     </label>
                     <input
                       type="date"
@@ -1494,7 +1480,7 @@ export default function Visa() {
                   </div>
                   <div>
                     <label>
-                      Date de retour <span className="required">*</span>
+                      {t("visaReturn")} <span className="required">*</span>
                     </label>
                     <input
                       type="date"
@@ -1509,10 +1495,10 @@ export default function Visa() {
 
                 <div className="form-actions">
                   <button type="button" className="btn-outline" onClick={handleCancelCreate}>
-                    Annuler
+                    {t("visaCancel")}
                   </button>
                   <button type="submit" className="btn-primary">
-                    Créer le dossier
+                    {t("visaCreateFile")}
                   </button>
                 </div>
               </form>
@@ -1523,23 +1509,24 @@ export default function Visa() {
         {!selectedDossier && (
           <>
             <section className="kpi-grid">
-              <KpiCard label="Dossiers en cours" value={stats.enCours} type="warning" />
-              <KpiCard label="Prêts pour dépôt" value={stats.pretDepot} type="info" />
-              <KpiCard label="Visa accordé" value={stats.visaAccorde} type="success" />
-              <KpiCard label="Visa refusé" value={stats.visaRefuse} type="danger" />
+              <KpiCard label={t("visaKpiInProgress")} value={stats.enCours} type="warning" />
+              <KpiCard label={t("visaKpiReadyToSubmit")} value={stats.pretDepot} type="info" />
+              <KpiCard label={t("visaKpiGranted")} value={stats.visaAccorde} type="success" />
+              <KpiCard label={t("visaKpiRefused")} value={stats.visaRefuse} type="danger" />
             </section>
 
             <div className="dossiers-container">
-              <Section title="📋 Dossiers en cours" sectionStatus="EN_COURS" innerRef={enCoursRef} dossiers={dossiersEnCours} onOpen={openDossier} />
-              <Section title="✅ Dossiers prêts pour dépôt" sectionStatus="PRET_POUR_DEPOT" innerRef={pretDepotRef} dossiers={dossiersPretDepot} onOpen={openDossier} />
-              <Section title="🎉 Visa accordé" sectionStatus="VISA_ACCORDE" innerRef={visaAccordeRef} dossiers={dossiersVisaAccorde} onOpen={openDossier} />
-              <Section title="❌ Visa refusé" sectionStatus="VISA_REFUSE" innerRef={visaRefuseRef} dossiers={dossiersVisaRefuse} onOpen={openDossier} />
+              <Section t={t} title={t("visaSectionInProgress")} sectionStatus="EN_COURS" innerRef={enCoursRef} dossiers={dossiersEnCours} onOpen={openDossier} />
+              <Section t={t} title={t("visaSectionReadyToSubmit")} sectionStatus="PRET_POUR_DEPOT" innerRef={pretDepotRef} dossiers={dossiersPretDepot} onOpen={openDossier} />
+              <Section t={t} title={t("visaSectionGranted")} sectionStatus="VISA_ACCORDE" innerRef={visaAccordeRef} dossiers={dossiersVisaAccorde} onOpen={openDossier} />
+              <Section t={t} title={t("visaSectionRefused")} sectionStatus="VISA_REFUSE" innerRef={visaRefuseRef} dossiers={dossiersVisaRefuse} onOpen={openDossier} />
             </div>
           </>
         )}
 
         {selectedDossier && (
           <DossierDetail
+            t={t}
             dossier={selectedDossier}
             onUpdateDocStatus={updateDocStatus}
             onUpdateDossierStatus={updateDossierStatus}
@@ -1548,6 +1535,8 @@ export default function Visa() {
             onSendSpecificEmail={sendSpecificEmail}
             onOpenProtectedFile={openProtectedFile}
             onOpenDossierPdf={openDossierPdf}
+            steps={steps}
+            docStatusLabelMap={docStatusLabelMap}
           />
         )}
       </div>
