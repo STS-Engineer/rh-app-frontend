@@ -1349,7 +1349,13 @@ export const LanguageProvider = ({ children }) => {
       visaSectionReadyToSubmit: "✅ Dossiers prêts pour dépôt",
       visaSectionGranted: "🎉 Visa accordé",
       visaSectionRefused: "❌ Visa refusé",
-    
+
+      /* ===== STATUTS ===== */
+      visaStatusInProgress: "En cours",
+      visaStatusReadyToSubmit: "Prêt pour dépôt",
+      visaStatusGranted: "Visa accordé",
+      visaStatusRefused: "Visa refusé",
+      
       /* ===== KPI ===== */
       visaKpiInProgress: "Dossiers en cours",
       visaKpiReadyToSubmit: "Prêts pour dépôt",
@@ -1933,7 +1939,12 @@ export const LanguageProvider = ({ children }) => {
       visaSectionReadyToSubmit: "✅ Files ready to submit",
       visaSectionGranted: "🎉 Visa granted",
       visaSectionRefused: "❌ Visa refused",
-    
+
+      visaStatusInProgress: "In progress",
+      visaStatusReadyToSubmit: "Ready to submit",
+      visaStatusGranted: "Visa granted",
+      visaStatusRefused: "Visa refused",
+      
       visaKpiInProgress: "In-progress files",
       visaKpiReadyToSubmit: "Ready to submit",
       visaKpiGranted: "Visa granted",
@@ -2506,7 +2517,12 @@ export const LanguageProvider = ({ children }) => {
       visaSectionReadyToSubmit: "✅ 可提交档案",
       visaSectionGranted: "🎉 签证已批准",
       visaSectionRefused: "❌ 签证被拒",
-    
+
+      visaStatusInProgress: "处理中",
+      visaStatusReadyToSubmit: "可提交",
+      visaStatusGranted: "签证已批准",
+      visaStatusRefused: "签证被拒",
+          
       visaKpiInProgress: "处理中档案",
       visaKpiReadyToSubmit: "可提交",
       visaKpiGranted: "已批准",
