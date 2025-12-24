@@ -1038,6 +1038,23 @@ button:disabled {
   border-color: #cbd9ff;
 }
 
+.type-to-bring {
+  background: #e7f3ff;
+  color: #1f5f8b;
+  border-color: #cbe7ff;
+}
+
+.type-pdf-generation {
+  background: #f3e8ff;
+  color: #6d3bbf;
+  border-color: #e6d4ff;
+}
+
+.type-specific-email {
+  background: #fdeee3;
+  color: #b25b20;
+  border-color: #f8dcc8;
+}
 /* ============================================================
    MODAL 
    ============================================================ */
