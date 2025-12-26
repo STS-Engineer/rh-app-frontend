@@ -114,8 +114,6 @@ const DeleteConfirmationModal = memo(function DeleteConfirmationModal({
             <p><strong>{t('employeeID')}:</strong> {employeeId}</p>
           </div>
           
-          
-          
           <div className="confirmation-checkbox">
             <label>
               <input type="checkbox" id="confirm-delete" />
@@ -231,7 +229,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       if (!dateString) return t('notSpecified');
       const date = new Date(dateString);
       if (Number.isNaN(date.getTime())) return t('notSpecified');
-      return date.toLocaleDateString();
+      return date.toLocaleDateString('fr-FR');
     },
     [t]
   );
@@ -309,6 +307,30 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     },
     [t, isPdfUrl]
   );
+
+  // Fonction pour vérifier si le contrat se termine bientôt
+  const isContractEndingSoon = useCallback(() => {
+    if (!formData.date_fin_contrat) return false;
+    
+    const endDate = new Date(formData.date_fin_contrat);
+    const today = new Date();
+    const thirtyDaysLater = new Date(today);
+    thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
+    
+    return endDate >= today && endDate <= thirtyDaysLater;
+  }, [formData.date_fin_contrat]);
+
+  // Fonction pour calculer les jours restants
+  const getDaysRemaining = useCallback(() => {
+    if (!formData.date_fin_contrat) return null;
+    
+    const endDate = new Date(formData.date_fin_contrat);
+    const today = new Date();
+    const diffTime = endDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    return diffDays;
+  }, [formData.date_fin_contrat]);
 
   const handleSave = useCallback(async () => {
     if (saving) return;
@@ -496,6 +518,8 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
   const documentUrl = getDocumentUrl(formData.dossier_rh);
   const hasDepartureDate = !!(formData.date_depart && String(formData.date_depart).trim() !== '');
   const currentPhotoUrl = photoPreview || getPhotoUrl();
+  const contractEndingSoon = isContractEndingSoon();
+  const daysRemaining = getDaysRemaining();
 
   return (
     <>
@@ -531,6 +555,18 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 <p className="employee-departement">{formData.site_dep}</p>
                 <p className="employee-contrat">{formData.type_contrat}</p>
                 <p className="employee-email">📧 {formData.adresse_mail || t('emailNotSpecified')}</p>
+
+                {/* Badge alerte fin de contrat */}
+                {contractEndingSoon && (
+                  <div className="contract-alert-badge">
+                    <span className="badge-icon">⚠️</span>
+                    <span className="badge-text">{t('contractEndingSoon')}</span>
+                    <span className="alert-date">
+                      {t('endsOn')}: {formatDateForDisplay(formData.date_fin_contrat)}
+                      {daysRemaining > 0 && ` (${daysRemaining} ${t('daysRemaining')})`}
+                    </span>
+                  </div>
+                )}
 
                 {/* Indicateur d'archivage */}
                 {formData.statut === 'archive' && (
@@ -582,6 +618,17 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                 <div className="detail-section">
                   <h4>💼 {t('professionalInfo')}</h4>
                   <DetailRow label={t('hireDate')} value={formatDateForDisplay(formData.date_debut)} />
+                  <DetailRow label={t('contractEndDate')} value={formatDateForDisplay(formData.date_fin_contrat)} />
+                  {formData.date_fin_contrat && daysRemaining > 0 && (
+                    <DetailRow 
+                      label={t('daysRemaining')} 
+                      value={
+                        <span className={contractEndingSoon ? 'contract-ending-soon' : ''}>
+                          {daysRemaining} {t('days')}
+                        </span>
+                      } 
+                    />
+                  )}
                   <DetailRow label={t('grossSalary')} value={`${formData.salaire_brute ?? ''} DT`} />
                   <DetailRow label={t('departureDate')} value={formatDateForDisplay(formData.date_depart)} />
                 </div>
@@ -741,6 +788,16 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
                       value={formatDateForInput(formData.date_debut)}
                       onChange={handleInputChange}
                       required
+                    />
+
+                    {/* NOUVEAU CHAMP - Date fin de contrat */}
+                    <FormInput
+                      label={t('contractEndDate')}
+                      name="date_fin_contrat"
+                      type="date"
+                      value={formatDateForInput(formData.date_fin_contrat)}
+                      onChange={handleInputChange}
+                      placeholder={t('optionalForPermanent')}
                     />
 
                     <FormInput
