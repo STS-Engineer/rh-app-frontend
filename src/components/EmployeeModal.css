@@ -1461,3 +1461,153 @@
 .confirmation-modal-overlay {
   z-index: 10000;
 }
+/* =========================
+   ALERTE FIN DE CONTRAT
+   ========================= */
+
+.contract-alert-badge {
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 20px;
+  padding: 8px 15px;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: pulse 2s infinite;
+  max-width: 400px;
+}
+
+.contract-alert-badge .badge-icon {
+  font-size: 18px;
+  animation: bounce 1s infinite;
+}
+
+.contract-alert-badge .badge-text {
+  font-weight: bold;
+  color: #856404;
+}
+
+.contract-alert-badge .alert-date {
+  color: #dc3545;
+  font-weight: bold;
+  margin-left: auto;
+  font-size: 0.9em;
+}
+
+.contract-ending-soon {
+  color: #dc3545;
+  font-weight: bold;
+  animation: blink 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { 
+    opacity: 1; 
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4);
+  }
+  70% { 
+    opacity: 0.9;
+    box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
+  }
+  100% { 
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+  }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Indicateur dans les détails */
+.detail-row .contract-ending-soon {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #fff3cd;
+  border-radius: 10px;
+  border: 1px solid #ffc107;
+  margin-left: 5px;
+}
+
+/* =========================
+   STYLES POUR LE FORMULAIRE
+   ========================= */
+
+.form-section {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.form-section:last-child {
+  border-bottom: none;
+}
+
+.form-section h4 {
+  color: #2c3e50;
+  margin-bottom: 15px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 15px;
+}
+
+.form-input-group {
+  margin-bottom: 15px;
+}
+
+.form-input-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #555;
+}
+
+.form-input-group input,
+.form-input-group select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-input-group input:focus,
+.form-input-group select:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+
+@media (max-width: 768px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .contract-alert-badge {
+    flex-direction: column;
+    gap: 5px;
+    text-align: center;
+  }
+  
+  .contract-alert-badge .alert-date {
+    margin-left: 0;
+  }
+}
