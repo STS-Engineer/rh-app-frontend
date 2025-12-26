@@ -12,14 +12,14 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     prenom: '',
     cin: '',
     passeport: '',
-    date_emission_passport: '',     
-    date_expiration_passport: '',  
+    date_emission_passport: '',
+    date_expiration_passport: '',
     date_naissance: '',
     poste: '',
     site_dep: t('headquarters'),
     type_contrat: 'CDI',
     date_debut: '',
-    date_fin_contrat: '',
+    date_fin_contrat: '', // NOUVEAU
     salaire_brute: '',
     adresse_mail: '',
     mail_responsable1: '',
@@ -142,8 +142,8 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       prenom: '',
       cin: '',
       passeport: '',
-      date_emission_passport: '',    
-      date_expiration_passport: '', 
+      date_emission_passport: '',
+      date_expiration_passport: '',
       date_naissance: '',
       poste: '',
       site_dep: t('headquarters'),
@@ -214,8 +214,6 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                     </div>
                   )}
                 </div>
-                
-             
               </div>
             </div>
 
@@ -341,6 +339,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                       onChange={handleInputChange} 
                       required 
                     />
+                    {/* NOUVEAU CHAMP - Date fin de contrat */}
                     <FormInput 
                       label={t('contractEndDate')} 
                       name="date_fin_contrat" 
