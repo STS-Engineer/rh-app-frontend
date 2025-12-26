@@ -147,7 +147,7 @@ const DeleteConfirmationModal = memo(function DeleteConfirmationModal({
    ✅ EmployeeModal Principal
    ========================= */
 
-const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
+const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refreshParent }) => {
   const { t } = useLanguage();
 
   const [isEditing, setIsEditing] = useState(false);
@@ -353,6 +353,9 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     try {
       let updatedData = { ...formData };
 
+      // Debug: afficher les données envoyées
+      console.log('📤 Données envoyées au backend:', JSON.stringify(updatedData, null, 2));
+
       // upload photo si sélectionnée
       if (selectedFile) {
         try {
@@ -365,24 +368,50 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       }
 
       const response = await employeesAPI.update(employee.id, updatedData);
-      onUpdate(response.data);
+      
+      // Mettre à jour les données locales
+      const updatedEmployee = response.data || response;
+      setFormData(updatedEmployee);
 
+      // Fermer le mode édition
       setIsEditing(false);
       setSelectedFile(null);
       setPhotoPreview('');
 
+      // 🔄 Rafraîchir les données dans le composant parent
+      if (onUpdate) {
+        onUpdate(updatedEmployee);
+      }
+
+      // 🔄 Rafraîchir le parent si une fonction est fournie
+      if (refreshParent) {
+        setTimeout(() => {
+          refreshParent();
+        }, 100);
+      }
+
+      // 🔄 Déclencher un événement global pour informer d'autres composants
+      window.dispatchEvent(new CustomEvent('employeeUpdated', {
+        detail: { employeeId: employee.id, updatedEmployee }
+      }));
+
       alert('✅ ' + t('changesSaved'));
+
     } catch (error) {
       console.error('Save error:', error);
+      console.error('Response data:', error.response?.data);
+      console.error('Response status:', error.response?.status);
+      
       const errorMessage =
         error.response?.data?.error ||
         error.response?.data?.message ||
+        error.response?.data?.details ||
         error.message;
       alert('❌ ' + t('saveError') + ': ' + errorMessage);
     } finally {
       setSaving(false);
     }
-  }, [saving, formData, isValidEmail, t, selectedFile, employee?.id, onUpdate]);
+  }, [saving, formData, isValidEmail, t, selectedFile, employee?.id, onUpdate, refreshParent]);
 
   const handleDeleteDossier = useCallback(async () => {
     if (!employee?.id) return;
@@ -399,7 +428,12 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
       if (onUpdate) {
         onUpdate(response.employee);
       }
-      
+
+      // 🔄 Rafraîchir le parent
+      if (refreshParent) {
+        refreshParent();
+      }
+
       alert(`✅ ${t('dossierDeletedSuccess')}`);
       setShowDeleteConfirm(false);
     } catch (error) {
@@ -408,7 +442,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     } finally {
       setDeletingDossier(false);
     }
-  }, [employee?.id, t, onUpdate]);
+  }, [employee?.id, t, onUpdate, refreshParent]);
 
   const confirmDeleteDossier = useCallback(() => {
     const confirmCheckbox = document.getElementById('confirm-delete');
@@ -480,6 +514,11 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
           onArchive(data.employee || { id: employee.id, statut: 'archive' });
         }
 
+        // 🔄 Rafraîchir le parent après archivage
+        if (refreshParent) {
+          refreshParent();
+        }
+
         setShowArchiveModal(false);
         handleClose();
 
@@ -501,7 +540,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
         setSaving(false);
       }
     },
-    [employee?.id, formData.date_depart, t, onArchive]
+    [employee?.id, formData.date_depart, t, onArchive, refreshParent]
   );
 
   const handleClose = useCallback(() => {
@@ -512,6 +551,22 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
     setShowDeleteConfirm(false);
     onClose();
   }, [employee, onClose]);
+
+  // Écouter les événements de mise à jour d'employé
+  useEffect(() => {
+    const handleEmployeeUpdated = (event) => {
+      if (event.detail?.employeeId === employee?.id) {
+        console.log('📢 EmployeeModal: Employé mis à jour depuis un autre composant');
+        // Vous pourriez rafraîchir les données ici si nécessaire
+      }
+    };
+
+    window.addEventListener('employeeUpdated', handleEmployeeUpdated);
+
+    return () => {
+      window.removeEventListener('employeeUpdated', handleEmployeeUpdated);
+    };
+  }, [employee?.id]);
 
   if (!isOpen || !employee) return null;
 
@@ -922,6 +977,11 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive }) => {
         onSuccess={(updatedEmployee) => {
           setFormData(updatedEmployee);
           if (onUpdate) onUpdate(updatedEmployee);
+          if (refreshParent) {
+            setTimeout(() => {
+              refreshParent();
+            }, 100);
+          }
         }}
       />
 
