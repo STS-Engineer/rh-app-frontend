@@ -19,6 +19,16 @@ export const LanguageProvider = ({ children }) => {
   const translations = {
     fr: {
       // Navigation
+      contractEndDate: "Date fin de contrat",
+      contractEndingSoon: "Contrat se termine bientôt",
+      endsOn: "Termine le",
+      optionalForPermanent: "Optionnel pour CDI",
+      daysRemaining: "Jours restants",
+      days: "jours",
+      contractAlert: "Alerte fin de contrat",
+      contractWillEnd: "Le contrat se termine le",
+      inLessThanMonth: "dans moins d'un mois",
+      addContractEndDate : "Ajouter date fin contrat",
       dashboard: 'Tableau de Bord',
       team: 'Équipe',
       demands: 'Demandes RH',
