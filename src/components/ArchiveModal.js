@@ -1,20 +1,17 @@
 import React, { useState, useRef } from 'react';
 import './ArchiveModal.css';
 
-const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) => {
+const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate }) => {
   const [pdfUrl, setPdfUrl] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState('');
+  const [archiveWithoutPdf, setArchiveWithoutPdf] = useState(false);
+  const [confirmationText, setConfirmationText] = useState('');
   const fileInputRef = useRef(null);
 
-  const rawDate =
-    departureDate ||              
-    employee?.date_depart ||   
-    null;
-
-  // Convertir proprement au bon format
+  const rawDate = departureDate || employee?.date_depart || null;
   let finalDepartureDate = null;
   if (rawDate) {
     const d = new Date(rawDate);
@@ -32,13 +29,12 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) =>
     const file = e.target.files[0];
     if (!file) return;
 
-    // Vérifier que c'est un PDF
     if (file.type !== 'application/pdf') {
       setErrorMessage('❌ Veuillez sélectionner un fichier PDF');
       return;
     }
 
-    if (file.size > 50 * 1024 * 1024) { // 50MB max
+    if (file.size > 50 * 1024 * 1024) {
       setErrorMessage('❌ Le fichier est trop volumineux (max 50MB)');
       return;
     }
@@ -47,6 +43,7 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) =>
     setUploadProgress(0);
     setErrorMessage('');
     setUploadedFileName(file.name);
+    setArchiveWithoutPdf(false); // Désactiver l'option sans PDF si on upload
 
     const formData = new FormData();
     formData.append('pdfFile', file);
@@ -57,16 +54,9 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) =>
         throw new Error('Non authentifié. Veuillez vous reconnecter.');
       }
 
-      // IMPORTANT: URL CORRECTE DU BACKEND
-      // Votre backend est sur 'backend-rh.azurewebsites.net'
-      // PAS sur 'avo-hr-managment.azurewebsites.net' (c'est le frontend)
       const backendUrl = 'https://backend-rh.azurewebsites.net';
       const uploadUrl = `${backendUrl}/api/archive/upload-pdf`;
       
-      console.log('📤 Upload vers BACKEND:', uploadUrl);
-      console.log('📄 Fichier:', file.name, 'Taille:', file.size);
-
-      // Simuler la progression
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => {
           if (prev >= 90) {
@@ -77,12 +67,10 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) =>
         });
       }, 200);
 
-      // Configuration de la requête
       const response = await fetch(uploadUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
-          // NE PAS mettre 'Content-Type' pour FormData, le navigateur le fait automatiquement
         },
         body: formData
       });
@@ -90,35 +78,27 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) =>
       clearInterval(progressInterval);
       setUploadProgress(100);
 
-      console.log('📥 Réponse reçue - Status:', response.status);
-
-      // Vérifier le type de contenu
       const contentType = response.headers.get('content-type');
-      console.log('📋 Content-Type:', contentType);
-
+      
       if (!contentType || !contentType.includes('application/json')) {
-        // Essayer de lire le texte pour déboguer
         const text = await response.text();
-        console.error('❌ Réponse non-JSON reçue (premiers 500 caractères):', text.substring(0, 500));
+        console.error('❌ Réponse non-JSON:', text.substring(0, 500));
         
         if (response.ok) {
-          // Essayer de parser quand même
           try {
             const data = JSON.parse(text);
             if (data.pdfUrl) {
               setPdfUrl(data.pdfUrl);
-              console.log('✅ Upload réussi (JSON parsé):', data.pdfUrl);
             } else {
               throw new Error('Réponse JSON invalide');
             }
           } catch (parseError) {
-            throw new Error(`Le serveur a retourné une réponse non-JSON. Statut: ${response.status}`);
+            throw new Error(`Erreur serveur: ${response.status}`);
           }
         } else {
           throw new Error(`Erreur serveur (${response.status}): ${text.substring(0, 200)}`);
         }
       } else {
-        // C'est du JSON, parser normalement
         const data = await response.json();
         
         if (!response.ok) {
@@ -129,9 +109,7 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) =>
           throw new Error(data.error || 'Échec de l\'upload');
         }
 
-        // Mettre à jour l'URL avec le PDF uploadé
         setPdfUrl(data.pdfUrl);
-        console.log('✅ Upload réussi:', data.pdfUrl);
       }
 
       setTimeout(() => {
@@ -140,54 +118,80 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) =>
       }, 500);
 
     } catch (error) {
-      console.error('❌ Erreur upload complète:', error);
+      console.error('❌ Erreur upload:', error);
       
       let message = error.message;
       
       if (error.message.includes('Unexpected token') || error.message.includes('non-JSON')) {
-        message = 'Problème de configuration serveur. Contactez l\'administrateur système.';
+        message = 'Problème de configuration serveur';
       } else if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
-        message = 'Erreur de connexion au serveur. Vérifiez votre réseau.';
-      } else if (error.message.includes('CORS')) {
-        message = 'Erreur de sécurité CORS. L\'administrateur doit configurer le serveur.';
+        message = 'Erreur de connexion au serveur';
       }
       
       setErrorMessage(`❌ ${message}`);
       setIsUploading(false);
       setUploadProgress(0);
       
-      // Réinitialiser le champ fichier
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     }
   };
 
-  const handleSubmit = () => {
-  if (!pdfUrl.trim()) {
-    setErrorMessage('❌ Veuillez d\'abord télécharger le PDF d\'entretien');
-    return;
-  }
-
-  // Ajouter la date de départ de l'employé
-  const archiveData = {
-    pdf_url: pdfUrl,
-    entretien_depart: 'Entretien de départ archivé',
-    date_depart: departureDate  // <-- Envoyer la date de départ
+  const handleArchiveWithoutPdf = () => {
+    setArchiveWithoutPdf(true);
+    setPdfUrl(''); // Réinitialiser le PDF
+    setUploadedFileName('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
-  setErrorMessage('');
-  // Envoyer toutes les données au parent
-  onArchive(pdfUrl, archiveData); // <-- Modifier pour envoyer plus de données
-};
+  const handleCancelWithoutPdf = () => {
+    setArchiveWithoutPdf(false);
+    setConfirmationText('');
+  };
+
+  const handleSubmit = () => {
+    if (archiveWithoutPdf) {
+      // Validation pour archivage sans PDF
+      if (confirmationText !== employee.matricule) {
+        setErrorMessage(`❌ Veuillez saisir le matricule "${employee.matricule}" pour confirmer`);
+        return;
+      }
+      
+      const archiveData = {
+        pdf_url: null, // Pas de PDF
+        entretien_depart: 'Archivé sans entretien PDF',
+        date_depart: departureDate
+      };
+      
+      onArchive(null, archiveData);
+    } else {
+      // Archivage avec PDF
+      if (!pdfUrl.trim()) {
+        setErrorMessage('❌ Veuillez d\'abord télécharger le PDF d\'entretien');
+        return;
+      }
+
+      const archiveData = {
+        pdf_url: pdfUrl,
+        entretien_depart: 'Entretien de départ archivé',
+        date_depart: departureDate
+      };
+
+      onArchive(pdfUrl, archiveData);
+    }
+  };
 
   const handleClose = () => {
-    // Réinitialiser tout
     setPdfUrl('');
     setIsUploading(false);
     setUploadProgress(0);
     setErrorMessage('');
     setUploadedFileName('');
+    setArchiveWithoutPdf(false);
+    setConfirmationText('');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -241,10 +245,6 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) =>
                   <span className="info-label">Poste:</span>
                   <span className="info-value">{employee.poste || 'Non spécifié'}</span>
                 </div>
-                <div className="info-item">
-                  <span className="info-label">Département:</span>
-                  <span className="info-value">{employee.site_dep || 'Non spécifié'}</span>
-                </div>
               </div>
               <div className="departure-date">
                 <span className="date-icon">📅</span>
@@ -261,7 +261,6 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) =>
             </div>
           </div>
 
-          {/* Message d'erreur */}
           {errorMessage && (
             <div className="error-alert">
               <div className="error-content">
@@ -281,149 +280,217 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) =>
             </div>
           )}
 
-          {/* Section Upload PDF */}
-          <div className="pdf-upload-section">
-            <div className="section-header">
-              <h4>
-                <span className="section-icon">📤</span>
-                Télécharger le PDF d'entretien de départ
-                <span className="required-indicator">* Obligatoire</span>
-              </h4>
-              <p className="section-description">
-                Joignez le rapport d'entretien de départ au format PDF
-              </p>
-            </div>
-            
-            <div 
-              className={`upload-area ${isUploading ? 'uploading' : ''} ${pdfUrl ? 'success' : ''}`}
-              onClick={handleFileSelect}
-            >
-              {isUploading ? (
-                <div className="upload-progress-container">
-                  <div className="progress-header">
-                    <span className="progress-icon">⏳</span>
-                    <span className="progress-title">Envoi en cours</span>
-                  </div>
-                  <div className="progress-bar">
-                    <div 
-                      className="progress-fill" 
-                      style={{ width: `${uploadProgress}%` }}
-                    ></div>
-                  </div>
-                  <div className="progress-info">
-                    <span className="progress-percentage">{uploadProgress}%</span>
-                    <span className="progress-file">
-                      <span className="file-icon">📄</span>
-                      {uploadedFileName}
-                    </span>
-                  </div>
-                  <p className="progress-hint">
-                    Ne fermez pas cette fenêtre pendant l'upload...
+          {/* Section Archivage sans PDF */}
+          {!pdfUrl && !isUploading && (
+            <div className="archive-options">
+              <div className="option-card without-pdf-option">
+                <div className="option-header">
+                  <h4>
+                    <span className="option-icon">📄</span>
+                    Option 1 : Archiver avec un PDF
+                  </h4>
+                  <p className="option-description">
+                    Téléchargez le rapport d'entretien de départ (recommandé)
                   </p>
                 </div>
-              ) : pdfUrl ? (
-                <div className="upload-success-container">
-                  <div className="success-header">
-                    <span className="success-icon">✅</span>
-                    <span className="success-title">PDF téléchargé avec succès !</span>
+                
+                <div 
+                  className={`upload-area ${isUploading ? 'uploading' : ''} ${pdfUrl ? 'success' : ''}`}
+                  onClick={handleFileSelect}
+                >
+                  {isUploading ? (
+                    <div className="upload-progress-container">
+                      <div className="progress-header">
+                        <span className="progress-icon">⏳</span>
+                        <span className="progress-title">Envoi en cours</span>
+                      </div>
+                      <div className="progress-bar">
+                        <div 
+                          className="progress-fill" 
+                          style={{ width: `${uploadProgress}%` }}
+                        ></div>
+                      </div>
+                      <div className="progress-info">
+                        <span className="progress-percentage">{uploadProgress}%</span>
+                        <span className="progress-file">
+                          <span className="file-icon">📄</span>
+                          {uploadedFileName}
+                        </span>
+                      </div>
+                    </div>
+                  ) : pdfUrl ? (
+                    <div className="upload-success-container">
+                      <div className="success-header">
+                        <span className="success-icon">✅</span>
+                        <span className="success-title">PDF téléchargé !</span>
+                      </div>
+                      <div className="success-file">
+                        <span className="file-icon">📄</span>
+                        <span className="file-name">{uploadedFileName}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="upload-icon-container">
+                        <span className="upload-main-icon">📄</span>
+                      </div>
+                      <div className="upload-text-container">
+                        <p className="upload-main-text">Cliquez pour sélectionner un PDF</p>
+                        <p className="upload-subtext">Glissez-déposez ou cliquez</p>
+                      </div>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    accept=".pdf,application/pdf"
+                    style={{ display: 'none' }}
+                    disabled={isUploading}
+                  />
+                </div>
+              </div>
+
+              <div className="option-divider">
+                <span className="divider-text">OU</span>
+              </div>
+
+              <div className="option-card without-pdf-option">
+                <div className="option-header">
+                  <h4>
+                    <span className="option-icon">⚡</span>
+                    Option 2 : Archiver sans PDF
+                  </h4>
+                  <p className="option-description warning-text">
+                    ⚠️ Attention : Aucun document ne sera associé à cet archivage
+                  </p>
+                </div>
+                
+                {!archiveWithoutPdf ? (
+                  <button 
+                    className="archive-without-pdf-btn"
+                    onClick={handleArchiveWithoutPdf}
+                    disabled={isUploading}
+                  >
+                    <span className="btn-icon">⚡</span>
+                    Archiver sans document PDF
+                  </button>
+                ) : (
+                  <div className="confirmation-section">
+                    <div className="warning-alert">
+                      <span className="warning-icon">⚠️</span>
+                      <div className="warning-text">
+                        <h5>Confirmation requise</h5>
+                        <p>Vous êtes sur le point d'archiver sans document. Cette action est irréversible.</p>
+                      </div>
+                    </div>
+                    
+                    <div className="confirmation-input">
+                      <label>
+                        Tapez le matricule "<strong>{employee.matricule}</strong>" pour confirmer :
+                      </label>
+                      <input
+                        type="text"
+                        value={confirmationText}
+                        onChange={(e) => setConfirmationText(e.target.value)}
+                        placeholder={`Saisir "${employee.matricule}"`}
+                        className="confirmation-field"
+                      />
+                    </div>
+                    
+                    <div className="confirmation-actions">
+                      <button 
+                        className="confirm-without-pdf-btn"
+                        onClick={handleSubmit}
+                        disabled={confirmationText !== employee.matricule}
+                      >
+                        <span className="btn-icon">✅</span>
+                        Confirmer l'archivage sans PDF
+                      </button>
+                      <button 
+                        className="cancel-without-pdf-btn"
+                        onClick={handleCancelWithoutPdf}
+                      >
+                        <span className="btn-icon">↩️</span>
+                        Retour
+                      </button>
+                    </div>
                   </div>
-                  <div className="success-file">
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Afficher si PDF uploadé */}
+          {pdfUrl && (
+            <div className="pdf-success-section">
+              <div className="success-card">
+                <div className="success-header">
+                  <span className="success-icon">✅</span>
+                  <h4>PDF prêt pour l'archivage</h4>
+                </div>
+                <div className="success-details">
+                  <div className="file-info">
                     <span className="file-icon">📄</span>
                     <span className="file-name">{uploadedFileName}</span>
                   </div>
-                  <div className="success-actions">
-                    <button 
-                      className="view-pdf-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleTestPdfLink();
-                      }}
-                      type="button"
-                    >
-                      <span className="btn-icon">👁️</span>
-                      Aperçu du PDF
-                    </button>
-                    <button 
-                      className="change-file-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPdfUrl('');
-                        setUploadedFileName('');
-                        if (fileInputRef.current) {
-                          fileInputRef.current.value = '';
-                        }
-                      }}
-                      type="button"
-                    >
-                      <span className="btn-icon">🔄</span>
-                      Changer le fichier
-                    </button>
-                  </div>
+                  <button 
+                    className="view-pdf-btn"
+                    onClick={handleTestPdfLink}
+                    type="button"
+                  >
+                    <span className="btn-icon">👁️</span>
+                    Vérifier le PDF
+                  </button>
+                  <button 
+                    className="change-file-btn"
+                    onClick={() => {
+                      setPdfUrl('');
+                      setUploadedFileName('');
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                      }
+                    }}
+                    type="button"
+                  >
+                    <span className="btn-icon">🔄</span>
+                    Changer le fichier
+                  </button>
                 </div>
-              ) : (
-                <>
-                  <div className="upload-icon-container">
-                    <span className="upload-main-icon">📄</span>
-                    <div className="upload-icon-shadow"></div>
-                  </div>
-                  <div className="upload-text-container">
-                    <p className="upload-main-text">Cliquez pour sélectionner un fichier</p>
-                    <p className="upload-subtext">ou glissez-déposez votre fichier PDF ici</p>
-                  </div>
-                  <div className="upload-requirements">
-                    <div className="requirement">
-                      <span className="requirement-icon">✓</span>
-                      <span className="requirement-text">Format PDF uniquement</span>
-                    </div>
-                   
-                  </div>
-                 
-                </>
-              )}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                accept=".pdf,application/pdf"
-                style={{ display: 'none' }}
-                disabled={isUploading}
-              />
+              </div>
             </div>
-            
-           
-          </div>
-
-         
-          
+          )}
         </div>
 
         <div className="archive-modal-footer">
           <div className="footer-actions">
-            <button 
-              className="archive-confirm-btn"
-              onClick={handleSubmit}
-              disabled={!pdfUrl || isUploading}
-              title={!pdfUrl ? "Téléchargez d'abord le PDF" : "Archiver l'employé"}
-            >
-              {isUploading ? (
-                <>
-                  <span className="loading-spinner"></span>
-                  <span className="btn-text">Traitement en cours...</span>
-                </>
-              ) : (
-                <>
-                  <span className="btn-icon">💾</span>
-                  <span className="btn-text">
-                    Archiver {employee.prenom} {employee.nom}
-                  </span>
-                </>
-              )}
-            </button>
+            {(pdfUrl || archiveWithoutPdf) && (
+              <button 
+                className="archive-confirm-btn"
+                onClick={handleSubmit}
+                disabled={archiveWithoutPdf && confirmationText !== employee.matricule}
+                title={pdfUrl ? "Archiver avec PDF" : "Archiver sans PDF"}
+              >
+                {isUploading ? (
+                  <>
+                    <span className="loading-spinner"></span>
+                    <span className="btn-text">Traitement...</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="btn-icon">💾</span>
+                    <span className="btn-text">
+                      {pdfUrl ? 'Archiver avec PDF' : 'Archiver sans PDF'}
+                    </span>
+                  </>
+                )}
+              </button>
+            )}
             <button 
               className="archive-cancel-btn"
               onClick={handleClose}
               disabled={isUploading}
-              title="Annuler l'archivage"
+              title="Annuler"
             >
               <span className="btn-icon">❌</span>
               <span className="btn-text">Annuler</span>
@@ -432,7 +499,9 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate}) =>
           <div className="footer-note">
             <span className="note-icon">ℹ️</span>
             <span className="note-text">
-              L'archivage prendra effet immédiatement après confirmation
+              {pdfUrl 
+                ? 'L\'archivage avec PDF est recommandé pour garder une trace.'
+                : 'L\'archivage sans PDF ne conserve aucun document.'}
             </span>
           </div>
         </div>
