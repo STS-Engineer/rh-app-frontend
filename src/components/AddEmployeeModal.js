@@ -19,6 +19,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     site_dep: t('headquarters'),
     type_contrat: 'CDI',
     date_debut: '',
+    date_fin_contrat: '',
     salaire_brute: '',
     adresse_mail: '',
     mail_responsable1: '',
@@ -148,6 +149,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       site_dep: t('headquarters'),
       type_contrat: 'CDI',
       date_debut: '',
+      date_fin_contrat: '',
       salaire_brute: '',
       adresse_mail: '',
       mail_responsable1: '',
@@ -338,6 +340,14 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                       value={formData.date_debut} 
                       onChange={handleInputChange} 
                       required 
+                    />
+                    <FormInput 
+                      label={t('contractEndDate')} 
+                      name="date_fin_contrat" 
+                      type="date" 
+                      value={formData.date_fin_contrat} 
+                      onChange={handleInputChange} 
+                      placeholder={t('optionalForPermanent')} 
                     />
                     <FormInput 
                       label={`${t('grossSalary')} *`} 
