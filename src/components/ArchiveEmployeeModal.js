@@ -398,12 +398,7 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
               {t('backToList')}
             </button>
           </div>
-          <div className="footer-note">
-            <span className="note-icon">ℹ️</span>
-            <span className="note-text">
-              {t('documentsKept')}
-            </span>
-          </div>
+       
         </div>
       </div>
     </div>
