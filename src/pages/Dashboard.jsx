@@ -160,9 +160,7 @@ const Dashboard = () => {
                 {getContractTypesText()}
               </p>
             </div>
-            <div className="stat-trend">
-              <span className="trend-up">↗️</span>
-            </div>
+            
           </div>
 
           <div className="stat-card">
@@ -174,9 +172,7 @@ const Dashboard = () => {
                 {stats.newThisMonth > 0 ? t('activeGrowth') : t('stableThisMonth')}
               </p>
             </div>
-            <div className="stat-trend">
-              {stats.newThisMonth > 0 ? <span className="trend-up"></span> : <span className="trend-neutral">➡️</span>}
-            </div>
+       
           </div>
 
           <div className="stat-card">
