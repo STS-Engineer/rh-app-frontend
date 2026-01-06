@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { NotificationProvider } from './contexts/NotificationContext'; // <-- Ajoutez cette importation
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Team from './pages/Team';
@@ -20,83 +21,85 @@ const PrivateRoute = ({ children }) => {
 function App() {
   return (
     <LanguageProvider>
-      <Router>
-        <div className="App">
-          <div className="zoom-80">
-            <Routes>
-              {/* Route publique - Login */}
-              <Route path="/" element={<Login />} />
-              
-              {/* Routes privées */}
-              <Route 
-                path="/dashboard" 
-                element={
-                  <PrivateRoute>
-                    <Dashboard />
-                  </PrivateRoute>
-                } 
-              />
-              <Route 
-                path="/fiche-de-paie" 
-                element={
-                  <PrivateRoute>
-                    <FicheDePaie />
-                  </PrivateRoute>
-                } 
-              />
-              <Route 
-                path="/team" 
-                element={
-                  <PrivateRoute>
-                    <Team />
-                  </PrivateRoute>
-                } 
-              />
-              <Route 
-                path="/demandes-rh"
-                element={
-                  <PrivateRoute>
-                    <DemandesRH />
-                  </PrivateRoute>
-                } 
-              />
-              <Route 
-                path="/archives" 
-                element={
-                  <PrivateRoute>
-                    <Archives />
-                  </PrivateRoute>
-                } 
-              />
-              <Route 
-                path="/statistics" 
-                element={
-                  <PrivateRoute>
-                    <Statistics />
-                  </PrivateRoute>
-                } 
-              />
-              <Route 
-                path="/settings" 
-                element={
-                  <PrivateRoute>
-                    <Settings />
-                  </PrivateRoute>
-                } 
-              />
-              
-              <Route 
-                path="/visa" 
-                element={
-                  <PrivateRoute>
-                    <Visa />
-                  </PrivateRoute>
-                } 
-              />
-            </Routes>
+      <NotificationProvider> {/* <-- Ajoutez ce wrapper */}
+        <Router>
+          <div className="App">
+            <div className="zoom-80">
+              <Routes>
+                {/* Route publique - Login */}
+                <Route path="/" element={<Login />} />
+                
+                {/* Routes privées */}
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    <PrivateRoute>
+                      <Dashboard />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route 
+                  path="/fiche-de-paie" 
+                  element={
+                    <PrivateRoute>
+                      <FicheDePaie />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route 
+                  path="/team" 
+                  element={
+                    <PrivateRoute>
+                      <Team />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route 
+                  path="/demandes-rh"
+                  element={
+                    <PrivateRoute>
+                      <DemandesRH />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route 
+                  path="/archives" 
+                  element={
+                    <PrivateRoute>
+                      <Archives />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route 
+                  path="/statistics" 
+                  element={
+                    <PrivateRoute>
+                      <Statistics />
+                    </PrivateRoute>
+                  } 
+                />
+                <Route 
+                  path="/settings" 
+                  element={
+                    <PrivateRoute>
+                      <Settings />
+                    </PrivateRoute>
+                  } 
+                />
+                
+                <Route 
+                  path="/visa" 
+                  element={
+                    <PrivateRoute>
+                      <Visa />
+                    </PrivateRoute>
+                  } 
+                />
+              </Routes>
+            </div>
           </div>
-        </div>
-      </Router>
+        </Router>
+      </NotificationProvider> {/* <-- Fermez le wrapper */}
     </LanguageProvider>
   );
 }
