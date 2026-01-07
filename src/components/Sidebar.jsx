@@ -1,9 +1,9 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
+import NotificationIcon from './NotificationIcon';
 import './Sidebar.css';
 import logo from './logo_sts.png';
-import logoo from './logo_sts2.png';
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -36,7 +36,11 @@ const Sidebar = () => {
     <div className="sidebar">
       <div className="sidebar-header">
         <img src={logo} alt="Logo" className="header-logo" />
-    
+        
+        {/* 🔔 NOUVELLE SECTION NOTIFICATION */}
+        <div className="sidebar-notification-container">
+          <NotificationIcon />
+        </div>
       </div>
       
       <nav className="sidebar-nav">
@@ -54,7 +58,6 @@ const Sidebar = () => {
 
       <div className="sidebar-footer">
         <div className="language-indicator">
-        
           <span className="language-text">
             {t('language')}: {language.toUpperCase()}
           </span>
