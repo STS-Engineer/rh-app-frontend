@@ -1,6 +1,8 @@
 .notification-wrapper {
-  position: relative;
-  display: inline-block;
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 2000;
 }
 
 .notification-button {
