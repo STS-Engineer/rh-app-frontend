@@ -92,7 +92,7 @@
 .notification-dropdown {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
+  left: 0; /* Changer de right: 0; à left: 0; */
   width: 380px;
   max-height: 500px;
   background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
@@ -104,6 +104,14 @@
   animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Pour la version mobile, ajustez aussi */
+@media (max-width: 480px) {
+  .notification-dropdown {
+    width: calc(100vw - 40px);
+    left: -20px; /* Changer de right: -20px; à left: -20px; */
+    right: auto; /* Ajouter cette ligne pour annuler le right */
+  }
+}
 @keyframes slideDown {
   from {
     opacity: 0;
