@@ -116,7 +116,7 @@ const NotificationIcon = () => {
     return icons[type] || '📄';
   };
 
-  return (
+    return (
     <div className="notification-wrapper">
       <button 
         className={`notification-button ${notificationCount > 0 ? 'has-notifications' : ''}`}
@@ -131,13 +131,15 @@ const NotificationIcon = () => {
         )}
       </button>
 
-      {showDropdown && (
+      {/* Utiliser Portal pour sortir le dropdown du sidebar */}
+      {showDropdown && ReactDOM.createPortal(
         <>
           <div 
             className="notification-overlay" 
             onClick={() => setShowDropdown(false)}
           />
           <div className="notification-dropdown">
+            {/* Contenu du dropdown */}
             <div className="notification-header">
               <h3>🔔 {t('notifications') || 'Notifications'}</h3>
               <span className="notification-count-badge">
@@ -201,7 +203,8 @@ const NotificationIcon = () => {
               </div>
             )}
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );
