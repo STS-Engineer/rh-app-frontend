@@ -86,25 +86,32 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 9998; /* Moins élevé que le dropdown */
-  background: rgba(0, 0, 0, 0.3); /* Ajouter un fond */
+  z-index: 999;
 }
 
 .notification-dropdown {
-  position: fixed; /* Changer de absolute à fixed */
-  top: 80px; /* Ajuster selon la hauteur de votre header */
-  left: 300px; /* Largeur du sidebar + un peu de marge */
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0; /* Changer de right: 0; à left: 0; */
   width: 380px;
   max-height: 500px;
   background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 16px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  z-index: 9999; /* Très élevé pour être au-dessus de tout */
+  z-index: 1000;
   overflow: hidden;
   animation: slideDown 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Pour la version mobile, ajustez aussi */
+@media (max-width: 480px) {
+  .notification-dropdown {
+    width: calc(100vw - 40px);
+    left: -20px; /* Changer de right: -20px; à left: -20px; */
+    right: auto; /* Ajouter cette ligne pour annuler le right */
+  }
+}
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -347,29 +354,9 @@
 }
 
 /* Responsive */
-@media (max-width: 1024px) {
+@media (max-width: 480px) {
   .notification-dropdown {
-    left: 20px;
-    right: 20px;
-    width: auto;
-    max-width: 400px;
-    margin: 0 auto;
+    width: calc(100vw - 40px);
+    right: -20px;
   }
-}
-
-@media (max-width: 768px) {
-  .notification-dropdown {
-    top: 70px;
-    left: 10px;
-    right: 10px;
-    width: calc(100vw - 20px);
-  }
-}
-
-/* Style pour le dropdown attaché au bouton (alternative) */
-.notification-dropdown.attached {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 10001; /* Encore plus élevé */
 }
