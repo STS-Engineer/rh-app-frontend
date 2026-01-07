@@ -94,7 +94,7 @@
 .notification-dropdown {
   position: absolute;
   top: calc(100% + 8px);
-  left: 0; /* Changer de right: 0; à left: 0; */
+  right: 0; /* Changer de right: 0; à left: 0; */
   width: 380px;
   max-height: 500px;
   background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
