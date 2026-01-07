@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-import NotificationIcon from './NotificationIcon';
+
 import './Sidebar.css';
 import logo from './logo_sts.png';
 
@@ -36,11 +36,6 @@ const Sidebar = () => {
     <div className="sidebar">
       <div className="sidebar-header">
         <img src={logo} alt="Logo" className="header-logo" />
-        
-        {/* 🔔 NOUVELLE SECTION NOTIFICATION */}
-        <div className="sidebar-notification-container">
-          <NotificationIcon />
-        </div>
       </div>
       
       <nav className="sidebar-nav">
