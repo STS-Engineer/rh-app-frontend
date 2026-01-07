@@ -381,3 +381,22 @@
   max-width: 46vw; /* s'adapte aux petits écrans */
   height: auto;
 }
+/* Ajoutez ces styles à votre Sidebar.css existant */
+
+.sidebar-notification-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding: 0 20px;
+}
+
+.sidebar-header {
+  position: relative;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar-notification-container {
+    padding: 0 15px;
+  }
+}
