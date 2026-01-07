@@ -16,12 +16,32 @@
   overflow-y: auto;
 }
 
+/* 🔔 SECTION HEADER AVEC NOTIFICATION */
 .sidebar-header {
   padding: 30px 25px;
   text-align: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(15, 23, 42, 0.8);
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-logo {
+  width: 240px;
+  max-width: 46vw;
+  height: auto;
+}
+
+/* 🔔 CONTENEUR NOTIFICATION */
+.sidebar-notification-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 0;
 }
 
 .sidebar-header h2 {
@@ -163,98 +183,6 @@
   box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
 }
 
-/* Animation pour le sidebar */
-@keyframes slideIn {
-  from {
-    transform: translateX(-100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-.sidebar {
-  animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .sidebar {
-    width: 250px;
-    transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  
-  .sidebar.open {
-    transform: translateX(0);
-  }
-}
-
-@media (max-width: 768px) {
-  .sidebar {
-    width: 100%;
-    z-index: 1001;
-  }
-  
-  .sidebar-header {
-    padding: 25px 20px;
-  }
-  
-  .sidebar-nav {
-    padding: 20px 0;
-  }
-  
-  .nav-item {
-    margin: 0 15px;
-    padding: 18px 20px;
-  }
-  
-  .sidebar-footer {
-    padding: 20px;
-  }
-}
-
-/* Style pour le bouton de toggle du sidebar sur mobile */
-.sidebar-toggle {
-  display: none;
-  position: fixed;
-  top: 20px;
-  left: 20px;
-  z-index: 1002;
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-  border: none;
-  border-radius: 12px;
-  width: 50px;
-  height: 50px;
-  cursor: pointer;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-  transition: all 0.3s ease;
-}
-
-.sidebar-toggle:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-}
-
-@media (max-width: 1024px) {
-  .sidebar-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-}
-
-
-
-
-
-
-
-
-
-
 .language-indicator {
   display: flex;
   align-items: center;
@@ -329,39 +257,22 @@
   }
 }
 
-/* Version claire/sombre */
-:root {
-  --sidebar-bg: #1e293b;
-  --sidebar-text: #cbd5e1;
-}
-
-.light-theme .sidebar-footer {
-  background: linear-gradient(135deg, rgba(241, 245, 249, 0.8) 0%, rgba(226, 232, 240, 0.4) 100%);
-  border-top: 1px solid rgba(148, 163, 184, 0.2);
-}
-
-.light-theme .language-indicator {
-  background: rgba(241, 245, 249, 0.6);
-  border-color: rgba(148, 163, 184, 0.3);
-}
-
-.light-theme .language-text {
-  color: #475569;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .sidebar-footer {
-    padding: 1rem;
-    border-radius: 0;
+/* Animation pour le sidebar */
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
   }
-  
-  .language-indicator {
-    padding: 0.625rem 0.875rem;
+  to {
+    transform: translateX(0);
+    opacity: 1;
   }
 }
 
-/* Animation d'entrée */
+.sidebar {
+  animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -376,27 +287,73 @@
 .sidebar-footer {
   animation: slideUp 0.4s ease-out;
 }
-.header-logo {
-  width: 240px;
-  max-width: 46vw; /* s'adapte aux petits écrans */
-  height: auto;
-}
-/* Ajoutez ces styles à votre Sidebar.css existant */
-
-.sidebar-notification-container {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-  padding: 0 20px;
-}
-
-.sidebar-header {
-  position: relative;
-}
 
 /* Responsive */
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 250px;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+}
+
 @media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    z-index: 1001;
+  }
+  
+  .sidebar-header {
+    padding: 25px 20px;
+  }
+  
+  .sidebar-nav {
+    padding: 20px 0;
+  }
+  
+  .nav-item {
+    margin: 0 15px;
+    padding: 18px 20px;
+  }
+  
+  .sidebar-footer {
+    padding: 20px;
+  }
+  
   .sidebar-notification-container {
-    padding: 0 15px;
+    padding: 5px 0;
+  }
+}
+
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1002;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border: none;
+  border-radius: 12px;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s ease;
+}
+
+.sidebar-toggle:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+@media (max-width: 1024px) {
+  .sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 }
