@@ -5,7 +5,7 @@ import { employeesAPI, getArchivedEmployees } from '../services/api';
 import { exportEmployeesToExcel } from '../services/exportService';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Dashboard.css';
-import NotificationIcon from './NotificationIcon';
+import NotificationIcon from '../components/NotificationIcon';
 
 const Dashboard = () => {
   const navigate = useNavigate();
