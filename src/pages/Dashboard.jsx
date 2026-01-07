@@ -5,6 +5,7 @@ import { employeesAPI, getArchivedEmployees } from '../services/api';
 import { exportEmployeesToExcel } from '../services/exportService';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Dashboard.css';
+import NotificationIcon from './NotificationIcon';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -142,6 +143,9 @@ const Dashboard = () => {
     <div className="dashboard-container">
       <Sidebar />
       <div className="dashboard-content">
+        <div className="sidebar-notification-container">
+          <NotificationIcon />
+        </div>
         <header className="dashboard-header">
           <h1>🏢 {t('dashboard')}</h1>
           <p>{t('overview')} {t('appSubtitle')}</p>
