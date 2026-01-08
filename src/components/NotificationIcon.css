@@ -541,3 +541,115 @@
   visibility: visible;
   transform: translateX(-50%) translateY(-5px);
 }
+/* ====================
+   STYLES PERSISTANTS
+   ==================== */
+
+/* Style pour le texte du titre */
+.title-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+
+/* Fallback pour avatar */
+.avatar-placeholder-fallback {
+  width: 100%;
+  height: 100%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border-radius: 50%;
+}
+
+/* Animation pour le badge qui disparaît */
+@keyframes badgeFadeOut {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+
+.notification-badge.hiding {
+  animation: badgeFadeOut 0.3s ease forwards;
+}
+
+/* Indicateur de non-lu plus visible */
+.notification-indicator {
+  width: 10px;
+  height: 10px;
+  background: #3b82f6;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+  animation: pulse-indicator 1.5s infinite;
+}
+
+@keyframes pulse-indicator {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+/* Style pour l'en-tête quand tout est lu */
+.notification-header.read-mode .notification-count-badge {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+/* Transition douce pour les items */
+.notification-item {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Message quand tout est marqué comme lu */
+.notification-all-read-message {
+  padding: 15px;
+  text-align: center;
+  color: #22c55e;
+  font-weight: 600;
+  background: rgba(34, 197, 94, 0.1);
+  border-radius: 8px;
+  margin: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.notification-all-read-message::before {
+  content: '✓';
+  font-weight: bold;
+}
+
+/* Animation d'apparition des notifications */
+@keyframes notificationAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notification-item {
+  animation: notificationAppear 0.3s ease forwards;
+  animation-delay: calc(var(--item-index, 0) * 0.05s);
+}
