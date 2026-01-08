@@ -243,7 +243,7 @@ const NotificationIcon = () => {
       <button 
         className={`notification-button ${notificationCount > 0 ? 'has-notifications' : ''}`}
         onClick={handleToggleDropdown}
-        aria-label={t('notifications') || 'Notifications'}
+        
         
       >
         <span className="notification-icon">🔔</span>
