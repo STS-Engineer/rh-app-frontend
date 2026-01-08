@@ -1,18 +1,26 @@
 :root {
   --primary-blue: #046eaf;
   --primary-blue-dark: #0e4e78;
+  --primary-blue-light: #e6f2ff;
   --primary-orange: #ef7807;
+  --primary-orange-light: #fff4e6;
   --neutral-grey: #c5c5c4;
   --neutral-grey-dark: #585858;
+  --neutral-grey-light: #f8f9fa;
   --background-grey: #f8f9fa;
   --card-background: #ffffff;
   --text-dark: #2c3e50;
   --text-light: #5d6d7e;
   --border-color: #e1e8ed;
   --success-color: #10b981;
+  --success-light: #d1fae5;
   --warning-color: #f59e0b;
+  --warning-light: #fef3c7;
   --error-color: #ef4444;
+  --error-light: #fee2e2;
   --info-color: #3b82f6;
+  --info-light: #dbeafe;
+  --chart-grid: #f0f0f0;
 }
 
 /* Statistics Container */
@@ -31,6 +39,7 @@
   margin-left: 280px;
   padding: 35px;
   transition: all 0.3s ease;
+  overflow-x: hidden;
 }
 
 .statistics-header {
@@ -61,6 +70,13 @@
   border-radius: 20px 20px 0 0;
 }
 
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
 .statistics-header h1 {
   margin: 0 0 15px 0;
   color: var(--primary-blue-dark);
@@ -89,6 +105,69 @@
   font-weight: 400;
   line-height: 1.7;
   max-width: 700px;
+}
+
+.time-selector {
+  display: flex;
+  gap: 10px;
+  background: var(--neutral-grey-light);
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.time-selector button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--neutral-grey-dark);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.time-selector button.active {
+  background: var(--primary-blue);
+  color: white;
+  box-shadow: 0 4px 12px rgba(4, 110, 175, 0.2);
+}
+
+.time-selector button:hover:not(.active) {
+  background: rgba(4, 110, 175, 0.1);
+}
+
+.chart-selector {
+  display: flex;
+  gap: 15px;
+  margin-top: 25px;
+  flex-wrap: wrap;
+}
+
+.chart-selector button {
+  padding: 12px 24px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  background: white;
+  color: var(--text-dark);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-selector button.active {
+  border-color: var(--primary-blue);
+  background: var(--primary-blue-light);
+  color: var(--primary-blue);
+  box-shadow: 0 4px 15px rgba(4, 110, 175, 0.1);
+}
+
+.chart-selector button:hover:not(.active) {
+  border-color: var(--primary-blue);
+  transform: translateY(-2px);
 }
 
 /* Stats Overview */
@@ -194,26 +273,50 @@
 }
 
 .stat-detail {
-  margin: 0;
+  margin: 0 0 10px 0;
   color: var(--neutral-grey-dark);
   font-size: 0.95rem;
   line-height: 1.6;
   font-weight: 500;
 }
 
-/* Charts Grid */
-.charts-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-  gap: 30px;
+.stat-trend {
+  font-size: 0.85rem;
+  color: var(--neutral-grey-dark);
+}
+
+.trend-up {
+  color: var(--success-color);
+  font-weight: 700;
+}
+
+.trend-down {
+  color: var(--error-color);
+  font-weight: 700;
+}
+
+.trend-neutral {
+  color: var(--warning-color);
+  font-weight: 700;
+}
+
+/* Professional Charts */
+.professional-charts {
   margin-bottom: 40px;
 }
 
-.chart-card {
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 30px;
+  margin-bottom: 30px;
+}
+
+.chart-container {
   background: linear-gradient(135deg, 
     var(--card-background) 0%,
     rgba(255, 255, 255, 0.95) 100%);
-  padding: 35px;
+  padding: 30px;
   border-radius: 20px;
   box-shadow: 0 10px 35px rgba(4, 110, 175, 0.08);
   border: 1px solid rgba(229, 231, 235, 0.5);
@@ -222,7 +325,7 @@
   overflow: hidden;
 }
 
-.chart-card::before {
+.chart-container::before {
   content: '';
   position: absolute;
   top: 0;
@@ -235,7 +338,15 @@
   border-radius: 20px 20px 0 0;
 }
 
-.chart-card h3 {
+.chart-container.large {
+  grid-column: 1 / -1;
+}
+
+.chart-container.medium {
+  min-height: 400px;
+}
+
+.chart-container h3 {
   margin: 0 0 25px 0;
   color: var(--primary-blue-dark);
   font-size: 1.4rem;
@@ -245,191 +356,227 @@
   gap: 12px;
 }
 
-.chart-content {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.chart-wrapper {
+  height: 350px;
+  width: 100%;
 }
 
-.chart-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+/* Custom Tooltip */
+.custom-tooltip {
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 15px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
-.chart-label {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--text-dark);
-}
-
-.chart-label span {
-  background: rgba(4, 110, 175, 0.1);
-  padding: 6px 12px;
-  border-radius: 8px;
+.tooltip-label {
   font-weight: 700;
-  color: var(--primary-blue-dark);
+  color: var(--text-dark);
+  margin: 0 0 8px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tooltip-value {
+  margin: 5px 0;
   font-size: 0.9rem;
+  font-weight: 600;
 }
 
-.chart-bar {
-  background: rgba(4, 110, 175, 0.05);
-  height: 10px;
-  border-radius: 5px;
-  overflow: hidden;
+/* Detailed Stats */
+.detailed-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: 30px;
+  margin-bottom: 40px;
+}
+
+.stats-card {
+  background: linear-gradient(135deg, 
+    var(--card-background) 0%,
+    rgba(255, 255, 255, 0.95) 100%);
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 35px rgba(4, 110, 175, 0.08);
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  backdrop-filter: blur(10px);
   position: relative;
+  overflow: hidden;
 }
 
-.chart-bar::after {
+.stats-card::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  height: 4px;
   background: linear-gradient(90deg, 
-    transparent 0%,
-    rgba(255, 255, 255, 0.1) 50%,
-    transparent 100%);
+    var(--success-color) 0%,
+    var(--warning-color) 100%);
+  border-radius: 20px 20px 0 0;
 }
 
-.chart-fill {
-  height: 100%;
-  border-radius: 5px;
-  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
-
-.chart-fill::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, 
-    rgba(255, 255, 255, 0.2) 0%,
-    transparent 50%,
-    rgba(255, 255, 255, 0.2) 100%);
-}
-
-.chart-fill.contract {
-  background: linear-gradient(90deg, var(--success-color), #059669);
-}
-
-.chart-fill:not(.contract) {
-  background: linear-gradient(90deg, var(--primary-blue), var(--primary-blue-dark));
-}
-
-/* Salary Stats */
-.salary-stats {
+.stats-card h3 {
+  margin: 0 0 25px 0;
+  color: var(--primary-blue-dark);
+  font-size: 1.4rem;
+  font-weight: 700;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.salary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 20px;
 }
 
-.salary-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 0;
-  border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+.salary-stat {
+  background: var(--primary-blue-light);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(4, 110, 175, 0.1);
   transition: all 0.3s ease;
 }
 
-.salary-item:hover {
-  padding-left: 10px;
-  padding-right: 10px;
-  background: rgba(4, 110, 175, 0.03);
-  border-radius: 8px;
-  border-bottom-color: transparent;
+.salary-stat:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(4, 110, 175, 0.15);
 }
 
 .salary-label {
-  color: var(--neutral-grey-dark);
-  font-size: 1rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.salary-label::before {
-  content: '';
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--primary-orange);
+  display: block;
+  color: var(--primary-blue-dark);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .salary-value {
+  display: block;
+  color: var(--text-dark);
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin-bottom: 15px;
+}
+
+.salary-bar {
+  height: 8px;
+  background: linear-gradient(90deg, var(--primary-blue), var(--primary-blue-dark));
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+/* Recent Hires Table */
+.recent-hires-table {
+  overflow-x: auto;
+}
+
+.recent-hires-table table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+.recent-hires-table th {
+  background: var(--primary-blue-light);
   color: var(--primary-blue-dark);
   font-weight: 700;
-  font-size: 1.1rem;
-  background: rgba(4, 110, 175, 0.1);
-  padding: 8px 16px;
-  border-radius: 8px;
-  transition: all 0.3s ease;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+  padding: 16px;
+  text-align: left;
+  border-bottom: 2px solid var(--primary-blue);
 }
 
-.salary-item:hover .salary-value {
-  background: rgba(4, 110, 175, 0.15);
-  transform: scale(1.05);
+.recent-hires-table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
 }
 
-/* Recent Hires */
-.recent-hires {
+.recent-hires-table tr:hover {
+  background: var(--primary-blue-light);
+}
+
+.employee-info {
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.hire-item {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 18px 20px;
-  border-radius: 12px;
-  background: rgba(4, 110, 175, 0.03);
-  border: 1px solid rgba(229, 231, 235, 0.5);
-  transition: all 0.3s ease;
+  gap: 12px;
 }
 
-.hire-item:hover {
-  background: rgba(4, 110, 175, 0.08);
-  transform: translateX(5px);
-  border-color: rgba(4, 110, 175, 0.2);
-}
-
-.hire-info {
+.employee-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-dark));
+  color: white;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.hire-info strong {
-  color: var(--primary-blue-dark);
-  font-size: 1.1rem;
+  align-items: center;
+  justify-content: center;
   font-weight: 700;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px rgba(4, 110, 175, 0.2);
 }
 
-.hire-info span {
-  color: var(--neutral-grey-dark);
-  font-size: 0.9rem;
-  font-weight: 500;
+.employee-name strong {
+  color: var(--text-dark);
+  font-size: 1rem;
 }
 
-.hire-date {
-  color: var(--primary-orange);
-  font-size: 0.9rem;
-  font-weight: 600;
-  background: rgba(239, 120, 7, 0.1);
+.department-badge {
+  background: var(--info-light);
+  color: var(--info-color);
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.contract-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.contract-badge.cdi {
+  background: var(--success-light);
+  color: var(--success-color);
+}
+
+.contract-badge.cdd {
+  background: var(--warning-light);
+  color: var(--warning-color);
+}
+
+.contract-badge.stage {
+  background: var(--info-light);
+  color: var(--info-color);
+}
+
+.contract-badge.interim {
+  background: var(--error-light);
+  color: var(--error-color);
+}
+
+.salary-cell {
+  font-weight: 700;
+  color: var(--success-color);
+  font-family: 'Courier New', monospace;
+}
+
+.date-cell {
+  color: var(--neutral-grey-dark);
+  font-weight: 600;
 }
 
 /* Export Section */
@@ -520,6 +667,11 @@
   color: white;
 }
 
+.export-btn.charts {
+  background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+  color: white;
+}
+
 .export-btn:hover:not(:disabled) {
   transform: translateY(-4px);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
@@ -531,6 +683,10 @@
 
 .export-btn.excel:hover:not(:disabled) {
   background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+.export-btn.charts:hover:not(:disabled) {
+  background: linear-gradient(135deg, var(--primary-blue-dark) 0%, #0e4e78 100%);
 }
 
 .export-btn:disabled {
@@ -589,9 +745,13 @@
     padding: 30px;
   }
   
-  .charts-grid {
+  .charts-row {
     grid-template-columns: 1fr;
     gap: 25px;
+  }
+  
+  .detailed-stats {
+    grid-template-columns: 1fr;
   }
   
   .stats-overview {
@@ -612,8 +772,17 @@
     font-size: 2.2rem;
   }
   
-  .chart-card {
+  .chart-container {
     padding: 30px;
+  }
+  
+  .header-top {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .time-selector {
+    align-self: flex-start;
   }
 }
 
@@ -654,18 +823,20 @@
     max-width: 300px;
   }
   
-  .chart-card h3 {
+  .chart-container h3 {
     font-size: 1.2rem;
   }
   
-  .hire-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;
+  .charts-row {
+    grid-template-columns: 1fr;
   }
   
-  .hire-date {
-    align-self: flex-end;
+  .chart-container {
+    min-width: 100%;
+  }
+  
+  .salary-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -690,7 +861,7 @@
     font-size: 2rem;
   }
   
-  .chart-card {
+  .chart-container {
     padding: 20px;
   }
   
@@ -701,12 +872,18 @@
   .export-section h3 {
     font-size: 1.4rem;
   }
+  
+  .salary-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Effet de focus pour l'accessibilité */
 .stat-card:focus,
 .export-btn:focus,
-.chart-card:focus-within {
+.chart-card:focus-within,
+.chart-selector button:focus,
+.time-selector button:focus {
   outline: 2px solid var(--primary-orange);
   outline-offset: 2px;
 }
@@ -728,4 +905,50 @@
 
 .statistics-content::-webkit-scrollbar-thumb:hover {
   background: var(--primary-blue);
+}
+
+/* Animations pour les graphiques */
+.chart-wrapper {
+  opacity: 0;
+  animation: fadeIn 0.8s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Styles pour l'impression */
+@media print {
+  .sidebar,
+  .export-section,
+  .chart-selector,
+  .time-selector {
+    display: none !important;
+  }
+  
+  .statistics-content {
+    margin-left: 0;
+    padding: 20px;
+  }
+  
+  .stat-card,
+  .chart-container,
+  .stats-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  .statistics-header {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
 }
