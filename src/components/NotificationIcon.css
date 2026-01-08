@@ -1,6 +1,6 @@
 .notification-wrapper {
   position: fixed;
-  top: 80px;
+  top: 20px;
   right: 20px;
   z-index: 2000;
 }
@@ -12,6 +12,7 @@
   border-radius: 12px;
   width: 48px;
   height: 48px;
+  margin-top:40px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
