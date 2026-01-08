@@ -362,3 +362,182 @@
     right: -20px;
   }
 }
+/* ====================
+   NOUVEAUX STYLES
+   ==================== */
+
+/* Header avec bouton marquer comme lu */
+.notification-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-mark-read {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #60a5fa;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.btn-mark-read:hover {
+  background: rgba(59, 130, 246, 0.2);
+  transform: scale(1.1);
+  border-color: rgba(59, 130, 246, 0.5);
+  color: #3b82f6;
+}
+
+/* Styles pour notifications lues/non lues */
+.notification-item.read {
+  opacity: 0.7;
+  background: rgba(30, 41, 59, 0.3);
+}
+
+.notification-item.read:hover {
+  background: rgba(59, 130, 246, 0.05);
+  transform: translateX(0);
+}
+
+.notification-item.read::before {
+  display: none;
+}
+
+.notification-item.read .notification-indicator {
+  display: none;
+}
+
+.notification-item.unread {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.notification-item.unread:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+/* Amélioration du placeholder d'avatar */
+.avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border-radius: 50%;
+}
+
+/* Animation pour le badge quand il change */
+.notification-badge {
+  transition: all 0.3s ease;
+}
+
+/* Effet pulse pour nouvelles notifications */
+@keyframes gentle-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+  }
+}
+
+.notification-button.has-notifications .notification-badge {
+  animation: gentle-pulse 2s infinite;
+}
+
+/* Amélioration responsive */
+@media (max-width: 480px) {
+  .notification-dropdown {
+    width: calc(100vw - 40px);
+    left: -20px;
+    right: auto;
+    max-height: 80vh;
+  }
+  
+  .notification-header-actions {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .notification-count-badge {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+  }
+}
+
+/* Animation d'entrée pour les items */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.notification-item {
+  animation: slideIn 0.3s ease forwards;
+  animation-delay: calc(var(--item-index, 0) * 0.05s);
+}
+
+/* Style pour le titre de notification */
+.notification-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.type-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+  min-width: 24px;
+}
+
+/* Tooltip pour le bouton */
+.notification-button {
+  position: relative;
+}
+
+.notification-button::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.95);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  pointer-events: none;
+  z-index: 1001;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.notification-button:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-5px);
+}
