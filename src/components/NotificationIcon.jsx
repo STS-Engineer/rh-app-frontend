@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import './NotificationIcon.css';
@@ -10,18 +10,20 @@ const NotificationIcon = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [recentNotifications, setRecentNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [hasNewNotifications, setHasNewNotifications] = useState(false);
-  const [notificationsRead, setNotificationsRead] = useState(false);
+  const [notificationsRead, setNotificationsRead] = useState(() => {
+    // Récupérer l'état depuis localStorage
+    const saved = localStorage.getItem('notificationsRead');
+    return saved ? JSON.parse(saved) : false;
+  });
 
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
 
   // Fonction pour récupérer le nombre de notifications
-  const fetchNotificationCount = async () => {
+  const fetchNotificationCount = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      console.log('🔔 Fetching notification count...');
       const response = await fetch(`${API_BASE_URL}/api/notifications/count`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -32,20 +34,18 @@ const NotificationIcon = () => {
       if (response.ok) {
         const data = await response.json();
         const newCount = data.count || 0;
-        console.log(`🔔 Notification count: ${newCount}`);
         setNotificationCount(newCount);
         
-        // Déterminer s'il y a de nouvelles notifications
-        if (newCount > 0 && !notificationsRead) {
-          setHasNewNotifications(true);
-        } else {
-          setHasNewNotifications(false);
+        // Mettre à jour localStorage si pas de notifications
+        if (newCount === 0) {
+          localStorage.setItem('notificationsRead', 'true');
+          setNotificationsRead(true);
         }
       }
     } catch (error) {
       console.error('❌ Erreur récupération notifications:', error);
     }
-  };
+  }, []);
 
   // Fonction pour marquer toutes les notifications comme lues
   const markAllAsRead = async () => {
@@ -53,23 +53,69 @@ const NotificationIcon = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      console.log('✅ Marquer toutes les notifications comme lues');
-      
-      // Pour votre backend actuel, on va simplement mettre à jour l'état local
-      // Si vous ajoutez un endpoint pour marquer comme lu, utilisez-le ici
-      
-      // Pour l'instant, on réinitialise juste le compteur
-      setNotificationCount(0);
-      setHasNewNotifications(false);
-      setNotificationsRead(true);
-      
-      // Marquer les notifications comme lues localement
-      setRecentNotifications(prev => 
-        prev.map(notif => ({ ...notif, read: true }))
-      );
-      
+      // Appel API pour marquer toutes comme lues
+      const response = await fetch(`${API_BASE_URL}/api/notifications/mark-all-read`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        // Réinitialiser le compteur
+        setNotificationCount(0);
+        
+        // Mettre à jour l'état local
+        setNotificationsRead(true);
+        localStorage.setItem('notificationsRead', 'true');
+        
+        // Mettre à jour les notifications affichées
+        setRecentNotifications(prev => 
+          prev.map(notif => ({ ...notif, read: true }))
+        );
+        
+        console.log('✅ Toutes les notifications marquées comme lues');
+      }
     } catch (error) {
       console.error('❌ Erreur marquer comme lu:', error);
+    }
+  };
+
+  // Fonction pour marquer une notification spécifique comme lue
+  const markNotificationAsRead = async (notificationId) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/mark-read`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        // Mettre à jour l'état local
+        setRecentNotifications(prev =>
+          prev.map(notif =>
+            notif.id === notificationId ? { ...notif, read: true } : notif
+          )
+        );
+        
+        // Décrémenter le compteur
+        setNotificationCount(prev => Math.max(0, prev - 1));
+        
+        // Vérifier si toutes sont lues
+        const allRead = recentNotifications.every(n => n.read || n.id === notificationId);
+        if (allRead && notificationCount <= 1) {
+          setNotificationsRead(true);
+          localStorage.setItem('notificationsRead', 'true');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erreur marquer notification comme lue:', error);
     }
   };
 
@@ -80,7 +126,6 @@ const NotificationIcon = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
 
-      console.log('🔔 Fetching recent notifications...');
       const response = await fetch(`${API_BASE_URL}/api/notifications/recent`, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -90,13 +135,14 @@ const NotificationIcon = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log(`🔔 ${data.notifications?.length || 0} notifications récentes`);
-        setRecentNotifications(data.notifications || []);
+        const notifications = data.notifications || [];
+        setRecentNotifications(notifications);
         
-        // Vérifier si des notifications sont non lues
-        const unreadCount = data.notifications?.length || 0;
-        if (unreadCount === 0) {
-          setHasNewNotifications(false);
+        // Vérifier si toutes les notifications sont lues
+        const allRead = notifications.every(n => n.read);
+        if (allRead && notificationCount === 0) {
+          setNotificationsRead(true);
+          localStorage.setItem('notificationsRead', 'true');
         }
       }
     } catch (error) {
@@ -106,7 +152,7 @@ const NotificationIcon = () => {
     }
   };
 
-  // Récupérer le nombre de notifications au chargement
+  // Récupérer le nombre de notifications au chargement et périodiquement
   useEffect(() => {
     fetchNotificationCount();
     
@@ -114,7 +160,7 @@ const NotificationIcon = () => {
     const interval = setInterval(fetchNotificationCount, 30000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchNotificationCount]);
 
   // Récupérer les détails quand on ouvre le dropdown
   useEffect(() => {
@@ -123,49 +169,38 @@ const NotificationIcon = () => {
     }
   }, [showDropdown]);
 
-  // Marquer comme lu quand on ferme le dropdown
+  // Synchroniser l'état avec le backend quand le compteur change
   useEffect(() => {
-    if (!showDropdown && hasNewNotifications) {
-      // On ne marque pas automatiquement, seulement quand l'utilisateur clique
+    if (notificationCount === 0) {
+      setNotificationsRead(true);
+      localStorage.setItem('notificationsRead', 'true');
+    } else {
+      setNotificationsRead(false);
+      localStorage.setItem('notificationsRead', 'false');
     }
-  }, [showDropdown, hasNewNotifications]);
+  }, [notificationCount]);
 
   const handleToggleDropdown = () => {
-    const newShowDropdown = !showDropdown;
-    setShowDropdown(newShowDropdown);
-    
-    // Si on ouvre le dropdown et qu'il y a des nouvelles notifications, on les marque comme lues
-    if (newShowDropdown && hasNewNotifications) {
-      // On pourrait marquer ici, mais on laisse l'utilisateur le faire manuellement
-    }
+    setShowDropdown(!showDropdown);
   };
 
-  const handleViewAll = () => {
-    setShowDropdown(false);
-    
-    // Marquer comme lues quand on va sur la page des demandes
-    if (hasNewNotifications) {
-      markAllAsRead();
+  const handleViewAll = async () => {
+    // Marquer toutes comme lues avant de naviguer
+    if (notificationCount > 0) {
+      await markAllAsRead();
     }
     
+    setShowDropdown(false);
     navigate('/demandes-rh');
   };
 
-  const handleNotificationClick = (notification) => {
-    // Fermer le dropdown
+  const handleNotificationClick = async (notification) => {
+    // Marquer cette notification comme lue
+    if (!notification.read) {
+      await markNotificationAsRead(notification.id);
+    }
+    
     setShowDropdown(false);
-    
-    // Marquer comme lue localement
-    setRecentNotifications(prev =>
-      prev.map(notif =>
-        notif.id === notification.id ? { ...notif, read: true } : notif
-      )
-    );
-    
-    // Décrémenter le compteur si > 0
-    setNotificationCount(prev => Math.max(0, prev - 1));
-    
-    // Naviguer vers les demandes
     navigate('/demandes-rh');
   };
 
@@ -196,17 +231,20 @@ const NotificationIcon = () => {
     return icons[type] || '📄';
   };
 
-  const handleMarkAllRead = () => {
-    markAllAsRead();
+  const handleMarkAllRead = async () => {
+    await markAllAsRead();
   };
+
+  // Calculer le nombre de notifications non lues dans la liste
+  const unreadInList = recentNotifications.filter(n => !n.read).length;
 
   return (
     <div className="notification-wrapper">
       <button 
-        className={`notification-button ${hasNewNotifications ? 'has-notifications' : ''}`}
+        className={`notification-button ${notificationCount > 0 ? 'has-notifications' : ''}`}
         onClick={handleToggleDropdown}
         aria-label={t('notifications') || 'Notifications'}
-        title={`${notificationCount} nouvelle(s) notification(s)`}
+        title={notificationCount > 0 ? `${notificationCount} nouvelle(s) notification(s)` : 'Aucune nouvelle notification'}
       >
         <span className="notification-icon">🔔</span>
         {notificationCount > 0 && (
@@ -228,15 +266,17 @@ const NotificationIcon = () => {
               {notificationCount > 0 && (
                 <div className="notification-header-actions">
                   <span className="notification-count-badge">
-                    {notificationCount} {t('new') || 'nouvelles'}
+                    {unreadInList > 0 ? `${unreadInList} non lues` : 'Toutes lues'}
                   </span>
-                  <button 
-                    className="btn-mark-read"
-                    onClick={handleMarkAllRead}
-                    title="Marquer toutes comme lues"
-                  >
-                    ✓
-                  </button>
+                  {unreadInList > 0 && (
+                    <button 
+                      className="btn-mark-read"
+                      onClick={handleMarkAllRead}
+                      title="Marquer toutes comme lues"
+                    >
+                      ✓
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -253,31 +293,37 @@ const NotificationIcon = () => {
                   <p>{t('noNewNotifications') || 'Aucune nouvelle notification'}</p>
                 </div>
               ) : (
-                recentNotifications.map((notif) => (
+                recentNotifications.map((notif, index) => (
                   <div 
                     key={notif.id}
-                    className={`notification-item ${notificationsRead ? 'read' : 'unread'}`}
+                    className={`notification-item ${notif.read ? 'read' : 'unread'}`}
                     onClick={() => handleNotificationClick(notif)}
+                    style={{ '--item-index': index }}
                   >
                     <div className="notification-avatar">
                       {notif.employe_photo ? (
-                        <img src={notif.employe_photo} alt="" onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.parentElement.innerHTML = 
-                            `<div class="avatar-placeholder">
-                              ${notif.employe_prenom?.[0] || 'E'}${notif.employe_nom?.[0] || 'M'}
-                            </div>`;
-                        }} />
+                        <img 
+                          src={notif.employe_photo} 
+                          alt="" 
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            const placeholder = e.target.parentElement.querySelector('.avatar-placeholder-fallback');
+                            if (placeholder) placeholder.style.display = 'flex';
+                          }} 
+                        />
                       ) : (
                         <div className="avatar-placeholder">
                           {notif.employe_prenom?.[0] || 'E'}{notif.employe_nom?.[0] || 'M'}
                         </div>
                       )}
+                      <div className="avatar-placeholder-fallback" style={{ display: 'none' }}>
+                        {notif.employe_prenom?.[0] || 'E'}{notif.employe_nom?.[0] || 'M'}
+                      </div>
                     </div>
                     <div className="notification-content">
                       <div className="notification-title">
                         <span className="type-icon">{getTypeIcon(notif.type_demande)}</span>
-                        {notif.titre || 'Nouvelle demande'}
+                        <span className="title-text">{notif.titre || 'Nouvelle demande'}</span>
                       </div>
                       <div className="notification-subtitle">
                         {notif.employe_prenom || 'Employé'} {notif.employe_nom || ''}
@@ -286,7 +332,7 @@ const NotificationIcon = () => {
                         {formatDate(notif.created_at)}
                       </div>
                     </div>
-                    {!notificationsRead && (
+                    {!notif.read && (
                       <div className="notification-indicator"></div>
                     )}
                   </div>
@@ -294,16 +340,14 @@ const NotificationIcon = () => {
               )}
             </div>
 
-            {recentNotifications.length > 0 && (
-              <div className="notification-footer">
-                <button 
-                  className="btn-view-all"
-                  onClick={handleViewAll}
-                >
-                  {t('viewAll') || 'Voir toutes les demandes'} →
-                </button>
-              </div>
-            )}
+            <div className="notification-footer">
+              <button 
+                className="btn-view-all"
+                onClick={handleViewAll}
+              >
+                {t('viewAll') || 'Voir toutes les demandes'} →
+              </button>
+            </div>
           </div>
         </>
       )}
