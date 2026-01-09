@@ -228,7 +228,7 @@ const NotificationIcon = () => {
       'visa': '',
       'conge': ''
     };
-    return icons[type] || '📄';
+    return icons[type] || '';
   };
 
   const handleMarkAllRead = async () => {
