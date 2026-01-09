@@ -402,7 +402,7 @@ const DemandesRH = () => {
                 {demande.frais_deplacement && (
                   <div className="detail-row">
                     <span className="detail-label">💰 {t('travelExpenses')}:</span>
-                    <span className="detail-value">{demande.frais_deplacement} DH</span>
+                    <span className="detail-value">{demande.frais_deplacement} DT</span>
                   </div>
                 )}
                 {demande.demi_journee && (
