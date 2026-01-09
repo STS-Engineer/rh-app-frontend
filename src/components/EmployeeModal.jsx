@@ -148,7 +148,7 @@ const DeleteConfirmationModal = memo(function DeleteConfirmationModal({
    ========================= */
 
 const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refreshParent }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage(); // AJOUT: Récupérer language
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
@@ -229,9 +229,17 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
       if (!dateString) return t('notSpecified');
       const date = new Date(dateString);
       if (Number.isNaN(date.getTime())) return t('notSpecified');
-      return date.toLocaleDateString('fr-FR');
+      
+      // Utiliser la locale basée sur la langue actuelle
+      const localeMap = {
+        'fr': 'fr-FR',
+        'en': 'en-US',
+        'zh': 'zh-CN'
+      };
+      
+      return date.toLocaleDateString(localeMap[language] || 'fr-FR');
     },
-    [t]
+    [t, language]  // MODIFICATION: Ajouter language
   );
 
   const getDefaultAvatar = useCallback(() => {
