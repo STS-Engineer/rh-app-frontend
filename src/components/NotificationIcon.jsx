@@ -222,11 +222,11 @@ const NotificationIcon = () => {
 
   const getTypeIcon = (type) => {
     const icons = {
-      'congé': '🏖️',
-      'autorisation_absence': '⏰',
-      'mission': '✈️',
-      'visa': '🛂',
-      'conge': '🏖️'
+      'congé': '',
+      'autorisation_absence': '',
+      'mission': '',
+      'visa': '',
+      'conge': ''
     };
     return icons[type] || '📄';
   };
