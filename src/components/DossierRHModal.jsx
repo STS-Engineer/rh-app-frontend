@@ -2,11 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import './DossierRHModal.css';
 
 const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
-  const [photos, setPhotos] = useState([]);
+  const [files, setFiles] = useState([]);
   const [dossierName, setDossierName] = useState('');
   const [isCapturing, setIsCapturing] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [generating, setGenerating] = useState(false);
+  const [processing, setProcessing] = useState(false);
   const [hasExistingDossier, setHasExistingDossier] = useState(false);
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
@@ -14,7 +14,6 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
 
-  // ✅ Détecter si un dossier existe déjà
   useEffect(() => {
     if (employee && employee.dossier_rh) {
       setHasExistingDossier(true);
@@ -26,7 +25,6 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     }
   }, [employee, dossierName]);
 
-  // Ouvrir la caméra
   const startCamera = async () => {
     try {
       setIsCapturing(true);
@@ -44,7 +42,6 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     }
   };
 
-  // Arrêter la caméra
   const stopCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -53,7 +50,6 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     setIsCapturing(false);
   };
 
-  // Capturer une photo
   const capturePhoto = () => {
     if (!videoRef.current) return;
 
@@ -68,13 +64,15 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
         const file = new File([blob], `capture-${Date.now()}.jpg`, {
           type: 'image/jpeg'
         });
-        setPhotos(prev => [
+        setFiles(prev => [
           ...prev,
           {
             file: file,
             preview: URL.createObjectURL(blob),
             name: `Capture ${prev.length + 1}`,
-            filename: `capture-${Date.now()}.jpg`
+            filename: `capture-${Date.now()}.jpg`,
+            isImage: true,
+            isPdf: false
           }
         ]);
       },
@@ -83,32 +81,39 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     );
   };
 
-  // Upload de photos depuis l'appareil
   const handleFileUpload = e => {
-    const files = Array.from(e.target.files);
-    const newPhotos = files.map(file => ({
-      file: file,
-      preview: URL.createObjectURL(file),
-      name: file.name,
-      filename: file.name
-    }));
-    setPhotos(prev => [...prev, ...newPhotos]);
+    const uploadedFiles = Array.from(e.target.files);
+    const newFiles = uploadedFiles.map(file => {
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      const isImage = file.type.startsWith('image/') && !isPdf;
+      
+      return {
+        file: file,
+        preview: isImage ? URL.createObjectURL(file) : null,
+        name: file.name,
+        filename: file.name,
+        isImage: isImage,
+        isPdf: isPdf,
+        fileType: isPdf ? 'pdf' : 'image'
+      };
+    });
+    setFiles(prev => [...prev, ...newFiles]);
   };
 
-  // Supprimer une photo
-  const removePhoto = index => {
-    setPhotos(prev => {
-      const newPhotos = [...prev];
-      URL.revokeObjectURL(newPhotos[index].preview);
-      newPhotos.splice(index, 1);
-      return newPhotos;
+  const removeFile = index => {
+    setFiles(prev => {
+      const newFiles = [...prev];
+      if (newFiles[index].preview) {
+        URL.revokeObjectURL(newFiles[index].preview);
+      }
+      newFiles.splice(index, 1);
+      return newFiles;
     });
   };
 
-  // Upload des photos vers le backend
-  const uploadPhotos = async () => {
-    if (photos.length === 0) {
-      alert('Veuillez ajouter au moins une photo');
+  const uploadFiles = async () => {
+    if (files.length === 0) {
+      alert('Veuillez ajouter au moins un fichier');
       return null;
     }
 
@@ -117,13 +122,13 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       const token = localStorage.getItem('token');
       const formData = new FormData();
 
-      photos.forEach(photo => {
-        formData.append('photos', photo.file);
+      files.forEach(file => {
+        formData.append('files', file.file);
       });
 
-      console.log('📤 Début upload des photos...');
+      console.log('📤 Début upload des fichiers...');
       const response = await fetch(
-        `${API_BASE_URL}/api/dossier-rh/upload-photos`,
+        `${API_BASE_URL}/api/dossier-rh/upload-files`,
         {
           method: 'POST',
           headers: {
@@ -141,60 +146,57 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
       const result = await response.json();
       console.log('✅ Upload réussi:', result);
-      return result.photos;
+      return result.files;
     } catch (error) {
       console.error('❌ Erreur upload:', error);
-      alert(`Erreur lors de l'upload des photos: ${error.message}`);
+      alert(`Erreur lors de l'upload des fichiers: ${error.message}`);
       return null;
     } finally {
       setUploading(false);
     }
   };
 
-  // ✅ MODIFICATION PRINCIPALE : Utiliser merge-pdf pour dossiers existants
-  const generateOrMergePDF = async () => {
+  const processDossier = async () => {
     if (!dossierName.trim()) {
       alert('Veuillez donner un nom au dossier');
       return;
     }
 
-    if (photos.length === 0) {
-      alert('Veuillez ajouter au moins une photo');
+    if (files.length === 0) {
+      alert('Veuillez ajouter au moins un fichier');
       return;
     }
 
-    setGenerating(true);
+    setProcessing(true);
     try {
-      console.log('🔄 Début génération/fusion PDF...');
+      console.log('🔄 Début traitement dossier RH...');
       
-      const uploadedPhotos = await uploadPhotos();
-      if (!uploadedPhotos) {
-        console.error('❌ Upload des photos échoué');
+      const uploadedFiles = await uploadFiles();
+      if (!uploadedFiles) {
+        console.error('❌ Upload des fichiers échoué');
         return;
       }
 
-      console.log('📸 Photos uploadées:', uploadedPhotos);
+      console.log('📤 Fichiers uploadés:', uploadedFiles);
       
       const token = localStorage.getItem('token');
       
-      // ✅ CHANGEMENT CLÉ : Utiliser merge-pdf pour dossiers existants
-      const endpoint = hasExistingDossier 
-        ? `${API_BASE_URL}/api/dossier-rh/merge-pdf/${employee.id}`
-        : `${API_BASE_URL}/api/dossier-rh/generate-pdf/${employee.id}`;
-      
-      console.log(`📍 Endpoint: ${hasExistingDossier ? 'MERGE (anciennes + nouvelles photos)' : 'CREATE (nouvelles photos)'}`);
-      
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          photos: uploadedPhotos,
-          dossierName: dossierName
-        })
-      });
+      // Utiliser la nouvelle route de traitement
+      const response = await fetch(
+        `${API_BASE_URL}/api/dossier-rh/process/${employee.id}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            files: uploadedFiles,
+            dossierName: dossierName,
+            mode: hasExistingDossier ? 'merge' : 'create'
+          })
+        }
+      );
 
       let result;
       try {
@@ -205,16 +207,16 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       }
 
       if (!response.ok) {
-        console.error('❌ Erreur génération/fusion PDF:', result);
+        console.error('❌ Erreur traitement dossier:', result);
         throw new Error(
           result?.error || result?.details || `Erreur ${response.status}`
         );
       }
 
-      console.log('✅ PDF généré/fusionné avec succès:', result);
+      console.log('✅ Dossier traité avec succès:', result);
       
       const successMessage = hasExistingDossier 
-        ? '✅ Dossier RH fusionné avec succès! Les anciennes et nouvelles photos ont été combinées.'
+        ? '✅ Dossier RH fusionné avec succès! Les nouveaux fichiers ont été ajoutés au dossier existant.'
         : '✅ Dossier RH créé avec succès!';
       
       alert(successMessage);
@@ -225,19 +227,29 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       
       handleClose();
     } catch (error) {
-      console.error('❌ Erreur génération/fusion PDF:', error);
-      alert(`Erreur lors de la génération du PDF: ${error.message}`);
+      console.error('❌ Erreur traitement dossier:', error);
+      alert(`Erreur lors du traitement du dossier: ${error.message}`);
     } finally {
-      setGenerating(false);
+      setProcessing(false);
     }
   };
 
   const handleClose = () => {
     stopCamera();
-    photos.forEach(photo => URL.revokeObjectURL(photo.preview));
-    setPhotos([]);
+    files.forEach(file => {
+      if (file.preview) {
+        URL.revokeObjectURL(file.preview);
+      }
+    });
+    setFiles([]);
     setDossierName('');
     onClose();
+  };
+
+  const getFileIcon = (file) => {
+    if (file.isPdf) return '📄';
+    if (file.isImage) return '🖼️';
+    return '📎';
   };
 
   if (!isOpen || !employee) return null;
@@ -250,7 +262,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
       >
         <div className="dossier-modal-header">
           <h2>
-            📁 {hasExistingDossier ? 'Fusionner le Dossier RH' : 'Créer un Dossier RH'}
+            {hasExistingDossier ? '🔄 Fusionner le Dossier RH' : '📁 Créer un Dossier RH'}
           </h2>
           <button className="close-btn" onClick={handleClose}>
             ×
@@ -266,24 +278,13 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
               Matricule: {employee.matricule} | Poste: {employee.poste}
             </p>
             
-            {/* ✅ Message explicatif amélioré */}
             {hasExistingDossier && (
-              <div style={{
-                background: '#fff3cd',
-                border: '2px solid #ffc107',
-                borderRadius: '8px',
-                padding: '12px',
-                marginTop: '12px',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '8px'
-              }}>
-                <span style={{ fontSize: '20px' }}>🔄</span>
+              <div className="info-message">
+                <span>🔄</span>
                 <div>
                   <strong>Mode Fusion Activé</strong>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '14px', color: '#555' }}>
-                    Les nouvelles photos seront <strong>ajoutées</strong> aux anciennes photos existantes dans le PDF. 
-                    L'ancien dossier sera conservé puis fusionné avec les nouvelles images.
+                  <p>
+                    Les nouveaux fichiers (images et PDFs) seront ajoutés aux documents existants.
                   </p>
                 </div>
               </div>
@@ -299,14 +300,21 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
               placeholder={
                 hasExistingDossier 
                   ? "Ex: Ajout documents 2024..."
-                  : "Ex: Dossier d'embauche, Évaluation trimestrielle..."
+                  : "Ex: Dossier d'embauche..."
               }
               className="dossier-name-input"
             />
           </div>
 
-          <div className="photos-section">
-            <h4>Photos à ajouter ({photos.length})</h4>
+          <div className="files-section">
+            <h4>Fichiers à ajouter ({files.length})</h4>
+            
+            <div className="files-summary">
+              <span>
+                📊 {files.filter(f => f.isImage).length} image(s), 
+                {files.filter(f => f.isPdf).length} PDF(s)
+              </span>
+            </div>
 
             <div className="capture-controls">
               {!isCapturing ? (
@@ -352,36 +360,47 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isCapturing}
               >
-                📁 Uploader des photos
+                📁 Uploader des fichiers
               </button>
 
               <input
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/*"
+                accept="image/*,.pdf,application/pdf"
                 onChange={handleFileUpload}
                 style={{ display: 'none' }}
               />
             </div>
 
-            {photos.length > 0 && (
-              <div className="photos-gallery">
-                <h5>Photos ajoutées:</h5>
-                <div className="photos-grid">
-                  {photos.map((photo, index) => (
-                    <div key={index} className="photo-item">
-                      <div className="photo-preview">
-                        <img src={photo.preview} alt={`Preview ${index}`} />
+            {files.length > 0 && (
+              <div className="files-list">
+                <h5>Fichiers ajoutés:</h5>
+                <div className="files-grid">
+                  {files.map((file, index) => (
+                    <div key={index} className="file-item">
+                      <div className="file-preview">
+                        {file.isImage && file.preview ? (
+                          <img src={file.preview} alt={`Preview ${index}`} />
+                        ) : (
+                          <div className="file-icon">
+                            {getFileIcon(file)}
+                          </div>
+                        )}
                         <button
-                          className="remove-photo-btn"
-                          onClick={() => removePhoto(index)}
-                          title="Supprimer cette photo"
+                          className="remove-file-btn"
+                          onClick={() => removeFile(index)}
+                          title="Supprimer ce fichier"
                         >
                           ×
                         </button>
                       </div>
-                      <span className="photo-name">{photo.name}</span>
+                      <div className="file-info">
+                        <span className="file-name">{file.name}</span>
+                        <span className="file-type">
+                          {file.isPdf ? 'PDF' : 'Image'}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -394,27 +413,27 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
           <button
             className="cancel-btn"
             onClick={handleClose}
-            disabled={generating || uploading}
+            disabled={processing || uploading}
           >
             ❌ Annuler
           </button>
           <button
             className="generate-btn"
-            onClick={generateOrMergePDF}
+            onClick={processDossier}
             disabled={
-              generating || 
+              processing || 
               uploading || 
-              photos.length === 0 || 
+              files.length === 0 || 
               !dossierName.trim()
             }
           >
-            {generating
+            {processing
               ? '⏳ Traitement en cours...'
               : uploading
-              ? '⏳ Upload des photos...'
+              ? '⏳ Upload des fichiers...'
               : hasExistingDossier
-              ? `🔄 Fusionner (${photos.length} nouvelle${photos.length > 1 ? 's' : ''} photo${photos.length > 1 ? 's' : ''})`
-              : `📄 Créer le PDF (${photos.length} photo${photos.length > 1 ? 's' : ''})`}
+              ? `🔄 Fusionner (${files.length} fichier${files.length > 1 ? 's' : ''})`
+              : `📁 Créer le dossier (${files.length} fichier${files.length > 1 ? 's' : ''})`}
           </button>
         </div>
       </div>
