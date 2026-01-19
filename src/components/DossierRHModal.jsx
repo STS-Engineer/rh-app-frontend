@@ -12,6 +12,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const cameraContainerRef = useRef(null);
 
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
 
@@ -29,10 +30,26 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     }
   }, [employee, dossierName]);
 
+  // Gérer la sortie du mode plein écran
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isCapturing) {
+        // L'utilisateur a quitté le mode plein écran, fermer la caméra
+        stopCamera();
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, [isCapturing]);
+
   const startCamera = async () => {
     try {
       setIsCapturing(true);
       setErrorMessage('');
+      
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'environment',
@@ -40,9 +57,21 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
           height: { ideal: 1080 }
         }
       });
+      
       streamRef.current = stream;
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+      }
+
+      // Passer en mode plein écran
+      if (cameraContainerRef.current) {
+        try {
+          await cameraContainerRef.current.requestFullscreen();
+        } catch (err) {
+          console.warn('Impossible de passer en plein écran:', err);
+          // Continuer même si le plein écran échoue
+        }
       }
     } catch (error) {
       console.error('Erreur caméra:', error);
@@ -51,7 +80,16 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
     }
   };
 
-  const stopCamera = () => {
+  const stopCamera = async () => {
+    // Quitter le mode plein écran
+    if (document.fullscreenElement) {
+      try {
+        await document.exitFullscreen();
+      } catch (err) {
+        console.warn('Erreur lors de la sortie du plein écran:', err);
+      }
+    }
+
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -112,21 +150,19 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
         mimetype: file.type
       };
 
-      // Vérifier la taille (max 50MB)
       if (file.size > 50 * 1024 * 1024) {
         setErrorMessage(`Le fichier "${file.name}" dépasse la taille maximale de 50MB`);
         return null;
       }
 
       return fileObj;
-    }).filter(file => file !== null); // Filtrer les fichiers invalides
+    }).filter(file => file !== null);
 
     if (newFiles.length > 0) {
       setFiles(prev => [...prev, ...newFiles]);
       setErrorMessage('');
     }
 
-    // Réinitialiser l'input pour permettre la sélection des mêmes fichiers
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -160,7 +196,6 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
       const formData = new FormData();
       
-      // Ajouter tous les fichiers
       files.forEach(file => {
         formData.append('files', file.file);
       });
@@ -173,7 +208,6 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
-            // NE PAS ajouter 'Content-Type' - laissez FormData le gérer
           },
           body: formData
         }
@@ -205,13 +239,12 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
 
       console.log('✅ Upload réussi:', result.files.length, 'fichier(s)');
 
-      // Associer les informations du serveur avec nos fichiers locaux
       const enrichedFiles = files.map((localFile, index) => {
         const serverFile = result.files[index] || {};
         return {
           ...serverFile,
-          file: localFile.file, // Conserver l'objet File original
-          preview: localFile.preview, // Conserver la preview
+          file: localFile.file,
+          preview: localFile.preview,
           name: localFile.name,
           isImage: localFile.isImage,
           isPdf: localFile.isPdf
@@ -258,7 +291,6 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
         throw new Error('Token d\'authentification manquant');
       }
 
-      // Utiliser la route de traitement
       const response = await fetch(
         `${API_BASE_URL}/api/dossier-rh/process/${employee.id}`,
         {
@@ -462,38 +494,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
                 >
                   📷 Ouvrir la caméra
                 </button>
-              ) : (
-                <div className="camera-active">
-                  <div className="video-container">
-                    <video
-                      ref={videoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      className="camera-video"
-                    />
-                    <div className="camera-overlay">
-                      <div className="camera-guide"></div>
-                    </div>
-                  </div>
-                  <div className="camera-actions">
-                    <button
-                      type="button"
-                      className="capture-btn"
-                      onClick={capturePhoto}
-                    >
-                      📸 Capturer photo
-                    </button>
-                    <button
-                      type="button"
-                      className="stop-camera-btn"
-                      onClick={stopCamera}
-                    >
-                      ❌ Fermer caméra
-                    </button>
-                  </div>
-                </div>
-              )}
+              ) : null}
 
               <div className="upload-zone">
                 <button
@@ -622,6 +623,48 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
           </div>
         </div>
       </div>
+
+      {/* Conteneur plein écran pour la caméra */}
+      {isCapturing && (
+        <div 
+          ref={cameraContainerRef}
+          className="camera-fullscreen-container"
+        >
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="camera-video-fullscreen"
+          />
+          
+          <div className="camera-overlay-fullscreen">
+            <div className="camera-guide-fullscreen"></div>
+          </div>
+
+          <div className="camera-controls-fullscreen">
+            <button
+              type="button"
+              className="capture-btn-fullscreen"
+              onClick={capturePhoto}
+            >
+              📸
+            </button>
+          </div>
+
+          <button
+            type="button"
+            className="close-camera-btn-fullscreen"
+            onClick={stopCamera}
+          >
+            ×
+          </button>
+
+          <div className="captures-counter-fullscreen">
+            {files.filter(f => f.isImage).length} photo(s)
+          </div>
+        </div>
+      )}
     </div>
   );
 };
