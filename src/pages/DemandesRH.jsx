@@ -249,13 +249,70 @@ const DemandesRH = () => {
     setShowModal(true);
   };
 
+  const calculateWorkingDays = (dateDepart, dateRetour, demiJournee) => {
+    if (!dateDepart || !dateRetour) return '';
+    
+    try {
+      const start = new Date(dateDepart);
+      const end = new Date(dateRetour);
+      
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return '';
+      
+      let count = 0;
+      const current = new Date(start);
+      
+      // Parcourir tous les jours entre la date de départ et de retour (inclus)
+      while (current <= end) {
+        const dayOfWeek = current.getDay();
+        // 0 = Dimanche, 6 = Samedi - On compte uniquement du lundi (1) au vendredi (5)
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          count++;
+        }
+        current.setDate(current.getDate() + 1);
+      }
+      
+      // Si c'est une demi-journée, on soustrait 0.5
+      if (demiJournee && count > 0) {
+        return `${count - 0.5} ${t('workingDays')}`;
+      }
+      
+      return `${count} ${count > 1 ? t('workingDays') : t('workingDay')}`;
+    } catch (e) {
+      return '';
+    }
+  };
+
   const handleExportExcel = () => {
     if (!demandes || demandes.length === 0) {
       alert(t('noRequestsToExport'));
       return;
     }
 
-    const headers = ['ID', t('title'), t('type'), t('leaveType'), t('status'), t('employee'), t('employeeID'), t('creationDate'), t('supervisor1'), t('supervisor2')];
+    const headers = [
+      'ID',
+      t('title'),
+      t('type'),
+      t('leaveType'),
+      t('status'),
+      t('employee'),
+      t('employeeID'),
+      t('position'),
+      t('startDateReq'),
+      t('returnDate'),
+      t('departureTime'),
+      t('returnTime'),
+      t('numberOfWorkingDays'),
+      t('halfDay'),
+      t('travelExpenses'),
+      t('supervisor1'),
+      t('supervisor1Status'),
+      t('supervisor2'),
+      t('supervisor2Status'),
+      t('refusalComment'),
+      t('creationDate'),
+      t('lastUpdated')
+    ];
+    
     const rows = demandes.map(d => [
       d.id,
       d.titre,
@@ -264,20 +321,33 @@ const DemandesRH = () => {
       getStatutLabel(d.statut),
       `${d.employe_prenom} ${d.employe_nom}`,
       d.employe_matricule || '',
-      formatDate(d.created_at),
+      d.employe_poste || '',
+      formatDate(d.date_depart),
+      formatDate(d.date_retour),
+      d.heure_depart || '',
+      d.heure_retour || '',
+      calculateWorkingDays(d.date_depart, d.date_retour, d.demi_journee),
+      d.demi_journee ? t('yes') : t('no'),
+      d.frais_deplacement ? `${d.frais_deplacement} DT` : '',
       d.mail_responsable1 || t('notAssigned'),
-      d.mail_responsable2 || t('notRequired')
+      getResponsableStatusLabel(getResponsableStatus(d, 1)),
+      d.mail_responsable2 || t('notRequired'),
+      d.mail_responsable2 ? getResponsableStatusLabel(getResponsableStatus(d, 2)) : '',
+      d.commentaire_refus || '',
+      formatDateTime(d.created_at),
+      formatDateTime(d.updated_at)
     ]);
 
     const csvContent = [headers, ...rows]
       .map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(';'))
       .join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `demandes_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `demandes_RH_${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
