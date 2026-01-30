@@ -11,6 +11,7 @@ import FicheDePaie from './pages/FicheDePaie';
 import Settings from './pages/Settings';
 import Visa from './pages/Visa';
 import './styles/App.css';
+import Presence from './pages/Presence'; 
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
@@ -57,6 +58,14 @@ function App() {
                 element={
                   <PrivateRoute>
                     <DemandesRH />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/presence" 
+                element={
+                  <PrivateRoute>
+                    <Presence />
                   </PrivateRoute>
                 } 
               />
