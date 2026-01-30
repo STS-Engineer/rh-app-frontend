@@ -783,6 +783,13 @@ const DemandesRH = () => {
                           <span className="value">{demande.heure_depart}</span>
                         </div>
                       )}
+
+                      {demande.heure_depart && (
+                        <div className="detail">
+                          <span className="label">⏰ {t('departureTime')}:</span>
+                          <span className="value">{demande.heure_retour}</span>
+                        </div>
+                      )}
                       
                       {demande.frais_deplacement && (
                         <div className="detail">
