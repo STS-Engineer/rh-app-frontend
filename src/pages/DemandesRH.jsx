@@ -784,9 +784,9 @@ const DemandesRH = () => {
                         </div>
                       )}
 
-                      {demande.heure_retour && (
+                      {demande.heure_depart && (
                         <div className="detail">
-                          <span className="label">⏰ {t('departureTime')}:</span>
+                          <span className="label">⏰ {t('returnTime')}:</span>
                           <span className="value">{demande.heure_retour}</span>
                         </div>
                       )}
