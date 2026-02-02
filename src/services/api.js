@@ -44,26 +44,6 @@ api.interceptors.response.use(
   }
 );
 
-
-
-
-
-export const presenceAPI = {
-  getOverview: (params = {}) => api.get('/presence/overview', { params }),
-  
-  // Version optimisée pour les données de présence
-  getPresenceData: async (startDate, endDate) => {
-    try {
-      const response = await api.get('/presence/overview', {
-        params: { startDate, endDate }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Erreur récupération données présence:', error);
-      throw error;
-    }
-  }
-};
 // =========================
 // API Authentification
 // =========================
