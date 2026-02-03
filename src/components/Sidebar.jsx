@@ -17,7 +17,7 @@ const Sidebar = () => {
     { path: '/fiche-de-paie', label: t('payslip'), icon: '💰' },
     { path: '/archives', label: t('archives'), icon: '📁' },
     { path: '/statistics', label: t('statistics'), icon: '📈' }, 
-    { path: '/presence', label: t('presence'), icon: '📅' }, // NOUVELLE PAGE
+    { path: '/etat-des-lieux', label: t('presence'), icon: '📅' },
     { path: '/visa', label: t('visa'), icon: '✈️' },
     { path: '/settings', label: t('settings'), icon: '⚙️' },
   ];
