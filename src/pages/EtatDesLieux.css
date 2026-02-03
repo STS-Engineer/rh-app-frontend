@@ -1,0 +1,395 @@
+.etat-des-lieux-container {
+  padding: 20px;
+  background-color: #f8fafc;
+  min-height: 100vh;
+}
+
+.etat-header {
+  margin-bottom: 30px;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.etat-header h1 {
+  margin: 0 0 20px 0;
+  color: #1e293b;
+  font-size: 28px;
+}
+
+.controls-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.view-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.view-btn {
+  padding: 8px 16px;
+  border: 1px solid #e5e7eb;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+  font-size: 14px;
+}
+
+.view-btn.active {
+  background: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}
+
+.view-btn:hover {
+  background: #f1f5f9;
+}
+
+.date-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.nav-btn {
+  padding: 8px 16px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.nav-btn:hover {
+  background: #f1f5f9;
+}
+
+.date-picker {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.week-display, .month-display {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.employee-filter {
+  display: flex;
+  gap: 10px;
+}
+
+.employee-search {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.filter-select {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: white;
+  font-size: 14px;
+}
+
+.legend-container {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.color-box {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+.presence-table-container {
+  background: white;
+  border-radius: 12px;
+  overflow: auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+}
+
+.presence-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.presence-table th {
+  background: #f8fafc;
+  padding: 12px;
+  text-align: center;
+  border-bottom: 2px solid #e5e7eb;
+  font-weight: 600;
+  color: #475569;
+}
+
+.employee-column {
+  min-width: 200px;
+  text-align: left;
+  padding-left: 20px;
+}
+
+.date-column {
+  min-width: 120px;
+}
+
+.date-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.weekday {
+  font-size: 12px;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.day {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.employee-row {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.employee-row:hover {
+  background: #f8fafc;
+}
+
+.employee-cell {
+  padding: 12px 20px;
+}
+
+.employee-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.employee-name {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.employee-details {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.status-cell {
+  padding: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s;
+  height: 80px;
+  vertical-align: top;
+}
+
+.status-cell:hover {
+  transform: scale(1.02);
+  z-index: 1;
+  position: relative;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.status-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+}
+
+.status-type {
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.2);
+}
+
+.time-info {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(0, 0, 0, 0.1);
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.detailed-view {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.detailed-view h3 {
+  margin: 0 0 20px 0;
+  color: #1e293b;
+}
+
+.absences-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.absence-item {
+  padding: 15px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+
+.absence-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.absence-type {
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+.absence-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.detail-row {
+  display: flex;
+  gap: 10px;
+}
+
+.detail-label {
+  font-weight: 500;
+  color: #64748b;
+  font-size: 13px;
+  min-width: 60px;
+}
+
+.detail-value {
+  color: #1e293b;
+  font-size: 13px;
+}
+
+.no-absences {
+  text-align: center;
+  padding: 40px;
+  color: #94a3b8;
+}
+
+.stats-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-top: 30px;
+}
+
+.stat-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: #2563eb;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.loading-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .view-controls {
+    flex-wrap: wrap;
+  }
+  
+  .employee-filter {
+    flex-direction: column;
+  }
+  
+  .presence-table-container {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 768px) {
+  .etat-header {
+    padding: 15px;
+  }
+  
+  .date-navigation {
+    flex-wrap: wrap;
+  }
+  
+  .stats-container {
+    grid-template-columns: 1fr;
+  }
+}
