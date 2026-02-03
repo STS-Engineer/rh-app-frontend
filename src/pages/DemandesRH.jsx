@@ -3,7 +3,6 @@ import './DemandesRH.css';
 import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../contexts/LanguageContext';
 
-
 const DemandesRH = () => {
   const { t } = useLanguage();
   const [demandes, setDemandes] = useState([]);
@@ -469,16 +468,17 @@ const DemandesRH = () => {
                     <span className="detail-value">{demande.heure_retour}</span>
                   </div>
                 )}
-                {demande.frais_deplacement && (
-                  <div className="detail-row">
-                    <span className="detail-label">💰 {t('travelExpenses')}:</span>
-                    <span className="detail-value">{demande.frais_deplacement} DT</span>
-                  </div>
-                )}
+                {/* AJOUT ICI - Afficher demi-journée si true */}
                 {demande.demi_journee && (
                   <div className="detail-row">
                     <span className="detail-label">🕐 {t('halfDay')}:</span>
                     <span className="detail-value">{t('yes')}</span>
+                  </div>
+                )}
+                {demande.frais_deplacement && (
+                  <div className="detail-row">
+                    <span className="detail-label">💰 {t('travelExpenses')}:</span>
+                    <span className="detail-value">{demande.frais_deplacement} DT</span>
                   </div>
                 )}
               </div>
@@ -784,10 +784,18 @@ const DemandesRH = () => {
                         </div>
                       )}
 
-                      {demande.heure_depart && (
+                      {demande.heure_retour && (
                         <div className="detail">
                           <span className="label">⏰ {t('returnTime')}:</span>
                           <span className="value">{demande.heure_retour}</span>
+                        </div>
+                      )}
+                      
+                      {/* AJOUT ICI - Afficher demi-journée dans la carte */}
+                      {demande.demi_journee && (
+                        <div className="detail">
+                          <span className="label">🕐 {t('halfDay')}:</span>
+                          <span className="value">{t('yes')}</span>
                         </div>
                       )}
                       
