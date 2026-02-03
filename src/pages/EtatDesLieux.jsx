@@ -5,6 +5,30 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import './EtatDesLieux.css';
 
+// Icônes (vous pouvez utiliser react-icons ou des emojis)
+const ICONS = {
+  CONGE: '🏖️',
+  MISSION: '✈️',
+  AUTORISATION: '⏰',
+  PRESENT: '✅',
+  ABSENT: '❌',
+  LATE: '⏰',
+  CALENDAR: '📅',
+  EMPLOYEE: '👤',
+  FILTER: '🔍',
+  DOWNLOAD: '📥',
+  PRINT: '🖨️',
+  STATS: '📊',
+  TEAM: '👥',
+  DEPARTMENT: '🏢',
+  TIME: '⏳',
+  LOCATION: '📍',
+  DOCUMENT: '📄',
+  APPROVED: '👍',
+  PENDING: '⏳',
+  REJECTED: '👎'
+};
+
 const EtatDesLieux = () => {
   const { t } = useLanguage();
   const [employees, setEmployees] = useState([]);
@@ -12,22 +36,39 @@ const EtatDesLieux = () => {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [dateRange, setDateRange] = useState({
-    start: new Date(),
-    end: new Date(new Date().setDate(new Date().getDate() + 6))
+    start: new Date(new Date().setDate(new Date().getDate() - new Date().getDay())),
+    end: new Date(new Date().setDate(new Date().getDate() - new Date().getDay() + 6))
   });
-  const [filterType, setFilterType] = useState('week'); // 'day', 'week', 'month', 'employee'
+  const [filterType, setFilterType] = useState('week');
   const [selectedEmployee, setSelectedEmployee] = useState('all');
-  const [viewMode, setViewMode] = useState('day'); // 'day', 'week', 'month'
-  
-  // Couleurs pour les différents types d'absence
+  const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [viewMode, setViewMode] = useState('week');
+  const [showDetailsPanel, setShowDetailsPanel] = useState(false);
+  const [selectedAbsence, setSelectedAbsence] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Couleurs avec dégradés
   const statusColors = {
-    'congé': '#ff6b6b', // Rouge pour congé
-    'mission': '#4ecdc4', // Turquoise pour mission
-    'autorisation': '#45b7d1', // Bleu pour autorisation
-    'default': '#f8f9fa' // Gris clair pour disponible
+    'congé': 'linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%)',
+    'mission': 'linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%)',
+    'autorisation': 'linear-gradient(135deg, #45b7d1 0%, #5e72e4 100%)',
+    'retard': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+    'formation': 'linear-gradient(135deg, #96e6a1 0%, #d4fc79 100%)',
+    'maladie': 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)',
+    'default': 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)'
   };
 
-  // Charger les données
+  // Icônes par type
+  const statusIcons = {
+    'congé': ICONS.CONGE,
+    'mission': ICONS.MISSION,
+    'autorisation': ICONS.AUTORISATION,
+    'retard': ICONS.LATE,
+    'formation': '📚',
+    'maladie': '🤒',
+    'default': ICONS.PRESENT
+  };
+
   useEffect(() => {
     loadData();
   }, []);
@@ -49,7 +90,6 @@ const EtatDesLieux = () => {
     }
   };
 
-  // Générer les dates à afficher selon le mode
   const datesToDisplay = useMemo(() => {
     const dates = [];
     
@@ -80,16 +120,30 @@ const EtatDesLieux = () => {
     return dates;
   }, [viewMode, selectedDate, dateRange]);
 
-  // Filtrer les employés selon la sélection
   const filteredEmployees = useMemo(() => {
-    if (selectedEmployee === 'all') return employees;
-    return employees.filter(emp => 
-      `${emp.prenom} ${emp.nom}`.toLowerCase().includes(selectedEmployee.toLowerCase()) ||
-      emp.matricule.toLowerCase().includes(selectedEmployee.toLowerCase())
-    );
-  }, [employees, selectedEmployee]);
+    let filtered = employees;
+    
+    if (selectedDepartment !== 'all') {
+      filtered = filtered.filter(emp => emp.departement === selectedDepartment);
+    }
+    
+    if (searchQuery) {
+      filtered = filtered.filter(emp => 
+        `${emp.prenom} ${emp.nom}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        emp.matricule.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        emp.poste.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    if (selectedEmployee !== 'all') {
+      filtered = filtered.filter(emp => 
+        emp.id.toString() === selectedEmployee
+      );
+    }
+    
+    return filtered;
+  }, [employees, selectedDepartment, searchQuery, selectedEmployee]);
 
-  // Trouver les demandes pour un employé à une date donnée
   const getEmployeeStatusOnDate = (employeeId, date) => {
     const dateStr = date.toISOString().split('T')[0];
     
@@ -99,34 +153,39 @@ const EtatDesLieux = () => {
       const demandeDate = new Date(d.date_depart);
       const demandeDateStr = demandeDate.toISOString().split('T')[0];
       
-      // Vérifier si la date correspond
       return demandeDateStr === dateStr && d.statut === 'approuve';
     });
     
-    if (!demande) return { status: 'available', color: statusColors.default };
+    if (!demande) {
+      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+      return { 
+        status: isWeekend ? 'weekend' : 'available', 
+        color: isWeekend ? '#f3f4f6' : statusColors.default,
+        icon: isWeekend ? '😴' : ICONS.PRESENT
+      };
+    }
     
-    // Déterminer le type d'absence
-    let statusType = 'autorisation';
-    if (demande.type_demande === 'congé') statusType = 'congé';
-    if (demande.type_demande === 'mission') statusType = 'mission';
+    let statusType = demande.type_demande || 'autorisation';
+    if (statusType === 'congé') statusType = 'congé';
+    if (statusType === 'mission') statusType = 'mission';
     
     return {
       status: statusType,
       color: statusColors[statusType] || statusColors.default,
+      icon: statusIcons[statusType] || ICONS.AUTORISATION,
       demande: demande
     };
   };
 
-  // Formatage de la date
   const formatDate = (date) => {
     return date.toLocaleDateString('fr-FR', {
-      weekday: 'short',
+      weekday: 'long',
       day: 'numeric',
-      month: 'short'
+      month: 'long',
+      year: 'numeric'
     });
   };
 
-  // Navigation dans les dates
   const navigateDate = (direction) => {
     const newDate = new Date(selectedDate);
     
@@ -149,12 +208,37 @@ const EtatDesLieux = () => {
     }
   };
 
+  const handleCellClick = (employee, date, status) => {
+    if (status.status !== 'available' && status.status !== 'weekend') {
+      setSelectedAbsence({
+        employee,
+        date,
+        ...status
+      });
+      setShowDetailsPanel(true);
+    }
+  };
+
+  const getDepartments = () => {
+    const departments = new Set(employees.map(emp => emp.departement).filter(Boolean));
+    return ['all', ...Array.from(departments)];
+  };
+
+  const exportToExcel = () => {
+    // Implémentez l'export Excel ici
+    console.log('Exporting data...');
+  };
+
+  const printReport = () => {
+    window.print();
+  };
+
   if (loading) {
     return (
       <div className="etat-des-lieux-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>{t('loading')}</p>
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p className="text-gradient">{t('loading_data')}</p>
         </div>
       </div>
     );
@@ -162,54 +246,60 @@ const EtatDesLieux = () => {
 
   return (
     <div className="etat-des-lieux-container">
-      {/* Header avec titre et contrôles */}
+      {/* Header principal */}
       <div className="etat-header">
-        <h1>📅 {t('presence')}</h1>
+        <h1>
+          <span className="text-gradient">{t('presence_tracker')}</span>
+          <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 'normal' }}>
+            {t('real_time_monitoring')}
+          </span>
+        </h1>
         
-        <div className="controls-container">
-          {/* Sélection du mode d'affichage */}
+        <div className="main-navigation">
           <div className="view-controls">
             <button 
               className={`view-btn ${viewMode === 'day' ? 'active' : ''}`}
               onClick={() => setViewMode('day')}
             >
-              {t('today')}
+              {ICONS.CALENDAR} {t('today')}
             </button>
             <button 
               className={`view-btn ${viewMode === 'week' ? 'active' : ''}`}
               onClick={() => setViewMode('week')}
             >
-              {t('this_week')}
+              {ICONS.TEAM} {t('this_week')}
             </button>
             <button 
               className={`view-btn ${viewMode === 'month' ? 'active' : ''}`}
               onClick={() => setViewMode('month')}
             >
-              {t('this_month')}
+              {ICONS.STATS} {t('this_month')}
             </button>
           </div>
 
-          {/* Navigation dans les dates */}
           <div className="date-navigation">
-            <button 
-              className="nav-btn"
-              onClick={() => navigateDate(-1)}
-            >
-              ← {t('previous_week')}
+            <button className="nav-btn" onClick={() => navigateDate(-1)}>
+              ← {t('previous')}
             </button>
             
             {viewMode === 'day' && (
               <DatePicker
                 selected={selectedDate}
                 onChange={date => setSelectedDate(date)}
-                dateFormat="dd/MM/yyyy"
+                dateFormat="EEEE dd MMMM yyyy"
                 className="date-picker"
+                customInput={
+                  <button className="date-picker custom">
+                    {ICONS.CALENDAR} {formatDate(selectedDate)}
+                  </button>
+                }
               />
             )}
             
             {viewMode === 'week' && (
               <div className="week-display">
-                {formatDate(dateRange.start)} - {formatDate(dateRange.end)}
+                {formatDate(dateRange.start).split(' ')[0]} {dateRange.start.getDate()} - 
+                {formatDate(dateRange.end).split(' ')[0]} {dateRange.end.getDate()} {dateRange.end.getFullYear()}
               </div>
             )}
             
@@ -219,31 +309,61 @@ const EtatDesLieux = () => {
               </div>
             )}
             
-            <button 
-              className="nav-btn"
-              onClick={() => navigateDate(1)}
-            >
-              {t('next_week')} →
+            <button className="nav-btn" onClick={() => navigateDate(1)}>
+              {t('next')} →
             </button>
           </div>
 
-          {/* Filtre par employé */}
-          <div className="employee-filter">
+          <div className="action-buttons">
+            <button className="action-btn secondary-btn" onClick={exportToExcel}>
+              {ICONS.DOWNLOAD} {t('export')}
+            </button>
+            <button className="action-btn secondary-btn" onClick={printReport}>
+              {ICONS.PRINT} {t('print')}
+            </button>
+          </div>
+        </div>
+
+        {/* Filtres avancés */}
+        <div className="advanced-filters">
+          <div className="filter-group">
+            <label className="filter-label">{ICONS.FILTER} {t('search_employee')}</label>
             <input
               type="text"
-              placeholder={t('filter_by_employee')}
-              value={selectedEmployee === 'all' ? '' : selectedEmployee}
-              onChange={(e) => setSelectedEmployee(e.target.value || 'all')}
+              placeholder={t('search_by_name_matricule_position')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="employee-search"
             />
+          </div>
+          
+          <div className="filter-group">
+            <label className="filter-label">{ICONS.DEPARTMENT} {t('department')}</label>
             <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
+              value={selectedDepartment}
+              onChange={(e) => setSelectedDepartment(e.target.value)}
+              className="department-select"
+            >
+              <option value="all">{t('all_departments')}</option>
+              {getDepartments().slice(1).map(dept => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="filter-group">
+            <label className="filter-label">{ICONS.EMPLOYEE} {t('specific_employee')}</label>
+            <select
+              value={selectedEmployee}
+              onChange={(e) => setSelectedEmployee(e.target.value)}
               className="filter-select"
             >
-              <option value="day">{t('filter_by_date')}</option>
-              <option value="week">{t('filter_by_week')}</option>
-              <option value="month">{t('this_month')}</option>
+              <option value="all">{t('all_employees')}</option>
+              {employees.map(emp => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.prenom} {emp.nom} ({emp.matricule})
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -252,120 +372,189 @@ const EtatDesLieux = () => {
       {/* Légende */}
       <div className="legend-container">
         <div className="legend-item">
-          <div className="color-box" style={{ backgroundColor: statusColors.default }}></div>
+          <div className="color-box" style={{ background: statusColors.default }}></div>
           <span>{t('available')}</span>
         </div>
         <div className="legend-item">
-          <div className="color-box" style={{ backgroundColor: statusColors.congé }}></div>
+          <div className="color-box" style={{ background: statusColors.congé }}></div>
           <span>{t('on_leave')}</span>
         </div>
         <div className="legend-item">
-          <div className="color-box" style={{ backgroundColor: statusColors.mission }}></div>
+          <div className="color-box" style={{ background: statusColors.mission }}></div>
           <span>{t('on_mission')}</span>
         </div>
         <div className="legend-item">
-          <div className="color-box" style={{ backgroundColor: statusColors.autorisation }}></div>
+          <div className="color-box" style={{ background: statusColors.autorisation }}></div>
           <span>{t('authorized_absence')}</span>
+        </div>
+        <div className="legend-item">
+          <div className="color-box" style={{ background: statusColors.retard }}></div>
+          <span>{t('late')}</span>
+        </div>
+        <div className="legend-item">
+          <div className="color-box" style={{ background: statusColors.maladie }}></div>
+          <span>{t('sick_leave')}</span>
         </div>
       </div>
 
       {/* Tableau principal */}
       <div className="presence-table-container">
-        <table className="presence-table">
-          <thead>
-            <tr>
-              <th className="employee-column">{t('employee_name')}</th>
-              {datesToDisplay.map((date, index) => (
-                <th key={index} className="date-column">
-                  <div className="date-header">
-                    <div className="weekday">{date.toLocaleDateString('fr-FR', { weekday: 'short' })}</div>
-                    <div className="day">{date.getDate()}</div>
-                  </div>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filteredEmployees.map((employee) => (
-              <tr key={employee.id} className="employee-row">
-                <td className="employee-cell">
-                  <div className="employee-info">
-                    <div className="employee-name">
-                      {employee.prenom} {employee.nom}
-                    </div>
-                    <div className="employee-details">
-                      {employee.poste} • {employee.matricule}
-                    </div>
-                  </div>
-                </td>
-                
-                {datesToDisplay.map((date, dateIndex) => {
-                  const status = getEmployeeStatusOnDate(employee.id, date);
+        <div className="table-header">
+          <h2>
+            {ICONS.TEAM} {t('presence_overview')}
+            <span style={{ fontSize: '14px', fontWeight: 'normal', opacity: 0.9 }}>
+              {filteredEmployees.length} {t('employees')} • {datesToDisplay.length} {t('days')}
+            </span>
+          </h2>
+        </div>
+        
+        <div className="table-scroll-container">
+          <table className="presence-table">
+            <thead>
+              <tr>
+                <th className="employee-column">{t('employee')}</th>
+                {datesToDisplay.map((date, index) => {
                   const isToday = new Date().toDateString() === date.toDateString();
-                  
                   return (
-                    <td 
-                      key={dateIndex} 
-                      className="status-cell"
-                      style={{ 
-                        backgroundColor: status.color,
-                        border: isToday ? '2px solid #2563eb' : '1px solid #e5e7eb'
-                      }}
-                      title={`${employee.prenom} ${employee.nom} - ${formatDate(date)}: ${status.status}`}
-                    >
-                      <div className="status-content">
-                        {status.status !== 'available' && (
-                          <div className="status-details">
-                            <div className="status-type">
-                              {status.demande?.type_demande || status.status}
-                            </div>
-                            {status.demande?.heure_depart && (
-                              <div className="time-info">
-                                {status.demande.heure_depart.substring(0, 5)}
-                                {status.demande.heure_retour && ` - ${status.demande.heure_retour.substring(0, 5)}`}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                    <th key={index} className="date-column">
+                      <div className="date-header">
+                        <div className="weekday">
+                          {date.toLocaleDateString('fr-FR', { weekday: 'short' })}
+                        </div>
+                        <div className={`day ${isToday ? 'today' : ''}`}>
+                          {date.getDate()}
+                        </div>
                       </div>
-                    </td>
+                    </th>
                   );
                 })}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {filteredEmployees.map((employee) => (
+                <tr key={employee.id} className="employee-row">
+                  <td className="employee-cell">
+                    <div className="employee-info">
+                      <div className="employee-name">
+                        <div className="employee-avatar">
+                          {employee.prenom.charAt(0)}{employee.nom.charAt(0)}
+                        </div>
+                        {employee.prenom} {employee.nom}
+                      </div>
+                      <div className="employee-details">
+                        <span className="employee-role">{employee.poste}</span>
+                        <span className="employee-id">
+                          {ICONS.DOCUMENT} {employee.matricule}
+                        </span>
+                      </div>
+                    </div>
+                  </td>
+                  
+                  {datesToDisplay.map((date, dateIndex) => {
+                    const status = getEmployeeStatusOnDate(employee.id, date);
+                    const isToday = new Date().toDateString() === date.toDateString();
+                    
+                    return (
+                      <td 
+                        key={dateIndex} 
+                        className="status-cell"
+                        style={{ 
+                          background: status.color,
+                          border: isToday ? '3px solid #667eea' : '1px solid #e5e7eb'
+                        }}
+                        onClick={() => handleCellClick(employee, date, status)}
+                        title={`${employee.prenom} ${employee.nom} - ${formatDate(date)}`}
+                      >
+                        <div className="status-content">
+                          <div className="status-icon">
+                            {status.icon}
+                          </div>
+                          {status.status !== 'available' && status.status !== 'weekend' && (
+                            <>
+                              <div className="status-type">
+                                {t(status.status)}
+                              </div>
+                              {status.demande?.heure_depart && (
+                                <div className="time-info">
+                                  {ICONS.TIME} {status.demande.heure_depart.substring(0, 5)}
+                                </div>
+                              )}
+                              <div className="status-badge"></div>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      {/* Vue détaillée pour le mode jour */}
+      {/* Vue détaillée */}
       {viewMode === 'day' && (
         <div className="detailed-view">
-          <h3>📋 {t('details_for')} {formatDate(selectedDate)}</h3>
-          <div className="absences-list">
+          <h3>
+            {ICONS.CALENDAR} {t('daily_details')} - {formatDate(selectedDate)}
+          </h3>
+          
+          <div className="absences-grid">
             {filteredEmployees.map(employee => {
               const status = getEmployeeStatusOnDate(employee.id, selectedDate);
               
-              if (status.status === 'available') return null;
+              if (status.status === 'available' || status.status === 'weekend') return null;
               
               return (
-                <div key={employee.id} className="absence-item" style={{ borderLeft: `4px solid ${status.color}` }}>
+                <div 
+                  key={employee.id} 
+                  className="absence-card"
+                  style={{ borderLeftColor: status.color.split(' ')[2] }}
+                  onClick={() => {
+                    setSelectedAbsence({ employee, date: selectedDate, ...status });
+                    setShowDetailsPanel(true);
+                  }}
+                >
                   <div className="absence-header">
-                    <span className="employee-name">{employee.prenom} {employee.nom}</span>
-                    <span className="absence-type" style={{ color: status.color }}>
-                      {status.demande?.type_demande || status.status}
-                    </span>
+                    <div className="employee-info-small">
+                      <div className="employee-avatar-small">
+                        {employee.prenom.charAt(0)}{employee.nom.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="employee-name">{employee.prenom} {employee.nom}</div>
+                        <div className="employee-role">{employee.poste}</div>
+                      </div>
+                    </div>
+                    <div 
+                      className="absence-type-badge"
+                      style={{ background: status.color }}
+                    >
+                      {status.icon} {t(status.status)}
+                    </div>
                   </div>
+                  
                   <div className="absence-details">
                     <div className="detail-row">
-                      <span className="detail-label">{t('time')}:</span>
+                      <span className="detail-label">
+                        {ICONS.TIME} {t('time')}:
+                      </span>
                       <span className="detail-value">
                         {status.demande?.heure_depart?.substring(0, 5) || 'Toute la journée'}
                         {status.demande?.heure_retour && ` - ${status.demande.heure_retour.substring(0, 5)}`}
                       </span>
                     </div>
                     <div className="detail-row">
-                      <span className="detail-label">{t('reason')}:</span>
+                      <span className="detail-label">
+                        {ICONS.DOCUMENT} {t('title')}:
+                      </span>
                       <span className="detail-value">{status.demande?.titre || 'Non spécifié'}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">
+                        {ICONS.LOCATION} {t('location')}:
+                      </span>
+                      <span className="detail-value">{status.demande?.lieu || '-'}</span>
                     </div>
                   </div>
                 </div>
@@ -373,10 +562,11 @@ const EtatDesLieux = () => {
             })}
             
             {!filteredEmployees.some(emp => 
-              getEmployeeStatusOnDate(emp.id, selectedDate).status !== 'available'
+              getEmployeeStatusOnDate(emp.id, selectedDate).status !== 'available' &&
+              getEmployeeStatusOnDate(emp.id, selectedDate).status !== 'weekend'
             ) && (
               <div className="no-absences">
-                <p>{t('no_absences')}</p>
+                <p>{t('no_absences_today')}</p>
               </div>
             )}
           </div>
@@ -386,33 +576,146 @@ const EtatDesLieux = () => {
       {/* Statistiques */}
       <div className="stats-container">
         <div className="stat-card">
+          <div className="stat-icon">{ICONS.TEAM}</div>
           <div className="stat-value">{filteredEmployees.length}</div>
-          <div className="stat-label">{t('all_employees')}</div>
+          <div className="stat-label">{t('total_employees')}</div>
         </div>
+        
         <div className="stat-card">
-          <div className="stat-value" style={{ color: statusColors.congé }}>
+          <div className="stat-icon">{ICONS.CONGE}</div>
+          <div className="stat-value">
             {filteredEmployees.filter(emp => 
               getEmployeeStatusOnDate(emp.id, selectedDate).status === 'congé'
             ).length}
           </div>
           <div className="stat-label">{t('on_leave')}</div>
         </div>
+        
         <div className="stat-card">
-          <div className="stat-value" style={{ color: statusColors.mission }}>
+          <div className="stat-icon">{ICONS.MISSION}</div>
+          <div className="stat-value">
             {filteredEmployees.filter(emp => 
               getEmployeeStatusOnDate(emp.id, selectedDate).status === 'mission'
             ).length}
           </div>
           <div className="stat-label">{t('on_mission')}</div>
         </div>
+        
         <div className="stat-card">
-          <div className="stat-value" style={{ color: statusColors.autorisation }}>
+          <div className="stat-icon">{ICONS.AUTORISATION}</div>
+          <div className="stat-value">
             {filteredEmployees.filter(emp => 
               getEmployeeStatusOnDate(emp.id, selectedDate).status === 'autorisation'
             ).length}
           </div>
-          <div className="stat-label">{t('authorized_absence')}</div>
+          <div className="stat-label">{t('authorized_absences')}</div>
         </div>
+        
+        <div className="stat-card">
+          <div className="stat-icon">📊</div>
+          <div className="stat-value">
+            {((filteredEmployees.filter(emp => 
+              getEmployeeStatusOnDate(emp.id, selectedDate).status === 'available'
+            ).length / filteredEmployees.length) * 100).toFixed(1)}%
+          </div>
+          <div className="stat-label">{t('presence_rate')}</div>
+        </div>
+      </div>
+
+      {/* Panneau latéral des détails */}
+      <div className={`details-panel ${showDetailsPanel ? 'open' : ''}`}>
+        {selectedAbsence && (
+          <>
+            <div className="panel-header">
+              <h3>{t('absence_details')}</h3>
+              <button className="close-panel" onClick={() => setShowDetailsPanel(false)}>
+                ×
+              </button>
+            </div>
+            
+            <div className="panel-content">
+              <div className="absence-header">
+                <div className="employee-info-small">
+                  <div className="employee-avatar-small" style={{ background: selectedAbsence.color }}>
+                    {selectedAbsence.employee.prenom.charAt(0)}{selectedAbsence.employee.nom.charAt(0)}
+                  </div>
+                  <div>
+                    <h4>{selectedAbsence.employee.prenom} {selectedAbsence.employee.nom}</h4>
+                    <p>{selectedAbsence.employee.poste} • {selectedAbsence.employee.matricule}</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="absence-details">
+                <div className="detail-row">
+                  <span className="detail-label">{t('date')}:</span>
+                  <span className="detail-value">{formatDate(selectedAbsence.date)}</span>
+                </div>
+                
+                <div className="detail-row">
+                  <span className="detail-label">{t('type')}:</span>
+                  <span 
+                    className="detail-value"
+                    style={{ 
+                      color: selectedAbsence.color.split(' ')[2],
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    {selectedAbsence.icon} {t(selectedAbsence.status)}
+                  </span>
+                </div>
+                
+                {selectedAbsence.demande && (
+                  <>
+                    <div className="detail-row">
+                      <span className="detail-label">{t('title')}:</span>
+                      <span className="detail-value">{selectedAbsence.demande.titre}</span>
+                    </div>
+                    
+                    <div className="detail-row">
+                      <span className="detail-label">{t('description')}:</span>
+                      <span className="detail-value">{selectedAbsence.demande.description || '-'}</span>
+                    </div>
+                    
+                    <div className="detail-row">
+                      <span className="detail-label">{t('time')}:</span>
+                      <span className="detail-value">
+                        {selectedAbsence.demande.heure_depart?.substring(0, 5) || 'Toute la journée'}
+                        {selectedAbsence.demande.heure_retour && ` - ${selectedAbsence.demande.heure_retour.substring(0, 5)}`}
+                      </span>
+                    </div>
+                    
+                    <div className="detail-row">
+                      <span className="detail-label">{t('location')}:</span>
+                      <span className="detail-value">{selectedAbsence.demande.lieu || '-'}</span>
+                    </div>
+                    
+                    <div className="detail-row">
+                      <span className="detail-label">{t('approved_by')}:</span>
+                      <span className="detail-value">{selectedAbsence.demande.approuve_par || '-'}</span>
+                    </div>
+                    
+                    <div className="detail-row">
+                      <span className="detail-label">{t('status')}:</span>
+                      <span className="detail-value" style={{ color: '#48bb78' }}>
+                        {ICONS.APPROVED} {t('approved')}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <div className="action-buttons" style={{ marginTop: '20px' }}>
+                <button className="action-btn primary-btn">
+                  {ICONS.DOCUMENT} {t('view_documents')}
+                </button>
+                <button className="action-btn secondary-btn">
+                  {ICONS.PRINT} {t('print_details')}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
