@@ -8,6 +8,7 @@ import Archives from './pages/Archives';
 import Statistics from './pages/Statistics';
 import DemandesRH from './pages/DemandesRH'; 
 import FicheDePaie from './pages/FicheDePaie';
+import EtatDesLieux from './pages/EtatDesLieux'; // IMPORTEZ LA NOUVELLE PAGE
 import Settings from './pages/Settings';
 import Visa from './pages/Visa';
 import './styles/App.css';
@@ -60,6 +61,15 @@ function App() {
                   </PrivateRoute>
                 } 
               />
+              {/* NOUVELLE ROUTE ÉTAT DES LIEUX */}
+              <Route 
+                path="/etat-des-lieux" 
+                element={
+                  <PrivateRoute>
+                    <EtatDesLieux />
+                  </PrivateRoute>
+                } 
+              />
               <Route 
                 path="/archives" 
                 element={
@@ -84,7 +94,6 @@ function App() {
                   </PrivateRoute>
                 } 
               />
-              
               <Route 
                 path="/visa" 
                 element={
