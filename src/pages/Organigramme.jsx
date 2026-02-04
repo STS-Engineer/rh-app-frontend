@@ -159,7 +159,7 @@ const Organigramme = () => {
     }
   }, [searchTerm, employees]);
 
-  // Dessiner l'organigramme HORIZONTAL
+  // Dessiner l'organigramme VERTICAL
   useEffect(() => {
     if (loading || !svgRef.current || filteredEmployees.length === 0) return;
 
@@ -169,21 +169,21 @@ const Organigramme = () => {
     const containerWidth = containerRef.current.clientWidth;
     const containerHeight = containerRef.current.clientHeight;
     
-    // Dimensions adaptées pour l'affichage horizontal
+    // Dimensions adaptées pour l'affichage vertical
     const nodeWidth = 180;
     const nodeHeight = 100;
-    const levelHeight = 250;
+    const levelHeight = 200;
 
     // Construire la hiérarchie
     const hierarchyData = buildHierarchy();
     
-    // Créer la structure tree avec orientation horizontale
+    // Créer la structure tree avec orientation verticale
     const root = d3.hierarchy(hierarchyData);
     
     // Calculer les dimensions nécessaires
     const maxDepth = root.height;
-    const width = (maxDepth + 1) * levelHeight + 200;
-    const height = Math.max(containerHeight, root.descendants().length * 50);
+    const width = Math.max(containerWidth, root.descendants().length * 100);
+    const height = (maxDepth + 1) * levelHeight + 200;
 
     const svg = d3.select(svgRef.current)
       .attr('width', containerWidth)
@@ -193,18 +193,18 @@ const Organigramme = () => {
     const g = svg.append('g')
       .attr('class', 'main-group');
 
-    // Créer le layout tree horizontal
+    // Créer le layout tree vertical (top to bottom)
     const treeLayout = d3.tree()
-      .size([height - 200, width - 300])
+      .size([width - 200, height - 200])
       .separation((a, b) => {
-        return a.parent === b.parent ? 1 : 1.2;
+        return a.parent === b.parent ? 1 : 1.5;
       });
 
     treeLayout(root);
 
-    // Ajuster la position initiale pour centrer
-    const initialX = 100;
-    const initialY = containerHeight / 2 - height / 4;
+    // Ajuster la position initiale pour centrer horizontalement
+    const initialX = containerWidth / 2 - width / 4;
+    const initialY = 50;
 
     g.attr('transform', `translate(${initialX},${initialY}) scale(${zoomLevel})`);
 
@@ -223,18 +223,18 @@ const Organigramme = () => {
       .attr('offset', '100%')
       .attr('stop-color', '#8b5cf6');
 
-    // Dessiner les liens avec courbes horizontales
+    // Dessiner les liens avec courbes verticales (top to bottom)
     const link = g.selectAll('.link')
       .data(root.links())
       .enter()
       .append('path')
       .attr('class', 'link')
       .attr('d', d => {
-        // Lien horizontal de gauche à droite
-        return `M${d.source.y},${d.source.x}
-                C${(d.source.y + d.target.y) / 2},${d.source.x}
-                 ${(d.source.y + d.target.y) / 2},${d.target.x}
-                 ${d.target.y},${d.target.x}`;
+        // Lien vertical de haut en bas
+        return `M${d.source.x},${d.source.y}
+                C${d.source.x},${(d.source.y + d.target.y) / 2}
+                 ${d.target.x},${(d.source.y + d.target.y) / 2}
+                 ${d.target.x},${d.target.y}`;
       })
       .attr('fill', 'none')
       .attr('stroke', d => d.target.data.isCEO ? '#2563eb' : '#94a3b8')
@@ -247,7 +247,7 @@ const Organigramme = () => {
       .enter()
       .append('g')
       .attr('class', d => `node ${d.data.isCEO ? 'node-ceo' : ''} node-depth-${d.depth}`)
-      .attr('transform', d => `translate(${d.y},${d.x})`)
+      .attr('transform', d => `translate(${d.x},${d.y})`)
       .style('cursor', 'pointer')
       .on('click', (event, d) => {
         setSelectedNode(d.data);
@@ -314,11 +314,11 @@ const Organigramme = () => {
       .attr('stroke-width', 2)
       .attr('filter', 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))');
 
-    // Badge pour le nombre d'enfants
+    // Badge pour le nombre d'enfants (ajusté pour vertical)
     node.filter(d => d.children && d.children.length > 0)
       .append('circle')
-      .attr('cx', d => d.data.isCEO ? 40 : nodeWidth / 2 - 15)
-      .attr('cy', d => d.data.isCEO ? -40 : -nodeHeight / 2 + 15)
+      .attr('cx', d => d.data.isCEO ? 0 : nodeWidth / 2 - 15)
+      .attr('cy', d => d.data.isCEO ? 60 : nodeHeight / 2 - 15)
       .attr('r', 16)
       .attr('fill', '#ef4444')
       .attr('stroke', 'white')
@@ -326,8 +326,8 @@ const Organigramme = () => {
 
     node.filter(d => d.children && d.children.length > 0)
       .append('text')
-      .attr('x', d => d.data.isCEO ? 40 : nodeWidth / 2 - 15)
-      .attr('y', d => d.data.isCEO ? -40 : -nodeHeight / 2 + 15)
+      .attr('x', d => d.data.isCEO ? 0 : nodeWidth / 2 - 15)
+      .attr('y', d => d.data.isCEO ? 60 : nodeHeight / 2 - 15)
       .attr('text-anchor', 'middle')
       .attr('dy', '0.35em')
       .style('fill', 'white')
@@ -411,9 +411,9 @@ const Organigramme = () => {
     // Centrer sur le CEO au chargement
     const ceoNode = root.descendants().find(d => d.data.isCEO);
     if (ceoNode) {
-      const scale = 0.8;
-      const x = containerWidth / 2 - ceoNode.y * scale;
-      const y = containerHeight / 2 - ceoNode.x * scale;
+      const scale = 0.9;
+      const x = containerWidth / 2 - ceoNode.x * scale;
+      const y = 80;
       
       svg.transition()
         .duration(750)
