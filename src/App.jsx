@@ -8,10 +8,11 @@ import Archives from './pages/Archives';
 import Statistics from './pages/Statistics';
 import DemandesRH from './pages/DemandesRH'; 
 import FicheDePaie from './pages/FicheDePaie';
-import EtatDesLieux from './pages/EtatDesLieux'; // IMPORTEZ LA NOUVELLE PAGE
+import EtatDesLieux from './pages/EtatDesLieux'; 
 import Settings from './pages/Settings';
 import Visa from './pages/Visa';
 import './styles/App.css';
+import Organigramme from './pages/Organigramme';
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
