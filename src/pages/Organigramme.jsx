@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { employeesAPI } from '../services/api';
 import * as d3 from 'd3';
-import { ZoomIn, ZoomOut, RotateCcw, User, Briefcase, Mail, Phone, MapPin } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, User, Briefcase, Mail, Phone, MapPin, Users } from 'lucide-react';
 import './Organigramme.css';
 
 const Organigramme = () => {
@@ -10,11 +10,13 @@ const Organigramme = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [selectedNode, setSelectedNode] = useState(null);
   const svgRef = useRef();
   const containerRef = useRef();
 
   // Couleurs par département
   const departmentColors = {
+    'CEO': '#2563eb',
     'Général': '#4ECDC4',
     'Digitale': '#FF6B6B',
     'Commerce': '#45B7D1',
@@ -32,119 +34,94 @@ const Organigramme = () => {
     // Créer un map des employés par email
     const employeeMap = {};
     employees.forEach(emp => {
-      employeeMap[emp.adresse_mail?.toLowerCase()] = {
-        ...emp,
-        children: []
-      };
-    });
-
-    // Trouver les racines (sans responsable ou responsable non dans la liste)
-    const roots = [];
-    const processed = new Set();
-
-    employees.forEach(emp => {
       const email = emp.adresse_mail?.toLowerCase();
-      if (!email || processed.has(email)) return;
-
-      // Vérifier si c'est un responsable
-      const isResponsible = employees.some(e => 
-        e.mail_responsable1?.toLowerCase() === email || 
-        e.mail_responsable2?.toLowerCase() === email
-      );
-
-      // Si pas de responsable ET personne ne le mentionne comme responsable => racine potentielle
-      if (!emp.mail_responsable1 && !emp.mail_responsable2) {
-        // Vérifier si quelqu'un le mentionne comme responsable
-        const isMentionedAsManager = employees.some(e => 
-          e.mail_responsable1?.toLowerCase() === email || 
-          e.mail_responsable2?.toLowerCase() === email
-        );
-        
-        if (!isMentionedAsManager) {
-          // C'est probablement une direction/CEO
-          roots.push(employeeMap[email]);
-          processed.add(email);
-        }
+      if (email) {
+        employeeMap[email] = {
+          ...emp,
+          children: []
+        };
       }
     });
 
-    // Si pas de racines trouvées, prendre Fethi Chaouachi comme racine (STS MANAGER)
-    if (roots.length === 0) {
-      const fethi = employees.find(e => 
-        e.prenom?.toLowerCase().includes('fethi') && 
-        e.nom?.toLowerCase().includes('chaouachi')
-      );
-      if (fethi && fethi.adresse_mail) {
-        roots.push(employeeMap[fethi.adresse_mail.toLowerCase()]);
-        processed.add(fethi.adresse_mail.toLowerCase());
-      }
+    // Trouver Fethi comme CEO (racine principale)
+    const fethi = employees.find(e => 
+      e.prenom?.toLowerCase().includes('fethi') && 
+      e.nom?.toLowerCase().includes('chaouachi')
+    );
+
+    if (!fethi || !fethi.adresse_mail) {
+      console.error('CEO Fethi Chaouachi non trouvé');
+      return { name: 'Organigramme', children: [] };
     }
 
-    // Construire la hiérarchie
-    const buildTree = (email) => {
-      const emp = employeeMap[email];
-      if (!emp) return null;
+    const fethiEmail = fethi.adresse_mail.toLowerCase();
+    const fethiNode = employeeMap[fethiEmail];
+    fethiNode.isCEO = true;
+    fethiNode.site_dep = 'CEO';
 
-      // Trouver les subordonnés directs
+    const processed = new Set([fethiEmail]);
+
+    // Fonction pour construire l'arbre récursivement
+    const buildTree = (managerEmail) => {
+      const manager = employeeMap[managerEmail];
+      if (!manager) return;
+
+      // Trouver tous les employés qui ont ce manager comme responsable 1 ou 2
       const subordinates = employees.filter(e => {
+        const email = e.adresse_mail?.toLowerCase();
+        if (!email || processed.has(email)) return false;
+        
         const resp1 = e.mail_responsable1?.toLowerCase();
         const resp2 = e.mail_responsable2?.toLowerCase();
-        return (resp1 === email || resp2 === email) && 
-               e.adresse_mail?.toLowerCase() !== email;
+        
+        return resp1 === managerEmail || resp2 === managerEmail;
       });
 
-      // Ajouter les enfants
+      // Trier les subordonnés : responsables/managers d'abord
+      subordinates.sort((a, b) => {
+        const aIsManager = a.poste?.toLowerCase().includes('responsable') || 
+                         a.poste?.toLowerCase().includes('manager') ||
+                         a.poste?.toLowerCase().includes('chef');
+        const bIsManager = b.poste?.toLowerCase().includes('responsable') || 
+                         b.poste?.toLowerCase().includes('manager') ||
+                         b.poste?.toLowerCase().includes('chef');
+        
+        if (aIsManager && !bIsManager) return -1;
+        if (!aIsManager && bIsManager) return 1;
+        return 0;
+      });
+
+      // Ajouter chaque subordonné et construire son sous-arbre
       subordinates.forEach(sub => {
         const subEmail = sub.adresse_mail?.toLowerCase();
         if (subEmail && !processed.has(subEmail)) {
           const childNode = employeeMap[subEmail];
           if (childNode) {
-            emp.children.push(childNode);
+            manager.children.push(childNode);
             processed.add(subEmail);
-            // Construire récursivement
+            // Construire récursivement l'arbre pour ce subordonné
             buildTree(subEmail);
           }
         }
       });
-
-      return emp;
     };
 
-    // Construire à partir des racines
-    roots.forEach(root => {
-      if (root && root.email) {
-        buildTree(root.adresse_mail?.toLowerCase());
-      }
-    });
+    // Construire l'arbre à partir de Fethi
+    buildTree(fethiEmail);
 
-    // Ajouter les employés non connectés
+    // Ajouter les employés non connectés directement sous Fethi
     employees.forEach(emp => {
       const email = emp.adresse_mail?.toLowerCase();
       if (email && !processed.has(email)) {
-        // Essayer de trouver un responsable
-        let parent = null;
-        if (emp.mail_responsable1) {
-          parent = employeeMap[emp.mail_responsable1.toLowerCase()];
-        } else if (emp.mail_responsable2) {
-          parent = employeeMap[emp.mail_responsable2.toLowerCase()];
+        const empNode = employeeMap[email];
+        if (empNode) {
+          fethiNode.children.push(empNode);
+          processed.add(email);
         }
-
-        if (parent) {
-          parent.children.push(employeeMap[email]);
-        } else {
-          // Ajouter à une racine par défaut
-          if (roots[0]) {
-            roots[0].children.push(employeeMap[email]);
-          }
-        }
-        processed.add(email);
       }
     });
 
-    return {
-      name: 'Organigramme',
-      children: roots
-    };
+    return fethiNode;
   };
 
   // Charger les employés
@@ -182,164 +159,289 @@ const Organigramme = () => {
     }
   }, [searchTerm, employees]);
 
-  // Dessiner l'organigramme
+  // Dessiner l'organigramme HORIZONTAL
   useEffect(() => {
     if (loading || !svgRef.current || filteredEmployees.length === 0) return;
 
     // Nettoyer le SVG précédent
     d3.select(svgRef.current).selectAll('*').remove();
 
-    const width = containerRef.current.clientWidth;
-    const height = containerRef.current.clientHeight;
-    const margin = { top: 50, right: 20, bottom: 50, left: 20 };
-
-    const svg = d3.select(svgRef.current)
-      .attr('width', width)
-      .attr('height', height)
-      .style('background', '#f8fafc')
-      .style('border-radius', '8px');
-
-    const g = svg.append('g')
-      .attr('transform', `translate(${margin.left},${margin.top}) scale(${zoomLevel})`);
+    const containerWidth = containerRef.current.clientWidth;
+    const containerHeight = containerRef.current.clientHeight;
+    
+    // Dimensions adaptées pour l'affichage horizontal
+    const nodeWidth = 180;
+    const nodeHeight = 100;
+    const levelHeight = 250;
 
     // Construire la hiérarchie
     const hierarchyData = buildHierarchy();
     
-    // Créer la structure tree
-    const treeLayout = d3.tree()
-      .size([height - margin.top - margin.bottom, width - margin.left - margin.right]);
-
+    // Créer la structure tree avec orientation horizontale
     const root = d3.hierarchy(hierarchyData);
+    
+    // Calculer les dimensions nécessaires
+    const maxDepth = root.height;
+    const width = (maxDepth + 1) * levelHeight + 200;
+    const height = Math.max(containerHeight, root.descendants().length * 50);
+
+    const svg = d3.select(svgRef.current)
+      .attr('width', containerWidth)
+      .attr('height', containerHeight);
+
+    // Groupe principal avec zoom et pan
+    const g = svg.append('g')
+      .attr('class', 'main-group');
+
+    // Créer le layout tree horizontal
+    const treeLayout = d3.tree()
+      .size([height - 200, width - 300])
+      .separation((a, b) => {
+        return a.parent === b.parent ? 1 : 1.2;
+      });
+
     treeLayout(root);
 
-    // Dessiner les liens
+    // Ajuster la position initiale pour centrer
+    const initialX = 100;
+    const initialY = containerHeight / 2 - height / 4;
+
+    g.attr('transform', `translate(${initialX},${initialY}) scale(${zoomLevel})`);
+
+    // Définir les gradients pour les liens
+    const defs = svg.append('defs');
+    
+    const gradient = defs.append('linearGradient')
+      .attr('id', 'link-gradient')
+      .attr('gradientUnits', 'userSpaceOnUse');
+    
+    gradient.append('stop')
+      .attr('offset', '0%')
+      .attr('stop-color', '#3b82f6');
+    
+    gradient.append('stop')
+      .attr('offset', '100%')
+      .attr('stop-color', '#8b5cf6');
+
+    // Dessiner les liens avec courbes horizontales
     const link = g.selectAll('.link')
       .data(root.links())
       .enter()
       .append('path')
       .attr('class', 'link')
-      .attr('d', d3.linkHorizontal()
-        .x(d => d.y)
-        .y(d => d.x))
+      .attr('d', d => {
+        // Lien horizontal de gauche à droite
+        return `M${d.source.y},${d.source.x}
+                C${(d.source.y + d.target.y) / 2},${d.source.x}
+                 ${(d.source.y + d.target.y) / 2},${d.target.x}
+                 ${d.target.y},${d.target.x}`;
+      })
       .attr('fill', 'none')
-      .attr('stroke', '#94a3b8')
-      .attr('stroke-width', 2);
+      .attr('stroke', d => d.target.data.isCEO ? '#2563eb' : '#94a3b8')
+      .attr('stroke-width', d => d.source.data.isCEO ? 3 : 2)
+      .attr('opacity', 0.6);
 
     // Dessiner les nœuds
     const node = g.selectAll('.node')
       .data(root.descendants())
       .enter()
       .append('g')
-      .attr('class', 'node')
+      .attr('class', d => `node ${d.data.isCEO ? 'node-ceo' : ''} node-depth-${d.depth}`)
       .attr('transform', d => `translate(${d.y},${d.x})`)
       .style('cursor', 'pointer')
+      .on('click', (event, d) => {
+        setSelectedNode(d.data);
+      })
       .on('mouseover', function(event, d) {
-        // Highlight le nœud et ses liens
-        d3.select(this).select('rect').style('stroke', '#3b82f6').style('stroke-width', '3px');
-        d3.select(this).select('circle').style('stroke', '#3b82f6').style('stroke-width', '3px');
+        d3.select(this).select('.node-rect').style('filter', 'brightness(1.1)');
+        d3.select(this).select('.node-circle').style('filter', 'brightness(1.1)');
+        
+        // Highlight les liens connectés
+        g.selectAll('.link')
+          .style('opacity', l => 
+            l.source === d || l.target === d ? 1 : 0.2
+          );
       })
       .on('mouseout', function(event, d) {
-        d3.select(this).select('rect').style('stroke', null).style('stroke-width', null);
-        d3.select(this).select('circle').style('stroke', null).style('stroke-width', null);
+        d3.select(this).select('.node-rect').style('filter', null);
+        d3.select(this).select('.node-circle').style('filter', null);
+        
+        g.selectAll('.link').style('opacity', 0.6);
       });
 
-    // Cercle pour les racines
-    node.filter(d => d.depth === 0)
+    // Cercle pour le CEO
+    node.filter(d => d.data.isCEO)
       .append('circle')
-      .attr('r', 40)
-      .attr('fill', '#3b82f6')
-      .attr('stroke', '#1d4ed8')
-      .attr('stroke-width', 2);
+      .attr('class', 'node-circle')
+      .attr('r', 55)
+      .attr('fill', 'url(#ceo-gradient)')
+      .attr('stroke', '#1e40af')
+      .attr('stroke-width', 4);
+
+    // Gradient pour le CEO
+    const ceoGradient = defs.append('radialGradient')
+      .attr('id', 'ceo-gradient');
+    
+    ceoGradient.append('stop')
+      .attr('offset', '0%')
+      .attr('stop-color', '#3b82f6');
+    
+    ceoGradient.append('stop')
+      .attr('offset', '100%')
+      .attr('stop-color', '#1e40af');
 
     // Rectangle pour les autres nœuds
-    node.filter(d => d.depth > 0)
+    node.filter(d => !d.data.isCEO)
       .append('rect')
-      .attr('x', -60)
-      .attr('y', -40)
-      .attr('width', 120)
-      .attr('height', 80)
-      .attr('rx', 8)
-      .attr('fill', d => departmentColors[d.data.site_dep] || '#6b7280')
-      .attr('stroke', '#374151')
+      .attr('class', 'node-rect')
+      .attr('x', -nodeWidth / 2)
+      .attr('y', -nodeHeight / 2)
+      .attr('width', nodeWidth)
+      .attr('height', nodeHeight)
+      .attr('rx', 12)
+      .attr('fill', d => {
+        const isManager = d.data.poste?.toLowerCase().includes('responsable') || 
+                         d.data.poste?.toLowerCase().includes('manager') ||
+                         d.data.poste?.toLowerCase().includes('chef');
+        return isManager ? '#4f46e5' : (departmentColors[d.data.site_dep] || '#6b7280');
+      })
+      .attr('stroke', d => {
+        const isManager = d.data.poste?.toLowerCase().includes('responsable') || 
+                         d.data.poste?.toLowerCase().includes('manager') ||
+                         d.data.poste?.toLowerCase().includes('chef');
+        return isManager ? '#3730a3' : '#374151';
+      })
+      .attr('stroke-width', 2)
+      .attr('filter', 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))');
+
+    // Badge pour le nombre d'enfants
+    node.filter(d => d.children && d.children.length > 0)
+      .append('circle')
+      .attr('cx', d => d.data.isCEO ? 40 : nodeWidth / 2 - 15)
+      .attr('cy', d => d.data.isCEO ? -40 : -nodeHeight / 2 + 15)
+      .attr('r', 16)
+      .attr('fill', '#ef4444')
+      .attr('stroke', 'white')
       .attr('stroke-width', 2);
 
-    // Image ou initiales
-    node.append('text')
+    node.filter(d => d.children && d.children.length > 0)
+      .append('text')
+      .attr('x', d => d.data.isCEO ? 40 : nodeWidth / 2 - 15)
+      .attr('y', d => d.data.isCEO ? -40 : -nodeHeight / 2 + 15)
       .attr('text-anchor', 'middle')
-      .attr('dy', d => d.depth === 0 ? '0.3em' : '-20')
+      .attr('dy', '0.35em')
+      .style('fill', 'white')
+      .style('font-size', '11px')
       .style('font-weight', 'bold')
-      .style('fill', d => d.depth === 0 ? 'white' : '#1f2937')
+      .text(d => d.children.length);
+
+    // Initiales ou icône
+    node.append('text')
+      .attr('class', 'node-initials')
+      .attr('text-anchor', 'middle')
+      .attr('dy', d => d.data.isCEO ? '0.35em' : '-25')
+      .style('font-weight', 'bold')
+      .style('fill', 'white')
+      .style('font-size', d => d.data.isCEO ? '28px' : '20px')
       .text(d => {
         if (d.data.prenom && d.data.nom) {
-          return `${d.data.prenom.charAt(0)}${d.data.nom.charAt(0)}`;
+          return `${d.data.prenom.charAt(0).toUpperCase()}${d.data.nom.charAt(0).toUpperCase()}`;
         }
         return '?';
-      })
-      .style('font-size', d => d.depth === 0 ? '20px' : '16px');
+      });
 
-    // Nom
+    // Nom complet
     node.append('text')
+      .attr('class', 'node-name')
       .attr('text-anchor', 'middle')
-      .attr('dy', d => d.depth === 0 ? '1.5em' : '-5')
-      .style('font-weight', '600')
-      .style('fill', d => d.depth === 0 ? 'white' : '#1f2937')
+      .attr('dy', d => d.data.isCEO ? '25' : '0')
+      .style('font-weight', '700')
+      .style('fill', d => d.data.isCEO ? 'white' : 'white')
+      .style('font-size', d => d.data.isCEO ? '14px' : '13px')
       .text(d => {
         if (d.data.prenom && d.data.nom) {
-          const maxLength = 15;
           const fullName = `${d.data.prenom} ${d.data.nom}`;
+          const maxLength = d.data.isCEO ? 20 : 18;
           return fullName.length > maxLength 
             ? fullName.substring(0, maxLength) + '...'
             : fullName;
         }
-        return '?';
-      })
-      .style('font-size', '12px');
+        return 'Inconnu';
+      });
 
     // Poste
     node.append('text')
+      .attr('class', 'node-position')
       .attr('text-anchor', 'middle')
-      .attr('dy', d => d.depth === 0 ? '2.8em' : '15')
-      .style('fill', d => d.depth === 0 ? '#d1d5db' : '#4b5563')
+      .attr('dy', d => d.data.isCEO ? '42' : '18')
+      .style('fill', d => d.data.isCEO ? '#dbeafe' : 'rgba(255,255,255,0.9)')
+      .style('font-size', d => d.data.isCEO ? '12px' : '11px')
+      .style('font-weight', '500')
       .text(d => {
         if (d.data.poste) {
-          const maxLength = 20;
+          const maxLength = 22;
           return d.data.poste.length > maxLength 
             ? d.data.poste.substring(0, maxLength) + '...'
             : d.data.poste;
         }
-        return 'Poste non défini';
-      })
-      .style('font-size', '10px');
+        return '';
+      });
 
-    // Département (pour les nœuds non-racine)
-    node.filter(d => d.depth > 0)
+    // Département (seulement pour non-CEO)
+    node.filter(d => !d.data.isCEO)
       .append('text')
+      .attr('class', 'node-department')
       .attr('text-anchor', 'middle')
       .attr('dy', '35')
-      .style('fill', '#6b7280')
+      .style('fill', 'rgba(255,255,255,0.8)')
+      .style('font-size', '10px')
       .style('font-style', 'italic')
-      .text(d => d.data.site_dep || 'Département')
-      .style('font-size', '9px');
+      .text(d => d.data.site_dep || '');
 
-  }, [filteredEmployees, loading, zoomLevel]);
+    // Fonction de zoom
+    const zoom = d3.zoom()
+      .scaleExtent([0.3, 3])
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform);
+        setZoomLevel(event.transform.k);
+      });
+
+    svg.call(zoom);
+
+    // Centrer sur le CEO au chargement
+    const ceoNode = root.descendants().find(d => d.data.isCEO);
+    if (ceoNode) {
+      const scale = 0.8;
+      const x = containerWidth / 2 - ceoNode.y * scale;
+      const y = containerHeight / 2 - ceoNode.x * scale;
+      
+      svg.transition()
+        .duration(750)
+        .call(zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
+    }
+
+  }, [filteredEmployees, loading]);
 
   // Fonctions de contrôle du zoom
   const handleZoomIn = () => {
-    setZoomLevel(prev => Math.min(prev + 0.2, 3));
+    const svg = d3.select(svgRef.current);
+    svg.transition().call(d3.zoom().scaleBy, 1.3);
   };
 
   const handleZoomOut = () => {
-    setZoomLevel(prev => Math.max(prev - 0.2, 0.5));
+    const svg = d3.select(svgRef.current);
+    svg.transition().call(d3.zoom().scaleBy, 0.7);
   };
 
   const handleResetZoom = () => {
-    setZoomLevel(1);
+    const svg = d3.select(svgRef.current);
+    svg.transition().call(d3.zoom().transform, d3.zoomIdentity);
   };
 
   // Statistiques
   const stats = {
     total: filteredEmployees.length,
-    departments: [...new Set(filteredEmployees.map(e => e.site_dep))].length,
+    departments: [...new Set(filteredEmployees.map(e => e.site_dep).filter(Boolean))].length,
     managers: filteredEmployees.filter(e => 
       e.poste?.toLowerCase().includes('manager') || 
       e.poste?.toLowerCase().includes('responsable') ||
@@ -367,21 +469,21 @@ const Organigramme = () => {
 
       <div className="organigramme-stats">
         <div className="stat-card">
-          <User size={20} />
+          <User size={24} />
           <div>
             <h3>{stats.total}</h3>
             <p>Employés</p>
           </div>
         </div>
         <div className="stat-card">
-          <Briefcase size={20} />
+          <Briefcase size={24} />
           <div>
             <h3>{stats.departments}</h3>
             <p>Départements</p>
           </div>
         </div>
         <div className="stat-card">
-          <MapPin size={20} />
+          <Users size={24} />
           <div>
             <h3>{stats.managers}</h3>
             <p>Responsables</p>
@@ -401,71 +503,120 @@ const Organigramme = () => {
         </div>
 
         <div className="zoom-controls">
-          <button onClick={handleZoomOut} className="zoom-btn" title="Zoom out">
-            <ZoomOut size={18} />
+          <button onClick={handleZoomOut} className="zoom-btn" title="Zoom arrière">
+            <ZoomOut size={20} />
           </button>
           <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
-          <button onClick={handleZoomIn} className="zoom-btn" title="Zoom in">
-            <ZoomIn size={18} />
+          <button onClick={handleZoomIn} className="zoom-btn" title="Zoom avant">
+            <ZoomIn size={20} />
           </button>
-          <button onClick={handleResetZoom} className="zoom-btn" title="Réinitialiser">
-            <RotateCcw size={18} />
+          <button onClick={handleResetZoom} className="zoom-btn reset-btn" title="Réinitialiser">
+            <RotateCcw size={20} />
           </button>
         </div>
       </div>
 
       <div className="organigramme-content">
-        <div className="legend">
-          <h4>Légende des départements</h4>
-          <div className="legend-items">
-            {Object.entries(departmentColors).map(([dept, color]) => (
-              <div key={dept} className="legend-item">
-                <span className="color-dot" style={{ backgroundColor: color }}></span>
-                <span>{dept}</span>
-              </div>
-            ))}
+        <div className="chart-wrapper">
+          <div className="chart-container" ref={containerRef}>
+            <svg ref={svgRef} className="organigramme-svg"></svg>
           </div>
-        </div>
 
-        <div className="chart-container" ref={containerRef}>
-          <svg ref={svgRef} className="organigramme-svg"></svg>
-        </div>
-
-        <div className="employee-list">
-          <h4>Liste des employés ({filteredEmployees.length})</h4>
-          <div className="list-container">
-            {filteredEmployees.slice(0, 10).map(employee => (
-              <div key={employee.id} className="employee-card">
-                <div className="employee-avatar">
-                  {employee.photo ? (
-                    <img src={employee.photo} alt={`${employee.prenom} ${employee.nom}`} />
+          {selectedNode && (
+            <div className="employee-details-panel">
+              <div className="panel-header">
+                <h3>Détails de l'employé</h3>
+                <button onClick={() => setSelectedNode(null)} className="close-btn">×</button>
+              </div>
+              <div className="panel-content">
+                <div className="detail-avatar">
+                  {selectedNode.photo ? (
+                    <img src={selectedNode.photo} alt={`${selectedNode.prenom} ${selectedNode.nom}`} />
                   ) : (
-                    <div className="avatar-fallback">
-                      {employee.prenom?.charAt(0)}{employee.nom?.charAt(0)}
+                    <div className="avatar-placeholder">
+                      {selectedNode.prenom?.charAt(0)}{selectedNode.nom?.charAt(0)}
                     </div>
                   )}
                 </div>
-                <div className="employee-info">
-                  <h5>{employee.prenom} {employee.nom}</h5>
-                  <p className="employee-poste">{employee.poste}</p>
-                  <p className="employee-department">
-                    <Briefcase size={12} /> {employee.site_dep}
-                  </p>
-                  {employee.adresse_mail && (
-                    <p className="employee-email">
-                      <Mail size={12} /> {employee.adresse_mail}
-                    </p>
+                <h4>{selectedNode.prenom} {selectedNode.nom}</h4>
+                <p className="detail-position">{selectedNode.poste}</p>
+                <div className="detail-info">
+                  {selectedNode.site_dep && (
+                    <div className="detail-row">
+                      <Briefcase size={16} />
+                      <span>{selectedNode.site_dep}</span>
+                    </div>
+                  )}
+                  {selectedNode.adresse_mail && (
+                    <div className="detail-row">
+                      <Mail size={16} />
+                      <span>{selectedNode.adresse_mail}</span>
+                    </div>
+                  )}
+                  {selectedNode.telephone && (
+                    <div className="detail-row">
+                      <Phone size={16} />
+                      <span>{selectedNode.telephone}</span>
+                    </div>
                   )}
                 </div>
               </div>
-            ))}
+            </div>
+          )}
+        </div>
+
+        <div className="sidebar-info">
+          <div className="legend">
+            <h4>Légende</h4>
+            <div className="legend-items">
+              <div className="legend-item">
+                <div className="legend-circle" style={{ background: 'linear-gradient(135deg, #3b82f6, #1e40af)' }}></div>
+                <span>CEO / Direction</span>
+              </div>
+              <div className="legend-item">
+                <div className="legend-box" style={{ backgroundColor: '#4f46e5' }}></div>
+                <span>Responsables</span>
+              </div>
+              {Object.entries(departmentColors)
+                .filter(([dept]) => dept !== 'CEO')
+                .slice(0, 8)
+                .map(([dept, color]) => (
+                  <div key={dept} className="legend-item">
+                    <div className="legend-box" style={{ backgroundColor: color }}></div>
+                    <span>{dept}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+
+          <div className="employee-list">
+            <h4>Employés récents ({filteredEmployees.length})</h4>
+            <div className="list-container">
+              {filteredEmployees.slice(0, 8).map(employee => (
+                <div key={employee.id} className="employee-card-mini">
+                  <div className="employee-avatar-mini">
+                    {employee.photo ? (
+                      <img src={employee.photo} alt={`${employee.prenom} ${employee.nom}`} />
+                    ) : (
+                      <div className="avatar-fallback-mini">
+                        {employee.prenom?.charAt(0)}{employee.nom?.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="employee-info-mini">
+                    <h5>{employee.prenom} {employee.nom}</h5>
+                    <p>{employee.poste}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
       <div className="organigramme-footer">
         <p className="update-info">
-          Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')} | 
+          Dernière mise à jour : {new Date().toLocaleDateString('fr-FR')} • 
           {filteredEmployees.length} employés actifs
         </p>
         <button onClick={fetchEmployees} className="refresh-btn">
