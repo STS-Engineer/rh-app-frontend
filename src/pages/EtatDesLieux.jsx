@@ -4,6 +4,7 @@ import { employeesAPI, demandesAPI } from '../services/api';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import './EtatDesLieux.css';
+import Sidebar from '../components/Sidebar';
 
 // Icônes (vous pouvez utiliser react-icons ou des emojis)
 const ICONS = {
@@ -246,7 +247,7 @@ const EtatDesLieux = () => {
 
   return (
     <div className="etat-des-lieux-container">
-      {/* Header principal */}
+      <Sidebar /> {/* Header principal */}
       <div className="etat-header">
         <h1>
           <span className="text-gradient">{t('presence_tracker')}</span>
