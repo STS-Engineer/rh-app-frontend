@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { employeesAPI } from '../services/api';
 import * as d3 from 'd3';
-import { ZoomIn, ZoomOut, RotateCcw, User, Briefcase, Mail, Phone, MapPin } from 'lucide-react';
+import { ZoomIn, ZoomOut, RotateCcw, User, Briefcase, Mail, MapPin } from 'lucide-react';
 import './Organigramme.css';
 
 const Organigramme = () => {
@@ -182,7 +182,7 @@ const Organigramme = () => {
     }
   }, [searchTerm, employees]);
 
-  // Dessiner l'organigramme
+  // Dessiner l'organigramme - VERSION CORRIGÉE
   useEffect(() => {
     if (loading || !svgRef.current || filteredEmployees.length === 0) return;
 
@@ -205,12 +205,17 @@ const Organigramme = () => {
     // Construire la hiérarchie
     const hierarchyData = buildHierarchy();
     
-    // Créer la structure tree
+    // Créer la structure tree - VERSION CORRIGÉE
     const treeLayout = d3.tree()
       .size([height - margin.top - margin.bottom, width - margin.left - margin.right]);
 
     const root = d3.hierarchy(hierarchyData);
     treeLayout(root);
+
+    // CORRECTION ICI : Utiliser d3.linkHorizontal() correctement
+    const linkGenerator = d3.linkHorizontal()
+      .x(d => d.y)
+      .y(d => d.x);
 
     // Dessiner les liens
     const link = g.selectAll('.link')
@@ -218,9 +223,7 @@ const Organigramme = () => {
       .enter()
       .append('path')
       .attr('class', 'link')
-      .attr('d', d3.linkHorizontal()
-        .x(d => d.y)
-        .y(d => d.x))
+      .attr('d', linkGenerator)
       .attr('fill', 'none')
       .attr('stroke', '#94a3b8')
       .attr('stroke-width', 2);
