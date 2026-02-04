@@ -246,8 +246,9 @@ const EtatDesLieux = () => {
   }
 
   return (
+    <div> 
+    <Sidebar />
     <div className="etat-des-lieux-container">
-      <Sidebar /> 
       <div className="etat-header">
         <h1>
           <span className="text-gradient">{t('presence_tracker')}</span>
@@ -718,6 +719,7 @@ const EtatDesLieux = () => {
           </>
         )}
       </div>
+    </div>
     </div>
   );
 };
