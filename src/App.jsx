@@ -12,6 +12,7 @@ import EtatDesLieux from './pages/EtatDesLieux';
 import Settings from './pages/Settings';
 import Visa from './pages/Visa';
 import './styles/App.css';
+
 import Organigramme from './pages/Organigramme';
 
 const PrivateRoute = ({ children }) => {
