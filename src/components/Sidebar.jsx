@@ -13,6 +13,7 @@ const Sidebar = () => {
   const menuItems = [
     { path: '/dashboard', label: t('dashboard'), icon: '📊' },
     { path: '/team', label: t('team'), icon: '👥' },
+    { path: '/organigramme', label: t('organigram'), icon: '🏢' },
     { path: '/demandes-rh', label: t('demands'), icon: '📋' }, 
     { path: '/fiche-de-paie', label: t('payslip'), icon: '💰' },
     { path: '/archives', label: t('archives'), icon: '📁' },
