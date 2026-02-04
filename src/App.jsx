@@ -54,6 +54,14 @@ function App() {
                 } 
               />
               <Route 
+                path="/organigramme" 
+                element={
+                  <PrivateRoute>
+                    <Organigramme />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
                 path="/demandes-rh"
                 element={
                   <PrivateRoute>
@@ -61,7 +69,7 @@ function App() {
                   </PrivateRoute>
                 } 
               />
-              {/* NOUVELLE ROUTE ÉTAT DES LIEUX */}
+            
               <Route 
                 path="/etat-des-lieux" 
                 element={
