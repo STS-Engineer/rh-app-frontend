@@ -10,7 +10,7 @@ const DemandesRH = () => {
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     statut: '',
-    type_demande: '',
+    nom: '', // Changé de type_demande à nom
     date_debut: '',
     date_fin: ''
   });
@@ -23,12 +23,11 @@ const DemandesRH = () => {
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
 
   const statuts = ['en_attente', 'approuve', 'refuse'];
-  const typesDemande = ['congé', 'autorisation_absence', 'mission'];
 
   const getActiveFiltersCount = () => {
     let count = 0;
     if (filters.statut) count++;
-    if (filters.type_demande) count++;
+    if (filters.nom) count++; // Changé de type_demande à nom
     if (filters.date_debut) count++;
     if (filters.date_fin) count++;
     return count;
@@ -103,8 +102,8 @@ const DemandesRH = () => {
         queryParams.append('statut', filters.statut);
       }
       
-      if (filters.type_demande) {
-        queryParams.append('type_demande', filters.type_demande);
+      if (filters.nom) { // Changé de type_demande à nom
+        queryParams.append('nom', filters.nom);
       }
       
       if (filters.date_debut) {
@@ -189,7 +188,7 @@ const DemandesRH = () => {
   const clearFilters = () => {
     setFilters({
       statut: '',
-      type_demande: '',
+      nom: '', // Changé de type_demande à nom
       date_debut: '',
       date_fin: ''
     });
@@ -560,17 +559,15 @@ const DemandesRH = () => {
             </select>
           </div>
 
+          {/* FILTRE PAR NOM au lieu de type */}
           <div className="filter-group">
-            <label>{t('type')}</label>
-            <select 
-              value={filters.type_demande} 
-              onChange={(e) => handleFilterChange('type_demande', e.target.value)}
-            >
-              <option value="">{t('allTypes')}</option>
-              {typesDemande.map(s => (
-                <option key={s} value={s}>{getTypeDemandeLabel(s)}</option>
-              ))}
-            </select>
+            <label>{t('name')}</label>
+            <input 
+              type="text" 
+              value={filters.nom}
+              onChange={(e) => handleFilterChange('nom', e.target.value)}
+              placeholder={t('enterName')}
+            />
           </div>
 
           <div className="filter-group">
@@ -597,7 +594,7 @@ const DemandesRH = () => {
             <span className="filter-tag">
               {t('activeFilters')} ({activeFiltersCount}): 
               {filters.statut && <span className="tag">{t('status')}: {getStatutLabel(filters.statut)}</span>}
-              {filters.type_demande && <span className="tag">{t('type')}: {getTypeDemandeLabel(filters.type_demande)}</span>}
+              {filters.nom && <span className="tag">{t('name')}: {filters.nom}</span>} {/* Changé de type_demande à nom */}
               {filters.date_debut && <span className="tag">{t('fromDate')}: {formatDate(filters.date_debut)}</span>}
               {filters.date_fin && <span className="tag">{t('toDate')}: {formatDate(filters.date_fin)}</span>}
             </span>
