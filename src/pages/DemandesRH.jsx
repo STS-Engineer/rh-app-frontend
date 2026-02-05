@@ -10,10 +10,12 @@ const DemandesRH = () => {
   const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     statut: '',
-    nom: '', // Changé de type_demande à nom
+    employe_id: '', // Changé de type_demande à employe_id
     date_debut: '',
     date_fin: ''
   });
+  const [employes, setEmployes] = useState([]); // Nouvel état pour la liste des employés
+  const [loadingEmployes, setLoadingEmployes] = useState(false);
   const [filtersApplied, setFiltersApplied] = useState(false);
   const [timeoutId, setTimeoutId] = useState(null);
   const [lastResponse, setLastResponse] = useState(null);
@@ -27,7 +29,7 @@ const DemandesRH = () => {
   const getActiveFiltersCount = () => {
     let count = 0;
     if (filters.statut) count++;
-    if (filters.nom) count++; // Changé de type_demande à nom
+    if (filters.employe_id) count++; // Changé de type_demande à employe_id
     if (filters.date_debut) count++;
     if (filters.date_fin) count++;
     return count;
@@ -83,6 +85,47 @@ const DemandesRH = () => {
     return classes[status] || '';
   };
 
+  // Fonction pour récupérer la liste des employés
+  const fetchEmployes = useCallback(async () => {
+    try {
+      setLoadingEmployes(true);
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/employes`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.error('❌ ' + t('errorFetchingEmployees'));
+        return;
+      }
+
+      const data = await response.json();
+      
+      if (data.success && Array.isArray(data.employes)) {
+        // Trier les employés par nom et prénom
+        const sortedEmployes = data.employes.sort((a, b) => {
+          const nameA = `${a.prenom} ${a.nom}`.toLowerCase();
+          const nameB = `${b.prenom} ${b.nom}`.toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        setEmployes(sortedEmployes);
+      }
+      
+    } catch (error) {
+      console.error('❌ ' + t('errorFetchingEmployees'), error);
+    } finally {
+      setLoadingEmployes(false);
+    }
+  }, [API_BASE_URL, t]);
+
   const fetchDemandes = useCallback(async (force = false) => {
     try {
       setLoading(true);
@@ -102,8 +145,8 @@ const DemandesRH = () => {
         queryParams.append('statut', filters.statut);
       }
       
-      if (filters.nom) { // Changé de type_demande à nom
-        queryParams.append('nom', filters.nom);
+      if (filters.employe_id) { // Changé de type_demande à employe_id
+        queryParams.append('employe_id', filters.employe_id);
       }
       
       if (filters.date_debut) {
@@ -155,6 +198,7 @@ const DemandesRH = () => {
 
   useEffect(() => {
     fetchDemandes(true);
+    fetchEmployes(); // Charger la liste des employés
   }, []);
 
   useEffect(() => {
@@ -188,7 +232,7 @@ const DemandesRH = () => {
   const clearFilters = () => {
     setFilters({
       statut: '',
-      nom: '', // Changé de type_demande à nom
+      employe_id: '', // Changé de type_demande à employe_id
       date_debut: '',
       date_fin: ''
     });
@@ -503,6 +547,12 @@ const DemandesRH = () => {
     );
   };
 
+  // Fonction pour obtenir le nom complet d'un employé par son ID
+  const getEmployeNameById = (id) => {
+    const employe = employes.find(e => e.id === parseInt(id));
+    return employe ? `${employe.prenom} ${employe.nom}` : '';
+  };
+
   return (
     <div className="demandes-rh">
       <Sidebar />
@@ -559,15 +609,23 @@ const DemandesRH = () => {
             </select>
           </div>
 
-          {/* FILTRE PAR NOM au lieu de type */}
+          {/* FILTRE PAR EMPLOYÉ avec liste déroulante */}
           <div className="filter-group">
-            <label>{t('name')}</label>
-            <input 
-              type="text" 
-              value={filters.nom}
-              onChange={(e) => handleFilterChange('nom', e.target.value)}
-              placeholder={t('enterName')}
-            />
+            <label>{t('employee')}</label>
+            <select 
+              value={filters.employe_id} 
+              onChange={(e) => handleFilterChange('employe_id', e.target.value)}
+              disabled={loadingEmployes}
+            >
+              <option value="">{t('allEmployees')}</option>
+              {employes.map(employe => (
+                <option key={employe.id} value={employe.id}>
+                  {employe.prenom} {employe.nom}
+                  {employe.matricule ? ` (${employe.matricule})` : ''}
+                </option>
+              ))}
+            </select>
+            {loadingEmployes && <div className="loading-small">{t('loading')}...</div>}
           </div>
 
           <div className="filter-group">
@@ -594,7 +652,11 @@ const DemandesRH = () => {
             <span className="filter-tag">
               {t('activeFilters')} ({activeFiltersCount}): 
               {filters.statut && <span className="tag">{t('status')}: {getStatutLabel(filters.statut)}</span>}
-              {filters.nom && <span className="tag">{t('name')}: {filters.nom}</span>} {/* Changé de type_demande à nom */}
+              {filters.employe_id && (
+                <span className="tag">
+                  {t('employee')}: {getEmployeNameById(filters.employe_id) || filters.employe_id}
+                </span>
+              )}
               {filters.date_debut && <span className="tag">{t('fromDate')}: {formatDate(filters.date_debut)}</span>}
               {filters.date_fin && <span className="tag">{t('toDate')}: {formatDate(filters.date_fin)}</span>}
             </span>
