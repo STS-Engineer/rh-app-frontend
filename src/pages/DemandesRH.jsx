@@ -92,10 +92,11 @@ const DemandesRH = () => {
       const token = localStorage.getItem('token');
       
       if (!token) {
+        console.log('❌ Token non trouvé');
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/api/employes`, {
+      const response = await fetch(`${API_BASE_URL}/api/employee`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -103,28 +104,33 @@ const DemandesRH = () => {
       });
 
       if (!response.ok) {
-        console.error('❌ ' + t('errorFetchingEmployees'));
-        return;
+        console.error('❌ Erreur récupération employés:', response.status, response.statusText);
+        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
       
-      if (data.success && Array.isArray(data.employes)) {
+      if (Array.isArray(data)) {
         // Trier les employés par nom et prénom
-        const sortedEmployes = data.employes.sort((a, b) => {
+        const sortedEmployes = data.sort((a, b) => {
           const nameA = `${a.prenom} ${a.nom}`.toLowerCase();
           const nameB = `${b.prenom} ${b.nom}`.toLowerCase();
           return nameA.localeCompare(nameB);
         });
         setEmployes(sortedEmployes);
+        console.log(`✅ ${sortedEmployes.length} employés chargés`);
+      } else {
+        console.error('❌ Format de données invalide pour les employés');
+        setEmployes([]);
       }
       
     } catch (error) {
-      console.error('❌ ' + t('errorFetchingEmployees'), error);
+      console.error('❌ Erreur récupération employés:', error);
+      setEmployes([]);
     } finally {
       setLoadingEmployes(false);
     }
-  }, [API_BASE_URL, t]);
+  }, [API_BASE_URL]);
 
   const fetchDemandes = useCallback(async (force = false) => {
     try {
@@ -163,6 +169,8 @@ const DemandesRH = () => {
 
       const url = `${API_BASE_URL}/api/demandes?${queryParams}`;
       
+      console.log('📡 Requête demandes:', url);
+      
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -173,7 +181,7 @@ const DemandesRH = () => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ ' + t('serverError'), errorText);
+        console.error('❌ ' + t('serverError'), response.status, errorText);
         throw new Error(`${t('error')} ${response.status}: ${response.statusText}`);
       }
 
@@ -183,7 +191,9 @@ const DemandesRH = () => {
       
       if (data.success && Array.isArray(data.demandes)) {
         setDemandes(data.demandes);
+        console.log(`✅ ${data.demandes.length} demandes récupérées`);
       } else {
+        console.log('⚠️ Aucune demande trouvée ou format invalide');
         setDemandes([]);
       }
       
@@ -260,7 +270,7 @@ const DemandesRH = () => {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return dateString;
-      return date.toLocaleDateString();
+      return date.toLocaleDateString('fr-FR');
     } catch (e) {
       return dateString;
     }
@@ -271,7 +281,7 @@ const DemandesRH = () => {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return dateString;
-      return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+      return date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR');
     } catch (e) {
       return dateString;
     }
@@ -621,11 +631,17 @@ const DemandesRH = () => {
               {employes.map(employe => (
                 <option key={employe.id} value={employe.id}>
                   {employe.prenom} {employe.nom}
+                  {employe.poste ? ` - ${employe.poste}` : ''}
                   {employe.matricule ? ` (${employe.matricule})` : ''}
                 </option>
               ))}
             </select>
-            {loadingEmployes && <div className="loading-small">{t('loading')}...</div>}
+            {loadingEmployes && (
+              <div className="loading-indicator">
+                <span className="loading-spinner-small"></span>
+                <span>{t('loading')}...</span>
+              </div>
+            )}
           </div>
 
           <div className="filter-group">
@@ -649,24 +665,40 @@ const DemandesRH = () => {
 
         {activeFiltersCount > 0 && (
           <div className="active-filters">
-            <span className="filter-tag">
-              {t('activeFilters')} ({activeFiltersCount}): 
-              {filters.statut && <span className="tag">{t('status')}: {getStatutLabel(filters.statut)}</span>}
-              {filters.employe_id && (
-                <span className="tag">
-                  {t('employee')}: {getEmployeNameById(filters.employe_id) || filters.employe_id}
-                </span>
-              )}
-              {filters.date_debut && <span className="tag">{t('fromDate')}: {formatDate(filters.date_debut)}</span>}
-              {filters.date_fin && <span className="tag">{t('toDate')}: {formatDate(filters.date_fin)}</span>}
-            </span>
+            <div className="filter-tag-container">
+              <span className="filter-tag-label">
+                {t('activeFilters')} ({activeFiltersCount}):
+              </span>
+              <div className="filter-tags">
+                {filters.statut && (
+                  <span className="tag">
+                    {t('status')}: {getStatutLabel(filters.statut)}
+                  </span>
+                )}
+                {filters.employe_id && (
+                  <span className="tag">
+                    {t('employee')}: {getEmployeNameById(filters.employe_id) || filters.employe_id}
+                  </span>
+                )}
+                {filters.date_debut && (
+                  <span className="tag">
+                    {t('fromDate')}: {formatDate(filters.date_debut)}
+                  </span>
+                )}
+                {filters.date_fin && (
+                  <span className="tag">
+                    {t('toDate')}: {formatDate(filters.date_fin)}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>
 
       <div className="stats-section">
         <div className="stat-card total">
-          <div className="stat-icon"><i class="fi fi-rr-rectangle-list"></i></div>
+          <div className="stat-icon"><i className="fi fi-rr-rectangle-list"></i></div>
           <div className="stat-content">
             <div className="stat-number">{demandes.length}</div>
             <div className="stat-label">{t('totalRequests')}</div>
