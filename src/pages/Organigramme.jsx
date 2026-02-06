@@ -232,7 +232,7 @@ const Organigramme = () => {
     
     // Dimensions plus grandes pour espacement clair
     const nodeWidth = 340;
-    const nodeHeight = 200;
+    const nodeHeight = 100;
     const levelSpacing = 280; // Espacement vertical entre niveaux
     const siblingSpacing = 250; // Espacement horizontal entre frères
 
