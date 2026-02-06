@@ -231,10 +231,10 @@ const Organigramme = () => {
     const containerHeight = containerRef.current.clientHeight;
     
     // Dimensions plus grandes pour espacement clair
-    const nodeWidth = 240;
-    const nodeHeight = 100;
-    const levelSpacing = 180; // Espacement vertical entre niveaux
-    const siblingSpacing = 150; // Espacement horizontal entre frères
+    const nodeWidth = 340;
+    const nodeHeight = 200;
+    const levelSpacing = 280; // Espacement vertical entre niveaux
+    const siblingSpacing = 250; // Espacement horizontal entre frères
 
     const hierarchyData = buildHierarchy();
     const root = d3.hierarchy(hierarchyData);
