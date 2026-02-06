@@ -30,7 +30,7 @@ const Organigramme = () => {
     'Management': '#374151'
   };
 
-  // Nouvelle fonction de hiérarchie améliorée
+  // Nouvelle fonction de hiérarchie basée sur votre logique
   const buildHierarchy = () => {
     const employeeMap = new Map();
     
@@ -42,49 +42,103 @@ const Organigramme = () => {
           ...emp,
           id: email,
           children: [],
-          depth: 0
+          depth: 0,
+          hasHorizontalTeam: false
         });
       }
     });
 
-    // Trouver Fethi comme CEO
+    // Trouver Fethi
     const fethi = employees.find(e => 
       e.prenom?.toLowerCase().includes('fethi') && 
       e.nom?.toLowerCase().includes('chaouachi')
     );
 
     if (!fethi || !fethi.adresse_mail) {
-      console.error('CEO Fethi Chaouachi non trouvé');
+      console.error('Fethi Chaouachi non trouvé');
       return { name: 'Organigramme', children: [] };
     }
 
     const fethiEmail = fethi.adresse_mail.toLowerCase();
     const fethiNode = employeeMap.get(fethiEmail);
     
-    // Marquer le CEO
+    // Marquer Fethi comme Plant Manager
     fethiNode.isCEO = true;
     fethiNode.site_dep = 'Plant Manager';
     fethiNode.depth = 0;
 
     const processed = new Set([fethiEmail]);
 
-    // Niveau 1: Responsables directs sous Fethi
-    const directReports = employees.filter(e => {
+    // LOGIQUE PRINCIPALE :
+    // 1. Ceux qui ont Fethi comme responsable 1 -> DIRECTEMENT sous Fethi
+    // 2. Ceux qui ont Fethi comme responsable 2 -> dans équipe avec leur premier responsable
+
+    // Récupérer tous les employés (sauf Fethi)
+    const allOtherEmployees = employees.filter(e => {
       const email = e.adresse_mail?.toLowerCase();
-      if (!email || processed.has(email) || email === fethiEmail) return false;
-      
+      return email && email !== fethiEmail;
+    });
+
+    // 1. Employés avec Fethi comme responsable 1 (DIRECTS)
+    const directReports = allOtherEmployees.filter(e => {
+      const resp1 = e.mail_responsable1?.toLowerCase();
+      return resp1 === fethiEmail;
+    });
+
+    // 2. Employés avec d'autres responsables
+    const otherEmployees = allOtherEmployees.filter(e => {
+      const email = e.adresse_mail?.toLowerCase();
       const resp1 = e.mail_responsable1?.toLowerCase();
       const resp2 = e.mail_responsable2?.toLowerCase();
       
-      // Sous Fethi si un seul responsable OU si Fethi est responsable1
-      if (!resp1 && !resp2) return true; // Pas de manager -> sous Fethi
-      if (resp1 === fethiEmail) return true; // Fethi est responsable1
-      if (!resp2 && resp1 !== fethiEmail) return true; // Un seul manager mais pas Fethi -> sous son manager
+      // Si pas de responsable ou responsable inconnu, mettre sous Fethi
+      if (!resp1 && !resp2) return true;
       
-      return false;
+      // Exclure ceux qui sont déjà dans directReports
+      return !directReports.some(dr => 
+        dr.adresse_mail?.toLowerCase() === email
+      );
     });
 
-    // Trier par poste (managers d'abord)
+    // Fonction pour grouper les employés par leur premier responsable
+    const groupByManager = (employeesList) => {
+      const groups = new Map();
+      
+      employeesList.forEach(emp => {
+        const email = emp.adresse_mail?.toLowerCase();
+        const managerEmail = emp.mail_responsable1?.toLowerCase();
+        
+        if (!managerEmail || !employeeMap.has(managerEmail)) {
+          // Si pas de manager ou manager non trouvé, mettre dans "non-groupé"
+          const key = 'ungrouped';
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(emp);
+          return;
+        }
+        
+        // Vérifier si le manager est dans la liste des managers directs de Fethi
+        const isManagerUnderFethi = directReports.some(dr => 
+          dr.adresse_mail?.toLowerCase() === managerEmail
+        );
+        
+        if (isManagerUnderFethi) {
+          if (!groups.has(managerEmail)) groups.set(managerEmail, []);
+          groups.get(managerEmail).push(emp);
+        } else {
+          // Si le manager n'est pas sous Fethi, mettre dans "non-groupé"
+          const key = 'ungrouped';
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(emp);
+        }
+      });
+      
+      return groups;
+    };
+
+    // Grouper les employés sous chaque manager direct
+    const groupedEmployees = groupByManager(otherEmployees);
+
+    // Trier les rapports directs par poste (managers d'abord)
     directReports.sort((a, b) => {
       const aIsManager = a.poste?.toLowerCase().includes('responsable') || 
                         a.poste?.toLowerCase().includes('manager') ||
@@ -100,7 +154,7 @@ const Organigramme = () => {
       return a.prenom?.localeCompare(b.prenom);
     });
 
-    // Ajouter les reports directs
+    // Ajouter les rapports directs sous Fethi
     directReports.forEach(emp => {
       const email = emp.adresse_mail?.toLowerCase();
       if (email && employeeMap.has(email)) {
@@ -108,104 +162,73 @@ const Organigramme = () => {
         node.depth = 1;
         fethiNode.children.push(node);
         processed.add(email);
-      }
-    });
-
-    // Construire la hiérarchie pour chaque niveau
-    const buildTreeForManager = (managerEmail, currentDepth) => {
-      const managerNode = employeeMap.get(managerEmail);
-      if (!managerNode) return;
-
-      const teamMembers = employees.filter(e => {
-        const email = e.adresse_mail?.toLowerCase();
-        if (!email || processed.has(email) || email === managerEmail) return false;
         
-        const resp1 = e.mail_responsable1?.toLowerCase();
-        const resp2 = e.mail_responsable2?.toLowerCase();
-        
-        // Membre de l'équipe si managerEmail est responsable1
-        return resp1 === managerEmail;
-      });
-
-      // Séparer les sous-managers et les employés simples
-      const subManagers = [];
-      const regularEmployees = [];
-      
-      teamMembers.forEach(member => {
-        const isManager = member.poste?.toLowerCase().includes('responsable') || 
-                         member.poste?.toLowerCase().includes('manager') ||
-                         member.poste?.toLowerCase().includes('chef');
-        
-        if (isManager) {
-          subManagers.push(member);
-        } else {
-          regularEmployees.push(member);
-        }
-      });
-
-      // Trier les sous-managers
-      subManagers.sort((a, b) => a.prenom?.localeCompare(b.prenom));
-      
-      // Trier les employés réguliers
-      regularEmployees.sort((a, b) => a.prenom?.localeCompare(b.prenom));
-
-      // Ajouter d'abord les sous-managers (ils auront des enfants verticalement)
-      subManagers.forEach(manager => {
-        const email = manager.adresse_mail?.toLowerCase();
-        if (email && employeeMap.has(email)) {
-          const node = employeeMap.get(email);
-          node.depth = currentDepth + 1;
-          managerNode.children.push(node);
-          processed.add(email);
+        // Vérifier si ce manager a des employés dans son groupe
+        if (groupedEmployees.has(email)) {
+          const teamMembers = groupedEmployees.get(email);
           
-          // Construire récursivement pour les sous-managers
-          buildTreeForManager(email, currentDepth + 1);
-        }
-      });
-
-      // Si on a des employés réguliers, créer un nœud virtuel pour les grouper horizontalement
-      if (regularEmployees.length > 0) {
-        // Créer un conteneur virtuel pour les employés réguliers
-        const virtualNode = {
-          id: `virtual_${managerEmail}_team`,
-          virtual: true,
-          isHorizontalGroup: true,
-          children: [],
-          depth: currentDepth + 1,
-          prenom: '',
-          nom: '',
-          poste: '',
-          site_dep: ''
-        };
-
-        // Ajouter tous les employés réguliers au nœud virtuel
-        regularEmployees.forEach(member => {
-          const email = member.adresse_mail?.toLowerCase();
-          if (email && employeeMap.has(email)) {
-            const node = employeeMap.get(email);
-            node.depth = currentDepth + 2; // Un niveau en dessous
-            virtualNode.children.push(node);
-            processed.add(email);
+          // Marquer le manager comme ayant une grande équipe si > 3
+          if (teamMembers.length > 3) {
+            node.hasHorizontalTeam = true;
           }
-        });
-
-        if (virtualNode.children.length > 0) {
-          managerNode.children.push(virtualNode);
+          
+          // Si l'équipe a plus de 3 personnes, créer un groupe horizontal
+          if (teamMembers.length > 3) {
+            // Créer un nœud virtuel pour le groupe horizontal
+            const virtualNode = {
+              id: `team_${email}`,
+              virtual: true,
+              isHorizontalGroup: true,
+              children: [],
+              depth: 2,
+              managerEmail: email,
+              teamSize: teamMembers.length,
+              teamMembers: teamMembers.map(m => m.adresse_mail?.toLowerCase())
+            };
+            
+            // Ajouter les membres de l'équipe
+            teamMembers.forEach(member => {
+              const memberEmail = member.adresse_mail?.toLowerCase();
+              if (memberEmail && employeeMap.has(memberEmail)) {
+                const memberNode = employeeMap.get(memberEmail);
+                memberNode.depth = 3; // Sous le groupe virtuel
+                virtualNode.children.push(memberNode);
+                processed.add(memberEmail);
+              }
+            });
+            
+            node.children.push(virtualNode);
+          } else {
+            // Pour les petites équipes, disposition verticale normale
+            teamMembers.forEach(member => {
+              const memberEmail = member.adresse_mail?.toLowerCase();
+              if (memberEmail && employeeMap.has(memberEmail)) {
+                const memberNode = employeeMap.get(memberEmail);
+                memberNode.depth = 2; // Directement sous le manager
+                node.children.push(memberNode);
+                processed.add(memberEmail);
+              }
+            });
+          }
         }
-      }
-    };
-
-    // Construire l'arbre pour chaque manager direct
-    fethiNode.children.forEach(child => {
-      if (child.poste?.toLowerCase().includes('responsable') || 
-          child.poste?.toLowerCase().includes('manager') ||
-          child.poste?.toLowerCase().includes('directeur') ||
-          child.poste?.toLowerCase().includes('chef')) {
-        buildTreeForManager(child.id, 1);
       }
     });
 
-    // Ajouter les employés restants non connectés
+    // Ajouter les employés non-groupés directement sous Fethi
+    if (groupedEmployees.has('ungrouped')) {
+      const ungrouped = groupedEmployees.get('ungrouped');
+      ungrouped.forEach(emp => {
+        const email = emp.adresse_mail?.toLowerCase();
+        if (email && employeeMap.has(email) && !processed.has(email)) {
+          const node = employeeMap.get(email);
+          node.depth = 1;
+          fethiNode.children.push(node);
+          processed.add(email);
+        }
+      });
+    }
+
+    // Ajouter les employés restants non traités
     employees.forEach(emp => {
       const email = emp.adresse_mail?.toLowerCase();
       if (email && !processed.has(email)) {
@@ -265,11 +288,11 @@ const Organigramme = () => {
     const containerWidth = containerRef.current.clientWidth;
     const containerHeight = containerRef.current.clientHeight;
     
-    // Dimensions largement augmentées pour une excellente lisibilité
+    // Dimensions pour meilleure lisibilité
     const nodeWidth = 450;
     const nodeHeight = 320;
-    const levelSpacing = 380; // Espacement vertical réduit pour gagner de l'espace
-    const siblingSpacing = 450; // Espacement horizontal entre frères
+    const levelSpacing = 380; // Espacement vertical
+    const siblingSpacing = 500; // Espacement horizontal entre frères
 
     const hierarchyData = buildHierarchy();
     const root = d3.hierarchy(hierarchyData);
@@ -278,11 +301,10 @@ const Organigramme = () => {
     const tree = d3.tree()
       .nodeSize([siblingSpacing, levelSpacing])
       .separation((a, b) => {
-        // Plus d'espace entre nœuds non-frères
-        if (a.parent === b.parent) {
-          return 1.5; // Frères: 1.5x l'espacement
-        }
-        return 2.5; // Non-frères: 2.5x l'espacement
+        // Plus d'espace pour les nœuds avec équipes horizontales
+        if (a.data.hasHorizontalTeam || b.data.hasHorizontalTeam) return 2.5;
+        if (a.parent === b.parent) return 1.2;
+        return 2;
       });
 
     tree(root);
@@ -312,7 +334,7 @@ const Organigramme = () => {
       .attr('class', 'main-group');
 
     // Ajuster l'échelle pour un affichage optimal - ZOOM FIXE à 40%
-    const scale = 0.4; // Zoom fixe à 40% pour voir l'ensemble clairement
+    const scale = 0.4;
 
     const initialX = (containerWidth / 2) - (minX + (maxX - minX) / 2) * scale;
     const initialY = 80;
@@ -354,29 +376,23 @@ const Organigramme = () => {
       .attr('offset', '100%')
       .attr('stop-color', '#6366f1');
 
-    // Dessiner les liens VERTICAUX avec lignes courbes en escalier (pas d'intersections)
+    // Dessiner les liens VERTICAUX simples
     g.selectAll('.link')
       .data(links)
       .enter()
       .append('path')
       .attr('class', 'link')
       .attr('d', d => {
-        // Si la source est un nœud virtuel (groupe horizontal), pas de ligne visible
-        if (d.source.data.virtual) return '';
+        // Ignorer les nœuds virtuels
+        if (d.source.data.virtual || d.target.data.virtual) return '';
         
-        // Lignes en escalier (step): vertical puis horizontal puis vertical
         const sourceX = d.source.x;
-        const sourceY = d.source.y + nodeHeight / 2; // Bas de la carte source
+        const sourceY = d.source.y + nodeHeight / 2;
         const targetX = d.target.x;
-        const targetY = d.target.y - nodeHeight / 2; // Haut de la carte cible
+        const targetY = d.target.y - nodeHeight / 2;
         
-        const midY = (sourceY + targetY) / 2;
-        
-        // Créer un chemin en escalier
-        return `M ${sourceX},${sourceY} 
-                L ${sourceX},${midY}
-                L ${targetX},${midY}
-                L ${targetX},${targetY}`;
+        // Lignes verticales directes
+        return `M ${sourceX},${sourceY} L ${targetX},${targetY}`;
       })
       .attr('stroke', d => {
         if (d.source.data.virtual) return 'none';
@@ -385,56 +401,52 @@ const Organigramme = () => {
       })
       .attr('stroke-width', d => {
         if (d.source.data.virtual) return 0;
-        return d.source.data.isCEO ? 4 : 3;
+        return d.source.data.isCEO ? 4 : 2;
       })
       .attr('fill', 'none')
       .attr('opacity', d => d.source.data.virtual ? 0 : 0.8);
 
-    // Dessiner les lignes de connexion pour relier les groupes horizontaux à leur manager
-    const virtualNodes = nodes.filter(d => d.data.virtual && d.data.isHorizontalGroup);
-    
-    virtualNodes.forEach(vNode => {
-      if (!vNode.children || vNode.children.length === 0) return;
+    // Dessiner les connexions pour les groupes horizontaux
+    const horizontalGroups = nodes.filter(d => d.data.virtual && d.data.isHorizontalGroup);
+
+    horizontalGroups.forEach(groupNode => {
+      const managerNode = groupNode.parent;
+      if (!managerNode || !groupNode.children || groupNode.children.length === 0) return;
       
-      const parentNode = vNode.parent;
-      if (!parentNode) return;
+      const managerX = managerNode.x;
+      const managerY = managerNode.y + nodeHeight / 2;
+      const groupTopY = groupNode.children[0].y - nodeHeight / 2;
       
-      const parentX = parentNode.x;
-      const parentY = parentNode.y + nodeHeight / 2;
-      
-      // Ligne verticale du parent vers le niveau des enfants
-      const childrenY = vNode.children[0].y - nodeHeight / 2;
-      const midY = (parentY + childrenY) / 2;
-      
-      // Dessiner ligne du parent vers le milieu
+      // Ligne verticale du manager au niveau du groupe
       g.append('path')
-        .attr('class', 'link virtual-link')
-        .attr('d', `M ${parentX},${parentY} L ${parentX},${midY}`)
+        .attr('class', 'link group-link')
+        .attr('d', `M ${managerX},${managerY} L ${managerX},${groupTopY}`)
         .attr('stroke', '#64748b')
-        .attr('stroke-width', 3)
+        .attr('stroke-width', 2)
+        .attr('fill', 'none')
+        .attr('opacity', 0.8)
+        .attr('stroke-dasharray', '5,5');
+      
+      // Ligne horizontale reliant tous les membres du groupe
+      const children = groupNode.children;
+      const minX = Math.min(...children.map(c => c.x));
+      const maxX = Math.max(...children.map(c => c.x));
+      
+      g.append('path')
+        .attr('class', 'link group-horizontal-line')
+        .attr('d', `M ${minX},${groupTopY} L ${maxX},${groupTopY}`)
+        .attr('stroke', '#64748b')
+        .attr('stroke-width', 2)
         .attr('fill', 'none')
         .attr('opacity', 0.8);
       
-      // Calculer les positions min et max des enfants
-      const minX = Math.min(...vNode.children.map(c => c.x));
-      const maxX = Math.max(...vNode.children.map(c => c.x));
-      
-      // Ligne horizontale reliant tous les enfants
-      g.append('path')
-        .attr('class', 'link virtual-link horizontal')
-        .attr('d', `M ${minX},${midY} L ${maxX},${midY}`)
-        .attr('stroke', '#64748b')
-        .attr('stroke-width', 3)
-        .attr('fill', 'none')
-        .attr('opacity', 0.8);
-      
-      // Lignes verticales vers chaque enfant
-      vNode.children.forEach(child => {
+      // Lignes verticales vers chaque membre
+      children.forEach(child => {
         g.append('path')
-          .attr('class', 'link virtual-link')
-          .attr('d', `M ${child.x},${midY} L ${child.x},${childrenY}`)
+          .attr('class', 'link member-vertical-line')
+          .attr('d', `M ${child.x},${groupTopY} L ${child.x},${child.y - nodeHeight / 2}`)
           .attr('stroke', '#64748b')
-          .attr('stroke-width', 3)
+          .attr('stroke-width', 2)
           .attr('fill', 'none')
           .attr('opacity', 0.8);
       });
@@ -445,7 +457,13 @@ const Organigramme = () => {
       .data(nodes.filter(d => !d.data.virtual)) // Ignorer les nœuds virtuels
       .enter()
       .append('g')
-      .attr('class', d => `node ${d.data.isCEO ? 'node-ceo' : 'node-regular'} node-depth-${d.depth}`)
+      .attr('class', d => {
+        const classes = ['node'];
+        if (d.data.isCEO) classes.push('node-ceo');
+        if (d.data.hasHorizontalTeam) classes.push('node-has-horizontal-team');
+        classes.push(`node-depth-${d.depth}`);
+        return classes.join(' ');
+      })
       .attr('transform', d => `translate(${d.x},${d.y})`)
       .style('cursor', 'pointer')
       .on('click', (event, d) => {
@@ -511,7 +529,7 @@ const Organigramme = () => {
                          d.data.poste?.toLowerCase().includes('chef');
         return isManager ? '#3730a3' : '#334155';
       })
-      .attr('stroke-width', d => d.data.isCEO ? 4 : 2);
+      .attr('stroke-width', d => d.data.isCEO ? 4 : (d.data.hasHorizontalTeam ? 3 : 2));
 
     // Badge de statut (CEO/Manager)
     node.filter(d => d.data.isCEO || d.data.poste?.toLowerCase().includes('responsable') || 
@@ -538,6 +556,33 @@ const Organigramme = () => {
       .style('font-size', '15px')
       .style('font-weight', 'bold')
       .text(d => d.data.isCEO ? 'CEO' : 'MGR');
+
+    // Badge pour les managers avec grande équipe
+    node.filter(d => d.data.hasHorizontalTeam)
+      .append('circle')
+      .attr('class', 'horizontal-team-badge')
+      .attr('cx', nodeWidth / 2 - 20)
+      .attr('cy', -nodeHeight / 2 - 15)
+      .attr('r', 20)
+      .attr('fill', '#ef4444')
+      .attr('stroke', 'white')
+      .attr('stroke-width', 3);
+
+    node.filter(d => d.data.hasHorizontalTeam)
+      .append('text')
+      .attr('class', 'team-size-text')
+      .attr('x', nodeWidth / 2 - 20)
+      .attr('y', -nodeHeight / 2 - 15)
+      .attr('text-anchor', 'middle')
+      .attr('dy', '0.35em')
+      .style('fill', 'white')
+      .style('font-size', '14px')
+      .style('font-weight', 'bold')
+      .text(d => {
+        // Trouver le groupe horizontal associé
+        const horizontalGroup = d.children?.find(c => c.data.virtual && c.data.isHorizontalGroup);
+        return horizontalGroup ? `+${horizontalGroup.data.teamSize}` : '';
+      });
 
     // Initiales
     node.append('text')
@@ -608,14 +653,14 @@ const Organigramme = () => {
       // Aussi compter les petits-enfants si on a des groupes horizontaux
       const grandChildren = d.children?.filter(c => c.data.virtual)
         .flatMap(c => c.children || []) || [];
-      return (realChildren.length + grandChildren.length) > 0;
+      return (realChildren.length + grandChildren.length) > 0 && !d.data.hasHorizontalTeam;
     })
       .append('g')
       .attr('class', 'team-indicator')
       .attr('transform', `translate(${nodeWidth / 2 - 24}, ${nodeHeight / 2 - 24})`)
       .append('circle')
       .attr('r', 22)
-      .attr('fill', '#ef4444')
+      .attr('fill', '#10b981')
       .attr('stroke', 'white')
       .attr('stroke-width', 3);
 
@@ -623,7 +668,7 @@ const Organigramme = () => {
       const realChildren = d.children?.filter(c => !c.data.virtual) || [];
       const grandChildren = d.children?.filter(c => c.data.virtual)
         .flatMap(c => c.children || []) || [];
-      return (realChildren.length + grandChildren.length) > 0;
+      return (realChildren.length + grandChildren.length) > 0 && !d.data.hasHorizontalTeam;
     })
       .select('.team-indicator')
       .append('text')
@@ -649,7 +694,7 @@ const Organigramme = () => {
 
     svg.call(zoom);
 
-    // Centrer sur le CEO avec animation - ZOOM FIXE 40%
+    // Centrer sur Fethi avec animation - ZOOM FIXE 40%
     const ceoNode = nodes.find(d => d.data.isCEO);
     if (ceoNode) {
       const finalX = containerWidth / 2 - ceoNode.x * scale;
@@ -657,7 +702,7 @@ const Organigramme = () => {
       
       svg.transition()
         .duration(1200)
-        .call(zoom.transform, d3.zoomIdentity.translate(finalX, finalY).scale(0.4)); // Zoom fixe à 40%
+        .call(zoom.transform, d3.zoomIdentity.translate(finalX, finalY).scale(0.4));
     }
 
   }, [filteredEmployees, loading]);
@@ -681,7 +726,7 @@ const Organigramme = () => {
       .duration(500)
       .call(d3.zoom().transform, d3.zoomIdentity
         .translate(containerWidth / 2, 120)
-        .scale(0.4)); // Zoom fixe à 40%
+        .scale(0.4));
   };
 
   // Statistiques
@@ -764,8 +809,11 @@ const Organigramme = () => {
           </div>
           
           <div className="hierarchy-info">
-            <span className="hierarchy-label">Hiérarchie: </span>
-            <span className="hierarchy-value">Fethi Chaouachi (CEO)</span>
+            <span className="hierarchy-label">Structure : </span>
+            <span className="hierarchy-value">Fethi Chaouachi (Plant Manager)</span>
+            <span className="hierarchy-note">
+              • Équipes >3 personnes → disposition horizontale
+            </span>
           </div>
         </div>
       </div>
@@ -839,23 +887,46 @@ const Organigramme = () => {
         <div className="legend-card">
           <div className="legend-header">
             <Briefcase size={20} />
-            <h4>Légende des départements</h4>
+            <h4>Légende de l'organigramme</h4>
           </div>
           <div className="legend-grid">
             <div className="legend-item ceo-item">
               <div className="legend-color ceo-color"></div>
               <div className="legend-text">
-                <span className="legend-title">CEO / Direction</span>
+                <span className="legend-title">Plant Manager (Fethi)</span>
                 <span className="legend-count">
-                  ({filteredEmployees.filter(e => e.site_dep === 'CEO').length})
+                  (1)
                 </span>
               </div>
             </div>
             <div className="legend-item manager-item">
               <div className="legend-color manager-color"></div>
               <div className="legend-text">
-                <span className="legend-title">Responsables / Managers</span>
-                <span className="legend-count">({stats.managers})</span>
+                <span className="legend-title">Managers sous Fethi</span>
+                <span className="legend-count">
+                  ({filteredEmployees.filter(e => {
+                    const resp1 = e.mail_responsable1?.toLowerCase();
+                    const fethiEmail = 'fethi.chaouachi@email.com'; // Ajuster l'email
+                    return resp1 === fethiEmail && 
+                      (e.poste?.toLowerCase().includes('responsable') || 
+                       e.poste?.toLowerCase().includes('manager') ||
+                       e.poste?.toLowerCase().includes('directeur'));
+                  }).length})
+                </span>
+              </div>
+            </div>
+            <div className="legend-item horizontal-team-item">
+              <div className="legend-color" style={{ background: '#ef4444' }}></div>
+              <div className="legend-text">
+                <span className="legend-title">Grandes équipes (>3 pers)</span>
+                <span className="legend-count">(Disposition horizontale)</span>
+              </div>
+            </div>
+            <div className="legend-item small-team-item">
+              <div className="legend-color" style={{ background: '#10b981' }}></div>
+              <div className="legend-text">
+                <span className="legend-title">Petites équipes (≤3 pers)</span>
+                <span className="legend-count">(Disposition verticale)</span>
               </div>
             </div>
             {Object.entries(departmentColors)
@@ -895,6 +966,10 @@ const Organigramme = () => {
             <span className="stat-item">
               <Briefcase size={14} />
               {stats.departments} départements
+            </span>
+            <span className="stat-item">
+              <Users size={14} />
+              {stats.managers} responsables
             </span>
           </div>
         </div>
