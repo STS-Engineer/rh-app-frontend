@@ -222,6 +222,63 @@ const Organigramme = () => {
     }
   }, [searchTerm, employees]);
 
+  // Fonction pour gérer le texte multiligne
+  const wrapText = (text, width) => {
+    text.each(function() {
+      const node = d3.select(this);
+      const originalText = node.text();
+      
+      if (!originalText || originalText.trim() === '') return;
+      
+      const words = originalText.split(/\s+/).reverse();
+      const lineHeight = 1.1;
+      const y = node.attr("y") || 0;
+      const dy = parseFloat(node.attr("dy")) || 0;
+      
+      node.text(null);
+      
+      let line = [];
+      let lineNumber = 0;
+      let tspan = node.append("tspan")
+        .attr("x", 0)
+        .attr("y", y)
+        .attr("dy", dy + "em");
+      
+      while (words.length > 0) {
+        const word = words.pop();
+        line.push(word);
+        tspan.text(line.join(" "));
+        
+        // Vérifier si le texte dépasse la largeur
+        const textLength = tspan.node().getComputedTextLength();
+        if (textLength > width && line.length > 1) {
+          line.pop(); // Retirer le dernier mot
+          tspan.text(line.join(" "));
+          line = [word]; // Commencer une nouvelle ligne avec le mot
+          lineNumber++;
+          tspan = node.append("tspan")
+            .attr("x", 0)
+            .attr("y", y)
+            .attr("dy", lineNumber * lineHeight + dy + "em")
+            .text(word);
+        }
+      }
+      
+      // Si une seule ligne et trop longue, tronquer
+      if (lineNumber === 0 && tspan.node().getComputedTextLength() > width) {
+        const maxChars = Math.floor(width / 7); // Estimation approximative
+        const truncated = originalText.length > maxChars 
+          ? originalText.substring(0, maxChars - 3) + '...' 
+          : originalText;
+        node.text(null).append("tspan")
+          .attr("x", 0)
+          .attr("y", y)
+          .attr("dy", dy + "em")
+          .text(truncated);
+      }
+    });
+  };
+
   // Dessiner l'organigramme amélioré
   useEffect(() => {
     if (loading || !svgRef.current || filteredEmployees.length === 0) return;
@@ -284,6 +341,25 @@ const Organigramme = () => {
     const initialY = (containerHeight - height * scale) / 2;
 
     g.attr('transform', `translate(${initialX},${initialY}) scale(${scale})`);
+
+    // Définir les gradients
+    const defs = svg.append('defs');
+    
+    // Gradient pour le CEO
+    const ceoGradient = defs.append('linearGradient')
+      .attr('id', 'ceo-gradient')
+      .attr('x1', '0%')
+      .attr('y1', '0%')
+      .attr('x2', '100%')
+      .attr('y2', '100%');
+    
+    ceoGradient.append('stop')
+      .attr('offset', '0%')
+      .attr('stop-color', '#1e40af');
+    
+    ceoGradient.append('stop')
+      .attr('offset', '100%')
+      .attr('stop-color', '#3b82f6');
 
     // Dessiner les liens (lignes droites)
     g.selectAll('.link')
@@ -428,12 +504,13 @@ const Organigramme = () => {
       .style('font-size', '14px')
       .text(d => {
         if (d.data.prenom && d.data.nom) {
-          return `${d.data.prenom} ${d.data.nom}`;
+          const fullName = `${d.data.prenom} ${d.data.nom}`;
+          return fullName.length > 20 ? fullName.substring(0, 18) + '...' : fullName;
         }
         return 'Nom inconnu';
       });
 
-    // Poste
+    // Poste (simplifié sans wrapText complexe)
     node.append('text')
       .attr('class', 'node-position')
       .attr('text-anchor', 'middle')
@@ -441,7 +518,13 @@ const Organigramme = () => {
       .style('fill', 'rgba(255,255,255,0.95)')
       .style('font-size', '12px')
       .style('font-weight', '500')
-      .call(wrapText, nodeWidth - 20);
+      .text(d => {
+        const position = d.data.poste || '';
+        if (position.length > 25) {
+          return position.substring(0, 23) + '...';
+        }
+        return position;
+      });
 
     // Département
     node.append('text')
@@ -451,7 +534,10 @@ const Organigramme = () => {
       .style('fill', 'rgba(255,255,255,0.85)')
       .style('font-size', '11px')
       .style('font-weight', '400')
-      .text(d => d.data.site_dep || 'Non spécifié');
+      .text(d => {
+        const dept = d.data.site_dep || 'Non spécifié';
+        return dept.length > 20 ? dept.substring(0, 18) + '...' : dept;
+      });
 
     // Indicateur d'équipe pour les managers
     node.filter(d => d.children && d.children.length > 0)
@@ -473,38 +559,6 @@ const Organigramme = () => {
       .style('font-size', '10px')
       .style('font-weight', 'bold')
       .text(d => d.children.length);
-
-    // Fonction pour gérer le texte multiligne
-    function wrapText(text, width) {
-      text.each(function() {
-        const node = d3.select(this);
-        const words = node.text().split(/\s+/).reverse();
-        const lineHeight = 1.1;
-        const y = node.attr("y");
-        const dy = parseFloat(node.attr("dy"));
-        let line = [];
-        let lineNumber = 0;
-        let tspan = node.text(null).append("tspan")
-          .attr("x", 0)
-          .attr("y", y)
-          .attr("dy", dy + "em");
-        
-        while (word = words.pop()) {
-          line.push(word);
-          tspan.text(line.join(" "));
-          if (tspan.node().getComputedTextLength() > width) {
-            line.pop();
-            tspan.text(line.join(" "));
-            line = [word];
-            tspan = node.append("tspan")
-              .attr("x", 0)
-              .attr("y", y)
-              .attr("dy", ++lineNumber * lineHeight + dy + "em")
-              .text(word);
-          }
-        }
-      });
-    }
 
     // Fonction de zoom
     const zoom = d3.zoom()
@@ -643,16 +697,6 @@ const Organigramme = () => {
         <div className="chart-wrapper">
           <div className="chart-container" ref={containerRef}>
             <svg ref={svgRef} className="organigramme-svg"></svg>
-            
-            {/* Gradients SVG */}
-            <svg width="0" height="0" style={{ position: 'absolute' }}>
-              <defs>
-                <linearGradient id="ceo-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#1e40af" />
-                  <stop offset="100%" stopColor="#3b82f6" />
-                </linearGradient>
-              </defs>
-            </svg>
           </div>
 
           {selectedNode && (
