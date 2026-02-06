@@ -266,9 +266,9 @@ const Organigramme = () => {
     const containerHeight = containerRef.current.clientHeight;
     
     // Dimensions largement augmentées pour une excellente lisibilité
-    const nodeWidth = 400;
-    const nodeHeight = 220;
-    const levelSpacing = 280; // Espacement vertical réduit pour gagner de l'espace
+    const nodeWidth = 450;
+    const nodeHeight = 320;
+    const levelSpacing = 380; // Espacement vertical réduit pour gagner de l'espace
     const siblingSpacing = 450; // Espacement horizontal entre frères
 
     const hierarchyData = buildHierarchy();
