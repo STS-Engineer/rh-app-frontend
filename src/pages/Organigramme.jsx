@@ -232,7 +232,7 @@ const Organigramme = () => {
     
     // Dimensions plus grandes pour espacement clair
     const nodeWidth = 340;
-    const nodeHeight = 100;
+    const nodeHeight = 200;
     const levelSpacing = 280; // Espacement vertical entre niveaux
     const siblingSpacing = 250; // Espacement horizontal entre frères
 
@@ -418,8 +418,8 @@ const Organigramme = () => {
       .attr('class', 'status-badge')
       .attr('x', nodeWidth / 2 - 35)
       .attr('y', -nodeHeight / 2)
-      .attr('width', 35)
-      .attr('height', 22)
+      .attr('width', 40)
+      .attr('height', 26)
       .attr('rx', 11)
       .attr('ry', 11)
       .attr('fill', d => d.data.isCEO ? '#1e40af' : '#4f46e5');
@@ -432,7 +432,7 @@ const Organigramme = () => {
       .attr('y', -nodeHeight / 2 + 14)
       .attr('text-anchor', 'middle')
       .attr('fill', 'white')
-      .style('font-size', '10px')
+      .style('font-size', '15px')
       .style('font-weight', 'bold')
       .text(d => d.data.isCEO ? 'CEO' : 'MGR');
 
@@ -443,7 +443,7 @@ const Organigramme = () => {
       .attr('dy', '-22')
       .style('font-weight', '900')
       .style('fill', 'white')
-      .style('font-size', '24px')
+      .style('font-size', '30px')
       .style('letter-spacing', '1px')
       .text(d => {
         if (d.data.prenom && d.data.nom) {
@@ -459,7 +459,7 @@ const Organigramme = () => {
       .attr('dy', '8')
       .style('font-weight', '700')
       .style('fill', 'white')
-      .style('font-size', '15px')
+      .style('font-size', '22px')
       .style('letter-spacing', '0.3px')
       .text(d => {
         if (d.data.prenom && d.data.nom) {
@@ -475,7 +475,7 @@ const Organigramme = () => {
       .attr('text-anchor', 'middle')
       .attr('dy', '28')
       .style('fill', 'rgba(255,255,255,0.95)')
-      .style('font-size', '12px')
+      .style('font-size', '18px')
       .style('font-weight', '500')
       .text(d => {
         const position = d.data.poste || '';
@@ -491,7 +491,7 @@ const Organigramme = () => {
       .attr('text-anchor', 'middle')
       .attr('dy', '45')
       .style('fill', 'rgba(255,255,255,0.85)')
-      .style('font-size', '11px')
+      .style('font-size', '17px')
       .style('font-weight', '400')
       .text(d => {
         const dept = d.data.site_dep || 'Non spécifié';
@@ -515,7 +515,7 @@ const Organigramme = () => {
       .attr('text-anchor', 'middle')
       .attr('dy', '0.35em')
       .style('fill', 'white')
-      .style('font-size', '11px')
+      .style('font-size', '17px')
       .style('font-weight', 'bold')
       .text(d => d.children.length);
 
