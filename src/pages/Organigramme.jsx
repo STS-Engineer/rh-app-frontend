@@ -230,11 +230,11 @@ const Organigramme = () => {
     const containerWidth = containerRef.current.clientWidth;
     const containerHeight = containerRef.current.clientHeight;
     
-    // Dimensions plus grandes pour espacement clair
-    const nodeWidth = 340;
-    const nodeHeight = 200;
-    const levelSpacing = 280; // Espacement vertical entre niveaux
-    const siblingSpacing = 250; // Espacement horizontal entre frères
+    // Dimensions optimisées pour une meilleure lisibilité
+    const nodeWidth = 280;
+    const nodeHeight = 160;
+    const levelSpacing = 240; // Espacement vertical entre niveaux
+    const siblingSpacing = 320; // Espacement horizontal entre frères
 
     const hierarchyData = buildHierarchy();
     const root = d3.hierarchy(hierarchyData);
@@ -243,7 +243,7 @@ const Organigramme = () => {
     const tree = d3.tree()
       .nodeSize([siblingSpacing, levelSpacing]) // Inversé pour vertical
       .separation((a, b) => {
-        return a.parent === b.parent ? 1 : 1.5;
+        return a.parent === b.parent ? 1.2 : 1.5;
       });
 
     tree(root);
@@ -262,8 +262,8 @@ const Organigramme = () => {
       if (d.y > maxY) maxY = d.y;
     });
 
-    const width = maxX - minX + 500; // Plus large
-    const height = maxY - minY + 600; // Plus haut
+    const width = maxX - minX + nodeWidth * 2;
+    const height = maxY - minY + nodeHeight * 3;
 
     const svg = d3.select(svgRef.current)
       .attr('width', containerWidth)
@@ -272,15 +272,15 @@ const Organigramme = () => {
     const g = svg.append('g')
       .attr('class', 'main-group');
 
-    // Ajuster l'échelle pour remplir l'espace
+    // Ajuster l'échelle pour un meilleur affichage initial
     const scale = Math.min(
-      containerWidth / (width + 300),
-      containerHeight / (height + 300),
-      0.9
+      (containerWidth - 100) / width,
+      (containerHeight - 100) / height,
+      1.2
     );
 
-    const initialX = (containerWidth - width * scale) / 2;
-    const initialY = 50; // Position verticale plus haute
+    const initialX = (containerWidth / 2) - (minX + (maxX - minX) / 2) * scale;
+    const initialY = 80;
 
     g.attr('transform', `translate(${initialX},${initialY}) scale(${scale})`);
 
@@ -416,23 +416,23 @@ const Organigramme = () => {
                     d.data.poste?.toLowerCase().includes('directeur'))
       .append('rect')
       .attr('class', 'status-badge')
-      .attr('x', nodeWidth / 2 - 35)
+      .attr('x', nodeWidth / 2 - 32)
       .attr('y', -nodeHeight / 2)
-      .attr('width', 40)
-      .attr('height', 26)
-      .attr('rx', 11)
-      .attr('ry', 11)
+      .attr('width', 36)
+      .attr('height', 24)
+      .attr('rx', 10)
+      .attr('ry', 10)
       .attr('fill', d => d.data.isCEO ? '#1e40af' : '#4f46e5');
 
     node.filter(d => d.data.isCEO || d.data.poste?.toLowerCase().includes('responsable') || 
                     d.data.poste?.toLowerCase().includes('manager') || 
                     d.data.poste?.toLowerCase().includes('directeur'))
       .append('text')
-      .attr('x', nodeWidth / 2 - 17.5)
-      .attr('y', -nodeHeight / 2 + 14)
+      .attr('x', nodeWidth / 2 - 14)
+      .attr('y', -nodeHeight / 2 + 13)
       .attr('text-anchor', 'middle')
       .attr('fill', 'white')
-      .style('font-size', '15px')
+      .style('font-size', '12px')
       .style('font-weight', 'bold')
       .text(d => d.data.isCEO ? 'CEO' : 'MGR');
 
@@ -440,10 +440,10 @@ const Organigramme = () => {
     node.append('text')
       .attr('class', 'node-initials')
       .attr('text-anchor', 'middle')
-      .attr('dy', '-22')
+      .attr('dy', '-20')
       .style('font-weight', '900')
       .style('fill', 'white')
-      .style('font-size', '30px')
+      .style('font-size', '26px')
       .style('letter-spacing', '1px')
       .text(d => {
         if (d.data.prenom && d.data.nom) {
@@ -456,15 +456,15 @@ const Organigramme = () => {
     node.append('text')
       .attr('class', 'node-name')
       .attr('text-anchor', 'middle')
-      .attr('dy', '8')
+      .attr('dy', '6')
       .style('font-weight', '700')
       .style('fill', 'white')
-      .style('font-size', '22px')
+      .style('font-size', '18px')
       .style('letter-spacing', '0.3px')
       .text(d => {
         if (d.data.prenom && d.data.nom) {
           const fullName = `${d.data.prenom} ${d.data.nom}`;
-          return fullName.length > 20 ? fullName.substring(0, 19) + '...' : fullName;
+          return fullName.length > 22 ? fullName.substring(0, 20) + '...' : fullName;
         }
         return 'Nom inconnu';
       });
@@ -473,14 +473,14 @@ const Organigramme = () => {
     node.append('text')
       .attr('class', 'node-position')
       .attr('text-anchor', 'middle')
-      .attr('dy', '28')
+      .attr('dy', '24')
       .style('fill', 'rgba(255,255,255,0.95)')
-      .style('font-size', '18px')
+      .style('font-size', '15px')
       .style('font-weight', '500')
       .text(d => {
         const position = d.data.poste || '';
-        if (position.length > 28) {
-          return position.substring(0, 26) + '...';
+        if (position.length > 30) {
+          return position.substring(0, 28) + '...';
         }
         return position;
       });
@@ -489,22 +489,22 @@ const Organigramme = () => {
     node.append('text')
       .attr('class', 'node-department')
       .attr('text-anchor', 'middle')
-      .attr('dy', '45')
+      .attr('dy', '40')
       .style('fill', 'rgba(255,255,255,0.85)')
-      .style('font-size', '17px')
+      .style('font-size', '14px')
       .style('font-weight', '400')
       .text(d => {
         const dept = d.data.site_dep || 'Non spécifié';
-        return dept.length > 22 ? dept.substring(0, 20) + '...' : dept;
+        return dept.length > 24 ? dept.substring(0, 22) + '...' : dept;
       });
 
     // Indicateur d'équipe pour les managers
     node.filter(d => d.children && d.children.length > 0)
       .append('g')
       .attr('class', 'team-indicator')
-      .attr('transform', `translate(${nodeWidth / 2 - 20}, ${nodeHeight / 2 - 20})`)
+      .attr('transform', `translate(${nodeWidth / 2 - 18}, ${nodeHeight / 2 - 18})`)
       .append('circle')
-      .attr('r', 18)
+      .attr('r', 16)
       .attr('fill', '#ef4444')
       .attr('stroke', 'white')
       .attr('stroke-width', 2);
@@ -515,13 +515,13 @@ const Organigramme = () => {
       .attr('text-anchor', 'middle')
       .attr('dy', '0.35em')
       .style('fill', 'white')
-      .style('font-size', '17px')
+      .style('font-size', '14px')
       .style('font-weight', 'bold')
       .text(d => d.children.length);
 
     // Fonction de zoom
     const zoom = d3.zoom()
-      .scaleExtent([0.1, 3])
+      .scaleExtent([0.3, 3])
       .on('zoom', (event) => {
         g.attr('transform', event.transform);
         setZoomLevel(event.transform.k);
@@ -533,11 +533,11 @@ const Organigramme = () => {
     const ceoNode = nodes.find(d => d.data.isCEO);
     if (ceoNode) {
       const finalX = containerWidth / 2 - ceoNode.x * scale;
-      const finalY = 100; // Position verticale fixe pour le CEO
+      const finalY = 100;
       
       svg.transition()
         .duration(1000)
-        .call(zoom.transform, d3.zoomIdentity.translate(finalX, finalY).scale(scale * 0.8));
+        .call(zoom.transform, d3.zoomIdentity.translate(finalX, finalY).scale(scale));
     }
 
   }, [filteredEmployees, loading]);
