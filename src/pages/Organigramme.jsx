@@ -63,7 +63,7 @@ const Organigramme = () => {
     
     // Marquer le CEO
     fethiNode.isCEO = true;
-    fethiNode.site_dep = 'CEO';
+    fethiNode.site_dep = 'Plant Manager';
     fethiNode.depth = 0;
 
     const processed = new Set([fethiEmail]);
