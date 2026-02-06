@@ -43,8 +43,7 @@ const Organigramme = () => {
           id: email,
           children: [],
           depth: 0,
-          hasLargeTeam: false,
-          teamSize: 0
+          hasHorizontalTeam: false
         });
       }
     });
@@ -170,23 +169,47 @@ const Organigramme = () => {
           
           // Marquer le manager comme ayant une grande équipe si > 3
           if (teamMembers.length > 3) {
-            node.hasLargeTeam = true;
-            node.teamSize = teamMembers.length;
+            node.hasHorizontalTeam = true;
           }
           
-          // Trier les membres d'équipe par prénom
-          teamMembers.sort((a, b) => a.prenom?.localeCompare(b.prenom));
-          
-          // Ajouter les membres de l'équipe (toujours verticalement)
-          teamMembers.forEach(member => {
-            const memberEmail = member.adresse_mail?.toLowerCase();
-            if (memberEmail && employeeMap.has(memberEmail)) {
-              const memberNode = employeeMap.get(memberEmail);
-              memberNode.depth = 2; // Directement sous le manager
-              node.children.push(memberNode);
-              processed.add(memberEmail);
-            }
-          });
+          // Si l'équipe a plus de 3 personnes, créer un groupe horizontal
+          if (teamMembers.length > 3) {
+            // Créer un nœud virtuel pour le groupe horizontal
+            const virtualNode = {
+              id: `team_${email}`,
+              virtual: true,
+              isHorizontalGroup: true,
+              children: [],
+              depth: 2,
+              managerEmail: email,
+              teamSize: teamMembers.length,
+              teamMembers: teamMembers.map(m => m.adresse_mail?.toLowerCase())
+            };
+            
+            // Ajouter les membres de l'équipe
+            teamMembers.forEach(member => {
+              const memberEmail = member.adresse_mail?.toLowerCase();
+              if (memberEmail && employeeMap.has(memberEmail)) {
+                const memberNode = employeeMap.get(memberEmail);
+                memberNode.depth = 3; // Sous le groupe virtuel
+                virtualNode.children.push(memberNode);
+                processed.add(memberEmail);
+              }
+            });
+            
+            node.children.push(virtualNode);
+          } else {
+            // Pour les petites équipes, disposition verticale normale
+            teamMembers.forEach(member => {
+              const memberEmail = member.adresse_mail?.toLowerCase();
+              if (memberEmail && employeeMap.has(memberEmail)) {
+                const memberNode = employeeMap.get(memberEmail);
+                memberNode.depth = 2; // Directement sous le manager
+                node.children.push(memberNode);
+                processed.add(memberEmail);
+              }
+            });
+          }
         }
       }
     });
@@ -256,7 +279,7 @@ const Organigramme = () => {
     }
   }, [searchTerm, employees]);
 
-  // Dessiner l'organigramme VERTICAL avec lignes droites à 90°
+  // Dessiner l'organigramme VERTICAL amélioré
   useEffect(() => {
     if (loading || !svgRef.current || filteredEmployees.length === 0) return;
 
@@ -266,42 +289,29 @@ const Organigramme = () => {
     const containerHeight = containerRef.current.clientHeight;
     
     // Dimensions pour meilleure lisibilité
-    const nodeWidth = 380;
-    const nodeHeight = 160;
-    const levelSpacing = 220; // Espacement vertical entre niveaux
-    const siblingSpacing = 420; // Espacement horizontal entre frères
-    const teamSpacing = 180; // Espacement réduit pour les membres d'équipe
+    const nodeWidth = 450;
+    const nodeHeight = 320;
+    const levelSpacing = 380; // Espacement vertical
+    const siblingSpacing = 500; // Espacement horizontal entre frères
 
     const hierarchyData = buildHierarchy();
     const root = d3.hierarchy(hierarchyData);
 
-    // Fonction pour calculer les positions des nœuds avec traitement spécial pour les grandes équipes
-    const customTree = (root) => {
-      let x = 0;
-      let y = 0;
-      
-      // Parcourir les nœuds et ajuster les positions
-      root.eachBefore((node) => {
-        node.x = x;
-        node.y = y;
-        
-        // Si c'est un manager avec grande équipe, ajuster l'espacement vertical
-        if (node.data.hasLargeTeam && node.children) {
-          // Pour les grandes équipes, réduire l'espacement entre membres
-          const spacing = teamSpacing;
-          y += spacing;
-        } else if (node.children) {
-          // Espacement normal pour les autres
-          y += levelSpacing;
-        }
+    // Créer un arbre VERTICAL (top to bottom)
+    const tree = d3.tree()
+      .nodeSize([siblingSpacing, levelSpacing])
+      .separation((a, b) => {
+        // Plus d'espace pour les nœuds avec équipes horizontales
+        if (a.data.hasHorizontalTeam || b.data.hasHorizontalTeam) return 2.5;
+        if (a.parent === b.parent) return 1.2;
+        return 2;
       });
-      
-      return root;
-    };
 
-    const rootWithPositions = customTree(root);
-    const nodes = rootWithPositions.descendants();
-    const links = rootWithPositions.links();
+    tree(root);
+
+    // Calculer les dimensions
+    const nodes = root.descendants();
+    const links = root.links();
 
     // Ajuster les positions pour centrer
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
@@ -313,6 +323,9 @@ const Organigramme = () => {
       if (d.y > maxY) maxY = d.y;
     });
 
+    const width = maxX - minX + nodeWidth * 2;
+    const height = maxY - minY + nodeHeight * 3;
+
     const svg = d3.select(svgRef.current)
       .attr('width', containerWidth)
       .attr('height', containerHeight);
@@ -320,11 +333,11 @@ const Organigramme = () => {
     const g = svg.append('g')
       .attr('class', 'main-group');
 
-    // Ajuster l'échelle pour un affichage optimal
-    const scale = 0.65;
+    // Ajuster l'échelle pour un affichage optimal - ZOOM FIXE à 40%
+    const scale = 0.4;
 
     const initialX = (containerWidth / 2) - (minX + (maxX - minX) / 2) * scale;
-    const initialY = 100;
+    const initialY = 80;
 
     g.attr('transform', `translate(${initialX},${initialY}) scale(${scale})`);
 
@@ -363,79 +376,91 @@ const Organigramme = () => {
       .attr('offset', '100%')
       .attr('stop-color', '#6366f1');
 
-    // Gradient pour les membres de grande équipe
-    const teamMemberGradient = defs.append('linearGradient')
-      .attr('id', 'team-member-gradient')
-      .attr('x1', '0%')
-      .attr('y1', '0%')
-      .attr('x2', '100%')
-      .attr('y2', '100%');
-    
-    teamMemberGradient.append('stop')
-      .attr('offset', '0%')
-      .attr('stop-color', '#0f766e');
-    
-    teamMemberGradient.append('stop')
-      .attr('offset', '100%')
-      .attr('stop-color', '#14b8a6');
-
-    // Fonction pour dessiner des lignes avec angles à 90°
-    const drawOrthogonalLine = (sourceX, sourceY, targetX, targetY) => {
-      // Si les nœuds sont alignés verticalement (même x), ligne droite
-      if (Math.abs(sourceX - targetX) < 10) {
-        return `M ${sourceX},${sourceY} L ${targetX},${targetY}`;
-      }
-      
-      // Sinon, ligne en escalier (vertical-horizontal-vertical)
-      const midY = sourceY + (targetY - sourceY) / 2;
-      return `M ${sourceX},${sourceY}
-              L ${sourceX},${midY}
-              L ${targetX},${midY}
-              L ${targetX},${targetY}`;
-    };
-
-    // Dessiner les liens VERTICAUX avec angles à 90°
+    // Dessiner les liens VERTICAUX simples
     g.selectAll('.link')
       .data(links)
       .enter()
       .append('path')
-      .attr('class', d => {
-        const classes = ['link'];
-        if (d.source.data.hasLargeTeam) classes.push('large-team-link');
-        if (d.source.data.isCEO) classes.push('ceo-link');
-        return classes.join(' ');
-      })
+      .attr('class', 'link')
       .attr('d', d => {
+        // Ignorer les nœuds virtuels
+        if (d.source.data.virtual || d.target.data.virtual) return '';
+        
         const sourceX = d.source.x;
         const sourceY = d.source.y + nodeHeight / 2;
         const targetX = d.target.x;
         const targetY = d.target.y - nodeHeight / 2;
         
-        return drawOrthogonalLine(sourceX, sourceY, targetX, targetY);
+        // Lignes verticales directes
+        return `M ${sourceX},${sourceY} L ${targetX},${targetY}`;
       })
       .attr('stroke', d => {
-        if (d.source.data.isCEO) return '#1e40af';
-        if (d.source.data.hasLargeTeam) return '#dc2626';
-        return '#64748b';
+        if (d.source.data.virtual) return 'none';
+        const isCEOLink = d.source.data.isCEO || d.target.data.isCEO;
+        return isCEOLink ? '#1e40af' : '#64748b';
       })
       .attr('stroke-width', d => {
-        if (d.source.data.isCEO) return 3;
-        if (d.source.data.hasLargeTeam) return 2.5;
-        return 2;
+        if (d.source.data.virtual) return 0;
+        return d.source.data.isCEO ? 4 : 2;
       })
       .attr('fill', 'none')
-      .attr('opacity', 0.8);
+      .attr('opacity', d => d.source.data.virtual ? 0 : 0.8);
 
-    // Dessiner les nœuds
+    // Dessiner les connexions pour les groupes horizontaux
+    const horizontalGroups = nodes.filter(d => d.data.virtual && d.data.isHorizontalGroup);
+
+    horizontalGroups.forEach(groupNode => {
+      const managerNode = groupNode.parent;
+      if (!managerNode || !groupNode.children || groupNode.children.length === 0) return;
+      
+      const managerX = managerNode.x;
+      const managerY = managerNode.y + nodeHeight / 2;
+      const groupTopY = groupNode.children[0].y - nodeHeight / 2;
+      
+      // Ligne verticale du manager au niveau du groupe
+      g.append('path')
+        .attr('class', 'link group-link')
+        .attr('d', `M ${managerX},${managerY} L ${managerX},${groupTopY}`)
+        .attr('stroke', '#64748b')
+        .attr('stroke-width', 2)
+        .attr('fill', 'none')
+        .attr('opacity', 0.8)
+        .attr('stroke-dasharray', '5,5');
+      
+      // Ligne horizontale reliant tous les membres du groupe
+      const children = groupNode.children;
+      const minX = Math.min(...children.map(c => c.x));
+      const maxX = Math.max(...children.map(c => c.x));
+      
+      g.append('path')
+        .attr('class', 'link group-horizontal-line')
+        .attr('d', `M ${minX},${groupTopY} L ${maxX},${groupTopY}`)
+        .attr('stroke', '#64748b')
+        .attr('stroke-width', 2)
+        .attr('fill', 'none')
+        .attr('opacity', 0.8);
+      
+      // Lignes verticales vers chaque membre
+      children.forEach(child => {
+        g.append('path')
+          .attr('class', 'link member-vertical-line')
+          .attr('d', `M ${child.x},${groupTopY} L ${child.x},${child.y - nodeHeight / 2}`)
+          .attr('stroke', '#64748b')
+          .attr('stroke-width', 2)
+          .attr('fill', 'none')
+          .attr('opacity', 0.8);
+      });
+    });
+
+    // Dessiner les nœuds (ignorer les nœuds virtuels)
     const node = g.selectAll('.node')
-      .data(nodes)
+      .data(nodes.filter(d => !d.data.virtual)) // Ignorer les nœuds virtuels
       .enter()
       .append('g')
       .attr('class', d => {
         const classes = ['node'];
         if (d.data.isCEO) classes.push('node-ceo');
-        if (d.data.hasLargeTeam) classes.push('node-large-team');
-        if (d.parent && d.parent.data.hasLargeTeam) classes.push('team-member');
+        if (d.data.hasHorizontalTeam) classes.push('node-has-horizontal-team');
         classes.push(`node-depth-${d.depth}`);
         return classes.join(' ');
       })
@@ -449,21 +474,34 @@ const Organigramme = () => {
         d3.select(this).select('.node-container')
           .transition()
           .duration(200)
-          .style('filter', 'drop-shadow(0 8px 24px rgba(0, 0, 0, 0.3))');
+          .style('transform', 'scale(1.05)');
         
-        // Highlight les liens connectés
+        // Highlight les liens
         svg.selectAll('.link')
           .style('opacity', l => 
-            (l.source === d || l.target === d) ? 1 : 0.3
+            l.source === d || l.target === d ? 1 : 0.3
           );
+        
+        // Highlight les nœuds parents/enfants
+        svg.selectAll('.node')
+          .style('opacity', n => {
+            if (n === d || 
+                n.parent === d || 
+                n.children?.includes(d) ||
+                (n.parent && n.parent === d.parent)) {
+              return 1;
+            }
+            return 0.5;
+          });
       })
       .on('mouseout', function(event, d) {
         d3.select(this).select('.node-container')
           .transition()
           .duration(200)
-          .style('filter', 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15))');
+          .style('transform', 'scale(1)');
         
         svg.selectAll('.link').style('opacity', 0.8);
+        svg.selectAll('.node').style('opacity', 1);
       });
 
     // Conteneur pour le nœud
@@ -473,11 +511,10 @@ const Organigramme = () => {
       .attr('y', -nodeHeight / 2)
       .attr('width', nodeWidth)
       .attr('height', nodeHeight)
-      .attr('rx', 6)
-      .attr('ry', 6)
+      .attr('rx', 12)
+      .attr('ry', 12)
       .attr('fill', d => {
         if (d.data.isCEO) return 'url(#ceo-gradient)';
-        if (d.parent && d.parent.data.hasLargeTeam) return 'url(#team-member-gradient)';
         const isManager = d.data.poste?.toLowerCase().includes('responsable') || 
                          d.data.poste?.toLowerCase().includes('manager') ||
                          d.data.poste?.toLowerCase().includes('directeur') ||
@@ -486,19 +523,13 @@ const Organigramme = () => {
       })
       .attr('stroke', d => {
         if (d.data.isCEO) return '#1e3a8a';
-        if (d.parent && d.parent.data.hasLargeTeam) return '#0f766e';
         const isManager = d.data.poste?.toLowerCase().includes('responsable') || 
                          d.data.poste?.toLowerCase().includes('manager') ||
                          d.data.poste?.toLowerCase().includes('directeur') ||
                          d.data.poste?.toLowerCase().includes('chef');
         return isManager ? '#3730a3' : '#334155';
       })
-      .attr('stroke-width', d => {
-        if (d.data.isCEO) return 3;
-        if (d.data.hasLargeTeam) return 2.5;
-        return 1.5;
-      })
-      .style('filter', 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15))');
+      .attr('stroke-width', d => d.data.isCEO ? 4 : (d.data.hasHorizontalTeam ? 3 : 2));
 
     // Badge de statut (CEO/Manager)
     node.filter(d => d.data.isCEO || d.data.poste?.toLowerCase().includes('responsable') || 
@@ -506,83 +537,62 @@ const Organigramme = () => {
                     d.data.poste?.toLowerCase().includes('directeur'))
       .append('rect')
       .attr('class', 'status-badge')
-      .attr('x', nodeWidth / 2 - 35)
+      .attr('x', nodeWidth / 2 - 45)
       .attr('y', -nodeHeight / 2)
-      .attr('width', 35)
-      .attr('height', 22)
-      .attr('rx', 4)
-      .attr('ry', 4)
+      .attr('width', 50)
+      .attr('height', 30)
+      .attr('rx', 12)
+      .attr('ry', 12)
       .attr('fill', d => d.data.isCEO ? '#1e40af' : '#4f46e5');
 
     node.filter(d => d.data.isCEO || d.data.poste?.toLowerCase().includes('responsable') || 
                     d.data.poste?.toLowerCase().includes('manager') || 
                     d.data.poste?.toLowerCase().includes('directeur'))
       .append('text')
-      .attr('x', nodeWidth / 2 - 17.5)
-      .attr('y', -nodeHeight / 2 + 13)
+      .attr('x', nodeWidth / 2 - 20)
+      .attr('y', -nodeHeight / 2 + 17)
       .attr('text-anchor', 'middle')
       .attr('fill', 'white')
-      .style('font-size', '11px')
+      .style('font-size', '15px')
       .style('font-weight', 'bold')
       .text(d => d.data.isCEO ? 'CEO' : 'MGR');
 
     // Badge pour les managers avec grande équipe
-    node.filter(d => d.data.hasLargeTeam)
-      .append('rect')
-      .attr('class', 'large-team-indicator')
-      .attr('x', -nodeWidth / 2)
-      .attr('y', -nodeHeight / 2 - 22)
-      .attr('width', nodeWidth)
-      .attr('height', 18)
-      .attr('rx', 3)
-      .attr('ry', 3)
-      .attr('fill', '#dc2626');
+    node.filter(d => d.data.hasHorizontalTeam)
+      .append('circle')
+      .attr('class', 'horizontal-team-badge')
+      .attr('cx', nodeWidth / 2 - 20)
+      .attr('cy', -nodeHeight / 2 - 15)
+      .attr('r', 20)
+      .attr('fill', '#ef4444')
+      .attr('stroke', 'white')
+      .attr('stroke-width', 3);
 
-    node.filter(d => d.data.hasLargeTeam)
+    node.filter(d => d.data.hasHorizontalTeam)
       .append('text')
-      .attr('class', 'large-team-text')
-      .attr('x', 0)
-      .attr('y', -nodeHeight / 2 - 11)
+      .attr('class', 'team-size-text')
+      .attr('x', nodeWidth / 2 - 20)
+      .attr('y', -nodeHeight / 2 - 15)
       .attr('text-anchor', 'middle')
-      .attr('fill', 'white')
-      .style('font-size', '10px')
+      .attr('dy', '0.35em')
+      .style('fill', 'white')
+      .style('font-size', '14px')
       .style('font-weight', 'bold')
-      .text(d => `Grande équipe (${d.data.teamSize} membres)`);
-
-    // Numéro d'ordre pour les membres de grande équipe
-    node.filter(d => d.parent && d.parent.data.hasLargeTeam)
-      .each(function(d, i) {
-        d3.select(this)
-          .append('rect')
-          .attr('class', 'member-order-badge')
-          .attr('x', -nodeWidth / 2 - 25)
-          .attr('y', -nodeHeight / 2)
-          .attr('width', 25)
-          .attr('height', 25)
-          .attr('rx', 4)
-          .attr('ry', 4)
-          .attr('fill', '#dc2626');
-        
-        d3.select(this)
-          .append('text')
-          .attr('x', -nodeWidth / 2 - 12.5)
-          .attr('y', -nodeHeight / 2 + 14)
-          .attr('text-anchor', 'middle')
-          .attr('fill', 'white')
-          .style('font-size', '12px')
-          .style('font-weight', 'bold')
-          .text(i + 1);
+      .text(d => {
+        // Trouver le groupe horizontal associé
+        const horizontalGroup = d.children?.find(c => c.data.virtual && c.data.isHorizontalGroup);
+        return horizontalGroup ? `+${horizontalGroup.data.teamSize}` : '';
       });
 
     // Initiales
     node.append('text')
       .attr('class', 'node-initials')
       .attr('text-anchor', 'middle')
-      .attr('dy', '-20')
-      .style('font-weight', '700')
+      .attr('dy', '-30')
+      .style('font-weight', '900')
       .style('fill', 'white')
-      .style('font-size', '24px')
-      .style('letter-spacing', '1px')
+      .style('font-size', '36px')
+      .style('letter-spacing', '2px')
       .text(d => {
         if (d.data.prenom && d.data.nom) {
           return `${d.data.prenom.charAt(0).toUpperCase()}${d.data.nom.charAt(0).toUpperCase()}`;
@@ -595,13 +605,14 @@ const Organigramme = () => {
       .attr('class', 'node-name')
       .attr('text-anchor', 'middle')
       .attr('dy', '5')
-      .style('font-weight', '600')
+      .style('font-weight', '700')
       .style('fill', 'white')
-      .style('font-size', '14px')
+      .style('font-size', '22px')
+      .style('letter-spacing', '0.5px')
       .text(d => {
         if (d.data.prenom && d.data.nom) {
           const fullName = `${d.data.prenom} ${d.data.nom}`;
-          return fullName.length > 18 ? fullName.substring(0, 16) + '...' : fullName;
+          return fullName.length > 25 ? fullName.substring(0, 23) + '...' : fullName;
         }
         return 'Nom inconnu';
       });
@@ -610,14 +621,14 @@ const Organigramme = () => {
     node.append('text')
       .attr('class', 'node-position')
       .attr('text-anchor', 'middle')
-      .attr('dy', '22')
+      .attr('dy', '30')
       .style('fill', 'rgba(255,255,255,0.95)')
-      .style('font-size', '12px')
+      .style('font-size', '18px')
       .style('font-weight', '500')
       .text(d => {
         const position = d.data.poste || '';
-        if (position.length > 25) {
-          return position.substring(0, 23) + '...';
+        if (position.length > 35) {
+          return position.substring(0, 33) + '...';
         }
         return position;
       });
@@ -626,35 +637,52 @@ const Organigramme = () => {
     node.append('text')
       .attr('class', 'node-department')
       .attr('text-anchor', 'middle')
-      .attr('dy', '36')
+      .attr('dy', '50')
       .style('fill', 'rgba(255,255,255,0.85)')
-      .style('font-size', '11px')
+      .style('font-size', '16px')
       .style('font-weight', '400')
       .text(d => {
         const dept = d.data.site_dep || 'Non spécifié';
-        return dept.length > 22 ? dept.substring(0, 20) + '...' : dept;
+        return dept.length > 28 ? dept.substring(0, 26) + '...' : dept;
       });
 
     // Indicateur d'équipe pour les managers
-    node.filter(d => d.children && d.children.length > 0 && !d.data.hasLargeTeam)
+    node.filter(d => {
+      // Compter les vrais enfants (pas les nœuds virtuels)
+      const realChildren = d.children?.filter(c => !c.data.virtual) || [];
+      // Aussi compter les petits-enfants si on a des groupes horizontaux
+      const grandChildren = d.children?.filter(c => c.data.virtual)
+        .flatMap(c => c.children || []) || [];
+      return (realChildren.length + grandChildren.length) > 0 && !d.data.hasHorizontalTeam;
+    })
       .append('g')
       .attr('class', 'team-indicator')
-      .attr('transform', `translate(${nodeWidth / 2 - 18}, ${nodeHeight / 2 - 18})`)
+      .attr('transform', `translate(${nodeWidth / 2 - 24}, ${nodeHeight / 2 - 24})`)
       .append('circle')
-      .attr('r', 14)
+      .attr('r', 22)
       .attr('fill', '#10b981')
       .attr('stroke', 'white')
-      .attr('stroke-width', 2);
+      .attr('stroke-width', 3);
 
-    node.filter(d => d.children && d.children.length > 0 && !d.data.hasLargeTeam)
+    node.filter(d => {
+      const realChildren = d.children?.filter(c => !c.data.virtual) || [];
+      const grandChildren = d.children?.filter(c => c.data.virtual)
+        .flatMap(c => c.children || []) || [];
+      return (realChildren.length + grandChildren.length) > 0 && !d.data.hasHorizontalTeam;
+    })
       .select('.team-indicator')
       .append('text')
       .attr('text-anchor', 'middle')
       .attr('dy', '0.35em')
       .style('fill', 'white')
-      .style('font-size', '11px')
+      .style('font-size', '18px')
       .style('font-weight', 'bold')
-      .text(d => d.children?.length || 0);
+      .text(d => {
+        const realChildren = d.children?.filter(c => !c.data.virtual) || [];
+        const grandChildren = d.children?.filter(c => c.data.virtual)
+          .flatMap(c => c.children || []) || [];
+        return realChildren.length + grandChildren.length;
+      });
 
     // Fonction de zoom
     const zoom = d3.zoom()
@@ -666,15 +694,15 @@ const Organigramme = () => {
 
     svg.call(zoom);
 
-    // Centrer sur Fethi avec animation
+    // Centrer sur Fethi avec animation - ZOOM FIXE 40%
     const ceoNode = nodes.find(d => d.data.isCEO);
     if (ceoNode) {
       const finalX = containerWidth / 2 - ceoNode.x * scale;
-      const finalY = 100;
+      const finalY = 120;
       
       svg.transition()
         .duration(1200)
-        .call(zoom.transform, d3.zoomIdentity.translate(finalX, finalY).scale(scale));
+        .call(zoom.transform, d3.zoomIdentity.translate(finalX, finalY).scale(0.4));
     }
 
   }, [filteredEmployees, loading]);
@@ -697,8 +725,8 @@ const Organigramme = () => {
     svg.transition()
       .duration(500)
       .call(d3.zoom().transform, d3.zoomIdentity
-        .translate(containerWidth / 2, 100)
-        .scale(0.65));
+        .translate(containerWidth / 2, 120)
+        .scale(0.4));
   };
 
   // Statistiques
@@ -710,15 +738,7 @@ const Organigramme = () => {
       e.poste?.toLowerCase().includes('responsable') ||
       e.poste?.toLowerCase().includes('directeur') ||
       e.poste?.toLowerCase().includes('chef')
-    ).length,
-    largeTeams: filteredEmployees.filter(e => {
-      // Compter les managers avec plus de 3 rapports directs
-      const email = e.adresse_mail?.toLowerCase();
-      const directReportsCount = filteredEmployees.filter(emp => 
-        emp.mail_responsable1?.toLowerCase() === email
-      ).length;
-      return directReportsCount > 3;
-    }).length
+    ).length
   };
 
   if (loading) {
@@ -736,7 +756,7 @@ const Organigramme = () => {
     <div className="organigramme-container">
       <div className="organigramme-header">
         <h1>Organigramme Hiérarchique</h1>
-        <p className="subtitle">Structure organisationnelle - Plant Manager: Fethi Chaouachi</p>
+        <p className="subtitle">Structure organisationnelle de l'entreprise</p>
       </div>
 
       <div className="organigramme-stats">
@@ -759,15 +779,6 @@ const Organigramme = () => {
           <div>
             <h3>{stats.managers}</h3>
             <p>Responsables</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div style={{background: '#fef2f2', padding: '14px', borderRadius: '14px'}}>
-            <Users size={24} color="#dc2626" />
-          </div>
-          <div>
-            <h3>{stats.largeTeams}</h3>
-            <p>Grandes équipes (>3)</p>
           </div>
         </div>
       </div>
@@ -801,7 +812,7 @@ const Organigramme = () => {
             <span className="hierarchy-label">Structure : </span>
             <span className="hierarchy-value">Fethi Chaouachi (Plant Manager)</span>
             <span className="hierarchy-note">
-              • Grandes équipes (>3) → membres disposés verticalement sous le manager
+              • Équipes >3 personnes → disposition horizontale
             </span>
           </div>
         </div>
@@ -883,41 +894,39 @@ const Organigramme = () => {
               <div className="legend-color ceo-color"></div>
               <div className="legend-text">
                 <span className="legend-title">Plant Manager (Fethi)</span>
+                <span className="legend-count">
+                  (1)
+                </span>
               </div>
             </div>
             <div className="legend-item manager-item">
               <div className="legend-color manager-color"></div>
               <div className="legend-text">
                 <span className="legend-title">Managers sous Fethi</span>
+                <span className="legend-count">
+                  ({filteredEmployees.filter(e => {
+                    const resp1 = e.mail_responsable1?.toLowerCase();
+                    const fethiEmail = 'fethi.chaouachi@email.com'; // Ajuster l'email
+                    return resp1 === fethiEmail && 
+                      (e.poste?.toLowerCase().includes('responsable') || 
+                       e.poste?.toLowerCase().includes('manager') ||
+                       e.poste?.toLowerCase().includes('directeur'));
+                  }).length})
+                </span>
               </div>
             </div>
-            <div className="legend-item large-team-item">
-              <div className="legend-color" style={{ background: '#dc2626' }}></div>
+            <div className="legend-item horizontal-team-item">
+              <div className="legend-color" style={{ background: '#ef4444' }}></div>
               <div className="legend-text">
-                <span className="legend-title">Managers avec grande équipe (>3)</span>
-                <span className="legend-count">(Membres disposés verticalement)</span>
+                <span className="legend-title">Grandes équipes (>3 pers)</span>
+                <span className="legend-count">(Disposition horizontale)</span>
               </div>
             </div>
-            <div className="legend-item team-member-item">
-              <div className="legend-color" style={{ background: 'url(#team-member-gradient)' }}></div>
+            <div className="legend-item small-team-item">
+              <div className="legend-color" style={{ background: '#10b981' }}></div>
               <div className="legend-text">
-                <span className="legend-title">Membres de grande équipe</span>
-                <span className="legend-count">(Numérotés dans l'ordre)</span>
-              </div>
-            </div>
-            <div className="legend-item line-style-item">
-              <div className="legend-line-sample">
-                <svg width="100" height="40">
-                  <path d="M 10,20 L 10,30 L 90,30 L 90,20" 
-                        stroke="#64748b" 
-                        stroke-width="2" 
-                        fill="none" 
-                        stroke-linecap="round" />
-                </svg>
-              </div>
-              <div className="legend-text">
-                <span className="legend-title">Lignes de connexion</span>
-                <span className="legend-count">(Angles droits à 90° - style professionnel)</span>
+                <span className="legend-title">Petites équipes (≤3 pers)</span>
+                <span className="legend-count">(Disposition verticale)</span>
               </div>
             </div>
             {Object.entries(departmentColors)
