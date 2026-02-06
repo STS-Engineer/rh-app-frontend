@@ -127,23 +127,31 @@ const Organigramme = () => {
         return resp1 === managerEmail;
       });
 
-      // Trier les membres
-      teamMembers.sort((a, b) => {
-        const aIsSubManager = a.poste?.toLowerCase().includes('responsable') || 
-                             a.poste?.toLowerCase().includes('manager') ||
-                             a.poste?.toLowerCase().includes('chef');
-        const bIsSubManager = b.poste?.toLowerCase().includes('responsable') || 
-                             b.poste?.toLowerCase().includes('manager') ||
-                             b.poste?.toLowerCase().includes('chef');
+      // Séparer les sous-managers et les employés simples
+      const subManagers = [];
+      const regularEmployees = [];
+      
+      teamMembers.forEach(member => {
+        const isManager = member.poste?.toLowerCase().includes('responsable') || 
+                         member.poste?.toLowerCase().includes('manager') ||
+                         member.poste?.toLowerCase().includes('chef');
         
-        if (aIsSubManager && !bIsSubManager) return -1;
-        if (!aIsSubManager && bIsSubManager) return 1;
-        return a.prenom?.localeCompare(b.prenom);
+        if (isManager) {
+          subManagers.push(member);
+        } else {
+          regularEmployees.push(member);
+        }
       });
 
-      // Ajouter les membres à l'équipe
-      teamMembers.forEach(member => {
-        const email = member.adresse_mail?.toLowerCase();
+      // Trier les sous-managers
+      subManagers.sort((a, b) => a.prenom?.localeCompare(b.prenom));
+      
+      // Trier les employés réguliers
+      regularEmployees.sort((a, b) => a.prenom?.localeCompare(b.prenom));
+
+      // Ajouter d'abord les sous-managers (ils auront des enfants verticalement)
+      subManagers.forEach(manager => {
+        const email = manager.adresse_mail?.toLowerCase();
         if (email && employeeMap.has(email)) {
           const node = employeeMap.get(email);
           node.depth = currentDepth + 1;
@@ -151,13 +159,40 @@ const Organigramme = () => {
           processed.add(email);
           
           // Construire récursivement pour les sous-managers
-          if (node.poste?.toLowerCase().includes('responsable') || 
-              node.poste?.toLowerCase().includes('manager') ||
-              node.poste?.toLowerCase().includes('chef')) {
-            buildTreeForManager(email, currentDepth + 1);
-          }
+          buildTreeForManager(email, currentDepth + 1);
         }
       });
+
+      // Si on a des employés réguliers, créer un nœud virtuel pour les grouper horizontalement
+      if (regularEmployees.length > 0) {
+        // Créer un conteneur virtuel pour les employés réguliers
+        const virtualNode = {
+          id: `virtual_${managerEmail}_team`,
+          virtual: true,
+          isHorizontalGroup: true,
+          children: [],
+          depth: currentDepth + 1,
+          prenom: '',
+          nom: '',
+          poste: '',
+          site_dep: ''
+        };
+
+        // Ajouter tous les employés réguliers au nœud virtuel
+        regularEmployees.forEach(member => {
+          const email = member.adresse_mail?.toLowerCase();
+          if (email && employeeMap.has(email)) {
+            const node = employeeMap.get(email);
+            node.depth = currentDepth + 2; // Un niveau en dessous
+            virtualNode.children.push(node);
+            processed.add(email);
+          }
+        });
+
+        if (virtualNode.children.length > 0) {
+          managerNode.children.push(virtualNode);
+        }
+      }
     };
 
     // Construire l'arbre pour chaque manager direct
@@ -233,7 +268,7 @@ const Organigramme = () => {
     // Dimensions largement augmentées pour une excellente lisibilité
     const nodeWidth = 400;
     const nodeHeight = 220;
-    const levelSpacing = 350; // Espacement vertical entre niveaux
+    const levelSpacing = 280; // Espacement vertical réduit pour gagner de l'espace
     const siblingSpacing = 450; // Espacement horizontal entre frères
 
     const hierarchyData = buildHierarchy();
@@ -276,12 +311,8 @@ const Organigramme = () => {
     const g = svg.append('g')
       .attr('class', 'main-group');
 
-    // Ajuster l'échelle pour un affichage optimal
-    const scale = Math.min(
-      (containerWidth - 200) / width,
-      (containerHeight - 200) / height,
-      0.6 // Échelle initiale plus petite pour voir l'ensemble
-    );
+    // Ajuster l'échelle pour un affichage optimal - ZOOM FIXE à 40%
+    const scale = 0.4; // Zoom fixe à 40% pour voir l'ensemble clairement
 
     const initialX = (containerWidth / 2) - (minX + (maxX - minX) / 2) * scale;
     const initialY = 80;
@@ -330,6 +361,9 @@ const Organigramme = () => {
       .append('path')
       .attr('class', 'link')
       .attr('d', d => {
+        // Si la source est un nœud virtuel (groupe horizontal), pas de ligne visible
+        if (d.source.data.virtual) return '';
+        
         // Lignes en escalier (step): vertical puis horizontal puis vertical
         const sourceX = d.source.x;
         const sourceY = d.source.y + nodeHeight / 2; // Bas de la carte source
@@ -345,16 +379,70 @@ const Organigramme = () => {
                 L ${targetX},${targetY}`;
       })
       .attr('stroke', d => {
+        if (d.source.data.virtual) return 'none';
         const isCEOLink = d.source.data.isCEO || d.target.data.isCEO;
         return isCEOLink ? '#1e40af' : '#64748b';
       })
-      .attr('stroke-width', d => d.source.data.isCEO ? 4 : 3)
+      .attr('stroke-width', d => {
+        if (d.source.data.virtual) return 0;
+        return d.source.data.isCEO ? 4 : 3;
+      })
       .attr('fill', 'none')
-      .attr('opacity', 0.8);
+      .attr('opacity', d => d.source.data.virtual ? 0 : 0.8);
 
-    // Dessiner les nœuds
+    // Dessiner les lignes de connexion pour relier les groupes horizontaux à leur manager
+    const virtualNodes = nodes.filter(d => d.data.virtual && d.data.isHorizontalGroup);
+    
+    virtualNodes.forEach(vNode => {
+      if (!vNode.children || vNode.children.length === 0) return;
+      
+      const parentNode = vNode.parent;
+      if (!parentNode) return;
+      
+      const parentX = parentNode.x;
+      const parentY = parentNode.y + nodeHeight / 2;
+      
+      // Ligne verticale du parent vers le niveau des enfants
+      const childrenY = vNode.children[0].y - nodeHeight / 2;
+      const midY = (parentY + childrenY) / 2;
+      
+      // Dessiner ligne du parent vers le milieu
+      g.append('path')
+        .attr('class', 'link virtual-link')
+        .attr('d', `M ${parentX},${parentY} L ${parentX},${midY}`)
+        .attr('stroke', '#64748b')
+        .attr('stroke-width', 3)
+        .attr('fill', 'none')
+        .attr('opacity', 0.8);
+      
+      // Calculer les positions min et max des enfants
+      const minX = Math.min(...vNode.children.map(c => c.x));
+      const maxX = Math.max(...vNode.children.map(c => c.x));
+      
+      // Ligne horizontale reliant tous les enfants
+      g.append('path')
+        .attr('class', 'link virtual-link horizontal')
+        .attr('d', `M ${minX},${midY} L ${maxX},${midY}`)
+        .attr('stroke', '#64748b')
+        .attr('stroke-width', 3)
+        .attr('fill', 'none')
+        .attr('opacity', 0.8);
+      
+      // Lignes verticales vers chaque enfant
+      vNode.children.forEach(child => {
+        g.append('path')
+          .attr('class', 'link virtual-link')
+          .attr('d', `M ${child.x},${midY} L ${child.x},${childrenY}`)
+          .attr('stroke', '#64748b')
+          .attr('stroke-width', 3)
+          .attr('fill', 'none')
+          .attr('opacity', 0.8);
+      });
+    });
+
+    // Dessiner les nœuds (ignorer les nœuds virtuels)
     const node = g.selectAll('.node')
-      .data(nodes)
+      .data(nodes.filter(d => !d.data.virtual)) // Ignorer les nœuds virtuels
       .enter()
       .append('g')
       .attr('class', d => `node ${d.data.isCEO ? 'node-ceo' : 'node-regular'} node-depth-${d.depth}`)
@@ -514,7 +602,14 @@ const Organigramme = () => {
       });
 
     // Indicateur d'équipe pour les managers
-    node.filter(d => d.children && d.children.length > 0)
+    node.filter(d => {
+      // Compter les vrais enfants (pas les nœuds virtuels)
+      const realChildren = d.children?.filter(c => !c.data.virtual) || [];
+      // Aussi compter les petits-enfants si on a des groupes horizontaux
+      const grandChildren = d.children?.filter(c => c.data.virtual)
+        .flatMap(c => c.children || []) || [];
+      return (realChildren.length + grandChildren.length) > 0;
+    })
       .append('g')
       .attr('class', 'team-indicator')
       .attr('transform', `translate(${nodeWidth / 2 - 24}, ${nodeHeight / 2 - 24})`)
@@ -524,7 +619,12 @@ const Organigramme = () => {
       .attr('stroke', 'white')
       .attr('stroke-width', 3);
 
-    node.filter(d => d.children && d.children.length > 0)
+    node.filter(d => {
+      const realChildren = d.children?.filter(c => !c.data.virtual) || [];
+      const grandChildren = d.children?.filter(c => c.data.virtual)
+        .flatMap(c => c.children || []) || [];
+      return (realChildren.length + grandChildren.length) > 0;
+    })
       .select('.team-indicator')
       .append('text')
       .attr('text-anchor', 'middle')
@@ -532,7 +632,12 @@ const Organigramme = () => {
       .style('fill', 'white')
       .style('font-size', '18px')
       .style('font-weight', 'bold')
-      .text(d => d.children.length);
+      .text(d => {
+        const realChildren = d.children?.filter(c => !c.data.virtual) || [];
+        const grandChildren = d.children?.filter(c => c.data.virtual)
+          .flatMap(c => c.children || []) || [];
+        return realChildren.length + grandChildren.length;
+      });
 
     // Fonction de zoom
     const zoom = d3.zoom()
@@ -544,7 +649,7 @@ const Organigramme = () => {
 
     svg.call(zoom);
 
-    // Centrer sur le CEO avec animation
+    // Centrer sur le CEO avec animation - ZOOM FIXE 40%
     const ceoNode = nodes.find(d => d.data.isCEO);
     if (ceoNode) {
       const finalX = containerWidth / 2 - ceoNode.x * scale;
@@ -552,7 +657,7 @@ const Organigramme = () => {
       
       svg.transition()
         .duration(1200)
-        .call(zoom.transform, d3.zoomIdentity.translate(finalX, finalY).scale(scale));
+        .call(zoom.transform, d3.zoomIdentity.translate(finalX, finalY).scale(0.4)); // Zoom fixe à 40%
     }
 
   }, [filteredEmployees, loading]);
@@ -571,14 +676,12 @@ const Organigramme = () => {
   const handleResetZoom = () => {
     const svg = d3.select(svgRef.current);
     const containerWidth = containerRef.current.clientWidth;
-    const containerHeight = containerRef.current.clientHeight;
     
     svg.transition()
       .duration(500)
       .call(d3.zoom().transform, d3.zoomIdentity
-        .translate(containerWidth / 2, 100)
-        .scale(0.8)
-        .translate(-containerWidth / 2, -100));
+        .translate(containerWidth / 2, 120)
+        .scale(0.4)); // Zoom fixe à 40%
   };
 
   // Statistiques
