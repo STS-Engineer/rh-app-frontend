@@ -1,4 +1,4 @@
-/* Organigramme.css - Version optimisée pour meilleure lisibilité */
+/* Organigramme.css - Version optimisée pour la nouvelle logique */
 .organigramme-container {
   padding: 30px;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
@@ -217,6 +217,7 @@
   background: #f0f9ff;
   border-radius: 10px;
   border: 1px solid #bae6fd;
+  flex-wrap: wrap;
 }
 
 .hierarchy-label {
@@ -229,6 +230,16 @@
   font-weight: 700;
   color: #0c4a6e;
   font-size: 1rem;
+}
+
+.hierarchy-note {
+  font-size: 0.9rem;
+  color: #475569;
+  font-weight: 500;
+  background: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border-left: 3px solid #10b981;
 }
 
 /* Main Content Layout - Organigramme vertical */
@@ -247,7 +258,7 @@
   overflow: hidden;
   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
   border: 2px solid #e2e8f0;
-  height: 1600px;
+  height: 1800px;
   position: relative;
 }
 
@@ -262,15 +273,31 @@
   cursor: grabbing;
 }
 
-/* SVG Elements Styling - Améliorations */
+/* SVG Elements Styling - Améliorations pour la nouvelle logique */
 .link {
   transition: all 0.3s ease;
-  stroke-linejoin: round; /* Coins arrondis pour les lignes en escalier */
+  stroke-linejoin: round;
   stroke-linecap: round;
+}
+
+.link.group-link {
+  stroke-dasharray: 5,5 !important;
+}
+
+.link.group-horizontal-line {
+  stroke-dasharray: none !important;
+}
+
+.link.member-vertical-line {
+  stroke-dasharray: none !important;
 }
 
 .node-ceo .node-container {
   filter: drop-shadow(0 14px 40px rgba(30, 64, 175, 0.5));
+}
+
+.node-has-horizontal-team .node-container {
+  filter: drop-shadow(0 8px 24px rgba(239, 68, 68, 0.3));
 }
 
 .node-container {
@@ -285,8 +312,26 @@
   filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.3));
 }
 
+.horizontal-team-badge {
+  filter: drop-shadow(0 5px 12px rgba(239, 68, 68, 0.4));
+  animation: pulse 2s infinite;
+}
+
 .team-indicator circle {
   filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.3));
+}
+
+/* Animation pour les badges d'équipes horizontales */
+@keyframes pulse {
+  0% {
+    filter: drop-shadow(0 5px 12px rgba(239, 68, 68, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 5px 20px rgba(239, 68, 68, 0.6));
+  }
+  100% {
+    filter: drop-shadow(0 5px 12px rgba(239, 68, 68, 0.4));
+  }
 }
 
 /* Styles de texte améliorés pour meilleure lisibilité */
@@ -308,6 +353,11 @@
 .node-department {
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   font-size: 16px !important;
+}
+
+.team-size-text {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-size: 14px !important;
 }
 
 /* Legend Section - Sous l'organigramme */
@@ -381,6 +431,16 @@
 .legend-item.manager-item {
   background: linear-gradient(135deg, #f5f3ff, #ede9fe);
   border: 1px solid #ddd6fe;
+}
+
+.legend-item.horizontal-team-item {
+  background: linear-gradient(135deg, #fef2f2, #fee2e2);
+  border: 1px solid #fecaca;
+}
+
+.legend-item.small-team-item {
+  background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+  border: 1px solid #a7f3d0;
 }
 
 .legend-color {
@@ -741,13 +801,13 @@
 /* Responsive Design */
 @media (max-width: 1400px) {
   .chart-container {
-    height: 1500px;
+    height: 1600px;
   }
 }
 
 @media (max-width: 1200px) {
   .chart-container {
-    height: 1400px;
+    height: 1500px;
   }
   
   .legend-grid {
@@ -793,7 +853,7 @@
   }
   
   .chart-container {
-    height: 1100px;
+    height: 1200px;
   }
   
   .legend-grid {
@@ -821,7 +881,7 @@
   }
   
   .chart-container {
-    height: 1000px;
+    height: 1100px;
   }
   
   .legend-grid {
@@ -870,7 +930,7 @@
   }
   
   .chart-container {
-    height: 900px;
+    height: 1000px;
   }
   
   .legend-grid {
