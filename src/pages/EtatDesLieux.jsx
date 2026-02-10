@@ -91,6 +91,24 @@ const EtatDesLieux = () => {
     }
   };
 
+  // Fonction pour formater une période d'absence
+  const formatAbsencePeriod = (demande) => {
+    if (!demande) return '';
+    
+    const dateDepart = new Date(demande.date_depart);
+    const dateRetour = demande.date_retour ? new Date(demande.date_retour) : dateDepart;
+    
+    const formatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
+    const formattedDepart = dateDepart.toLocaleDateString('fr-FR', formatOptions);
+    const formattedRetour = dateRetour.toLocaleDateString('fr-FR', formatOptions);
+    
+    if (dateDepart.toDateString() === dateRetour.toDateString()) {
+      return `Le ${formattedDepart}`;
+    } else {
+      return `Du ${formattedDepart} au ${formattedRetour}`;
+    }
+  };
+
   const datesToDisplay = useMemo(() => {
     const dates = [];
     
@@ -148,13 +166,29 @@ const EtatDesLieux = () => {
   const getEmployeeStatusOnDate = (employeeId, date) => {
     const dateStr = date.toISOString().split('T')[0];
     
-    const demande = demandes.find(d => {
-      if (d.employe_id !== employeeId) return false;
+    // Chercher toutes les demandes approuvées pour cet employé
+    const demandesApprouvees = demandes.filter(d => 
+      d.employe_id === employeeId && d.statut === 'approuve'
+    );
+    
+    // Chercher une demande qui couvre la date spécifiée
+    const demande = demandesApprouvees.find(d => {
+      const dateDepart = new Date(d.date_depart);
+      const dateRetour = d.date_retour ? new Date(d.date_retour) : dateDepart;
       
-      const demandeDate = new Date(d.date_depart);
-      const demandeDateStr = demandeDate.toISOString().split('T')[0];
+      // Normaliser les dates (ignorer l'heure)
+      const dateDepartStr = dateDepart.toISOString().split('T')[0];
+      const dateRetourStr = dateRetour.toISOString().split('T')[0];
+      const currentDateStr = date.toISOString().split('T')[0];
       
-      return demandeDateStr === dateStr && d.statut === 'approuve';
+      // Comparer les chaînes de caractères des dates
+      const dateDepartTime = new Date(dateDepartStr).getTime();
+      const dateRetourTime = new Date(dateRetourStr).getTime();
+      const currentDateTime = new Date(currentDateStr).getTime();
+      
+      // Vérifier si la date actuelle est dans l'intervalle [dateDepart, dateRetour]
+      // Note: date_retour est incluse dans le congé (c'est la dernière journée de congé)
+      return currentDateTime >= dateDepartTime && currentDateTime <= dateRetourTime;
     });
     
     if (!demande) {
@@ -169,6 +203,8 @@ const EtatDesLieux = () => {
     let statusType = demande.type_demande || 'autorisation';
     if (statusType === 'congé') statusType = 'congé';
     if (statusType === 'mission') statusType = 'mission';
+    if (statusType === 'formation') statusType = 'formation';
+    if (statusType === 'maladie') statusType = 'maladie';
     
     return {
       status: statusType,
@@ -246,10 +282,7 @@ const EtatDesLieux = () => {
   }
 
   return (
-    
-    
     <div className="etat-des-lieux-container">
-     
       <div className="etat-header">
         <h1>
           <span className="text-gradient">{t('presence_tracker')}</span>
@@ -540,11 +573,10 @@ const EtatDesLieux = () => {
                   <div className="absence-details">
                     <div className="detail-row">
                       <span className="detail-label">
-                        {ICONS.TIME} {t('time')}:
+                        {ICONS.TIME} {t('period')}:
                       </span>
                       <span className="detail-value">
-                        {status.demande?.heure_depart?.substring(0, 5) || 'Toute la journée'}
-                        {status.demande?.heure_retour && ` - ${status.demande.heure_retour.substring(0, 5)}`}
+                        {formatAbsencePeriod(status.demande)}
                       </span>
                     </div>
                     <div className="detail-row">
@@ -656,6 +688,13 @@ const EtatDesLieux = () => {
                 </div>
                 
                 <div className="detail-row">
+                  <span className="detail-label">{t('period')}:</span>
+                  <span className="detail-value">
+                    {formatAbsencePeriod(selectedAbsence.demande)}
+                  </span>
+                </div>
+                
+                <div className="detail-row">
                   <span className="detail-label">{t('type')}:</span>
                   <span 
                     className="detail-value"
@@ -721,7 +760,6 @@ const EtatDesLieux = () => {
         )}
       </div>
     </div>
-   
   );
 };
 
