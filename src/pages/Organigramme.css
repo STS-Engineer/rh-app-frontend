@@ -2,7 +2,7 @@
 .organigramme-container {
   padding: 30px;
   background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  min-height: 100vh;
+  min-height: 10vh;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
