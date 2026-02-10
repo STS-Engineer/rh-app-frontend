@@ -26,7 +26,7 @@
 /* Statistics Container */
 .statistics-container {
   display: flex;
-  min-height: 10vh;
+  min-height: 5vh;
   background: linear-gradient(135deg, 
     rgba(248, 249, 250, 0.98) 0%,
     rgba(240, 242, 245, 0.98) 100%);
