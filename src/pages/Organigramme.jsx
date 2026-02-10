@@ -303,7 +303,7 @@ const Organigramme = () => {
       .attr('class', 'main-group');
 
     // Ajuster l'échelle pour un affichage optimal
-    const scale = 0.6;
+    const scale = 0.1;
 
     const initialX = (containerWidth / 2) - (minX + (maxX - minX) / 2) * scale;
     const initialY = 100;
