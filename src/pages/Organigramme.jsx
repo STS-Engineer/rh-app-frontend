@@ -279,8 +279,8 @@ const Organigramme = () => {
     const nodeHeight = 150;
     
     // Espacements différenciés
-    const horizontalSpacing = 100; // Espacement entre les cartes HORIZONTALES (niveau 1)
-    const verticalSpacing = 100;    // Espacement entre les cartes VERTICALES (équipes)
+    const horizontalSpacing = 130; // Espacement entre les cartes HORIZONTALES (niveau 1)
+    const verticalSpacing = 130;    // Espacement entre les cartes VERTICALES (équipes)
 
     const hierarchyData = buildHierarchy();
     const root = d3.hierarchy(hierarchyData);
