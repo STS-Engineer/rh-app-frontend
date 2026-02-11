@@ -35,16 +35,35 @@ const Organigramme = () => {
     'Default': '#4b5563'
   };
 
-  // Nettoyer le nom des abréviations parasites
+  // Nettoyer le nom COMPLÈTEMENT (élimine toutes les abréviations)
   const cleanName = (prenom, nom) => {
     if (!prenom && !nom) return 'Sans nom';
-    if (!prenom) return nom?.replace(/\s+[A-Z]{2,}$/g, '').trim() || 'Sans nom';
-    if (!nom) return prenom?.replace(/\s+[A-Z]{2,}$/g, '').trim() || 'Sans nom';
     
-    let cleanPrenom = prenom.replace(/\s+[A-Z]{2,}$/g, '').trim();
-    let cleanNom = nom.replace(/\s+[A-Z]{2,}$/g, '').trim();
-    cleanPrenom = cleanPrenom.replace(/[-–—][A-Z]{2,}$/g, '').trim();
-    cleanNom = cleanNom.replace(/[-–—][A-Z]{2,}$/g, '').trim();
+    // Fonction pour nettoyer une chaîne des abréviations
+    const removeAbbreviations = (str) => {
+      if (!str) return '';
+      
+      // Supprime les abréviations de 2 lettres ou plus à la fin (FC, MM, RC, etc.)
+      let cleaned = str.replace(/\s+[A-ZÀ-Ÿ]{2,}$/g, '');
+      
+      // Supprime les abréviations après un tiret (ex: "Jean-Paul FC" -> "Jean-Paul")
+      cleaned = cleaned.replace(/[-–—]\s*[A-ZÀ-Ÿ]{2,}$/g, '');
+      
+      // Supprime les abréviations au milieu si elles sont isolées
+      cleaned = cleaned.replace(/\s+[A-ZÀ-Ÿ]{2,}\s+/g, ' ');
+      
+      // Supprime les abréviations au début si elles sont isolées
+      cleaned = cleaned.replace(/^[A-ZÀ-Ÿ]{2,}\s+/g, '');
+      
+      return cleaned.trim();
+    };
+
+    let cleanPrenom = removeAbbreviations(prenom || '');
+    let cleanNom = removeAbbreviations(nom || '');
+    
+    if (!cleanPrenom && !cleanNom) return 'Sans nom';
+    if (!cleanPrenom) return cleanNom;
+    if (!cleanNom) return cleanPrenom;
     
     return `${cleanPrenom} ${cleanNom}`.trim();
   };
@@ -59,15 +78,15 @@ const Organigramme = () => {
   const buildHierarchy = () => {
     const employeeMap = new Map();
     
-    // Créer le map des employés
+    // Créer le map des employés avec noms nettoyés
     employees.forEach(emp => {
       const email = emp.adresse_mail?.toLowerCase();
       if (email) {
         employeeMap.set(email, {
           ...emp,
           id: email,
-          prenom: emp.prenom?.replace(/\s+[A-Z]{2,}$/g, '').replace(/[-–—][A-Z]{2,}$/g, '').trim() || '',
-          nom: emp.nom?.replace(/\s+[A-Z]{2,}$/g, '').replace(/[-–—][A-Z]{2,}$/g, '').trim() || '',
+          prenom: emp.prenom?.trim() || '',
+          nom: emp.nom?.trim() || '',
           poste: cleanPosition(emp.poste),
           children: [],
           depth: 0,
@@ -132,13 +151,6 @@ const Organigramme = () => {
       return email !== fethiEmail && e.mail_responsable1?.toLowerCase() === fethiEmail;
     });
 
-    // Trier les rapports directs
-    directReports.sort((a, b) => {
-      const aIsManager = employeeMap.get(a.adresse_mail?.toLowerCase())?.isManager ? 1 : 0;
-      const bIsManager = employeeMap.get(b.adresse_mail?.toLowerCase())?.isManager ? 1 : 0;
-      return bIsManager - aIsManager;
-    });
-
     // Ajouter les rapports directs comme enfants HORIZONTAUX de Fethi
     directReports.forEach(emp => {
       const email = emp.adresse_mail?.toLowerCase();
@@ -146,19 +158,17 @@ const Organigramme = () => {
         const node = employeeMap.get(email);
         node.depth = 1;
         node.parentId = fethiEmail;
-        node.layout = 'horizontal'; // Marquer comme disposition horizontale
+        node.layout = 'horizontal';
         fethiNode.children.push(node);
         processed.add(email);
       }
     });
 
     // NIVEAUX SUIVANTS: Équipes - DISPOSITION VERTICALE
-    // Pour chaque manager, ajouter ses subordonnés en disposition VERTICALE
     const processManager = (managerEmail) => {
       const manager = employeeMap.get(managerEmail);
       if (!manager || !manager.isManager) return;
 
-      // Trouver tous les subordonnés de ce manager
       const subordinates = employees.filter(e => {
         const email = e.adresse_mail?.toLowerCase();
         const resp1 = e.mail_responsable1?.toLowerCase();
@@ -169,27 +179,18 @@ const Organigramme = () => {
       });
 
       if (subordinates.length > 0) {
-        // Trier par nom
-        subordinates.sort((a, b) => {
-          const aName = cleanName(a.prenom, a.nom);
-          const bName = cleanName(b.prenom, b.nom);
-          return aName.localeCompare(bName);
-        });
-
-        // Ajouter les subordonnés comme enfants VERTICAUX
         subordinates.forEach(sub => {
           const email = sub.adresse_mail?.toLowerCase();
           if (email && employeeMap.has(email) && !processed.has(email)) {
             const subNode = employeeMap.get(email);
             subNode.depth = manager.depth + 1;
             subNode.parentId = managerEmail;
-            subNode.layout = 'vertical'; // Marquer comme disposition verticale
+            subNode.layout = 'vertical';
             
             if (!manager.children) manager.children = [];
             manager.children.push(subNode);
             processed.add(email);
             
-            // Traiter récursivement si ce subordonné est aussi un manager
             if (subNode.isManager) {
               processManager(email);
             }
@@ -198,30 +199,12 @@ const Organigramme = () => {
       }
     };
 
-    // Traiter tous les managers (sauf Fethi) qui sont déjà dans processed
+    // Traiter tous les managers
     const managers = Array.from(employeeMap.values())
       .filter(emp => emp.isManager && emp.id !== fethiEmail && processed.has(emp.id));
     
     managers.forEach(manager => {
       processManager(manager.id);
-    });
-
-    // Ajouter les employés restants sous Fethi
-    const remainingEmployees = employees.filter(e => {
-      const email = e.adresse_mail?.toLowerCase();
-      return email && !processed.has(email) && email !== fethiEmail;
-    });
-
-    remainingEmployees.forEach(emp => {
-      const email = emp.adresse_mail?.toLowerCase();
-      if (email && employeeMap.has(email)) {
-        const node = employeeMap.get(email);
-        node.depth = 1;
-        node.parentId = fethiEmail;
-        node.layout = 'horizontal';
-        fethiNode.children.push(node);
-        processed.add(email);
-      }
     });
 
     return fethiNode;
@@ -279,19 +262,19 @@ const Organigramme = () => {
     const nodeHeight = 150;
     
     // Espacements différenciés
-    const horizontalSpacing = 130; // Espacement entre les cartes HORIZONTALES (niveau 1)
-    const verticalSpacing = 180;    // Espacement entre les cartes VERTICALES (équipes)
+    const horizontalSpacing = 400; // AUGMENTÉ pour espace normal entre les managers (comme les autres nœuds horizontaux)
+    const verticalSpacing = 180;    // Espacement vertical
 
     const hierarchyData = buildHierarchy();
     const root = d3.hierarchy(hierarchyData);
 
-    // Configuration D3 pour gérer les deux types de disposition
+    // Configuration D3
     const tree = d3.tree()
       .nodeSize([horizontalSpacing, verticalSpacing * 2])
       .separation((a, b) => {
         if (a.depth === 0) return 2; // Fethi
-        if (a.depth === 1) return 1.8; // Niveau horizontal
-        return 1.2; // Niveaux verticaux
+        if (a.depth === 1) return 1.2; // ESPACEMENT NORMAL pour les managers niveau 1
+        return 1; // Niveaux verticaux
       });
 
     tree(root);
@@ -301,12 +284,11 @@ const Organigramme = () => {
     // AJUSTEMENT DES POSITIONS POUR DISPOSITION VERTICALE
     nodes.forEach(node => {
       if (node.depth >= 2) {
-        // Disposition verticale: aligner tous les enfants sous le parent
         const parent = node.parent;
         if (parent && parent.children) {
           const index = parent.children.indexOf(node);
           if (index >= 0) {
-            // Position verticale: même X que le parent, Y décalé
+            // Position verticale alignée sous le parent
             node.x = parent.x;
             node.y = parent.y + verticalSpacing * (index + 1);
           }
@@ -349,7 +331,7 @@ const Organigramme = () => {
     managerGradient.append('stop').attr('offset', '0%').attr('stop-color', '#1e40af');
     managerGradient.append('stop').attr('offset', '100%').attr('stop-color', '#3b82f6');
 
-    // DESSINER LES LIENS
+    // DESSINER LES LIENS - TOUS DROITS
     const links = root.links();
     
     g.selectAll('.link')
@@ -367,30 +349,24 @@ const Organigramme = () => {
         const targetX = d.target.x;
         const targetY = d.target.y - nodeHeight / 2;
         
-        if (d.source.depth === 0) {
-          // Lien CEO -> Niveau 1 (horizontal) - Ligne courbe élégante
-          const midY = sourceY + (targetY - sourceY) * 0.7;
+        // TOUS LES LIENS SONT DROITS - Lignes à 90 degrés
+        if (sourceX === targetX) {
+          // Ligne verticale droite
           return `M ${sourceX},${sourceY}
-                  C ${sourceX},${midY}
-                    ${targetX},${midY}
-                    ${targetX},${targetY}`;
-        } else if (d.source.depth === 1) {
-          // Lien Niveau 1 -> Niveau 2 (vertical) - Ligne droite à 90°
-          const midY = sourceY + (targetY - sourceY) * 0.3;
+                  L ${targetX},${targetY}`;
+        } else {
+          // Ligne avec angles droits (en forme de Z)
+          const midY = sourceY + (targetY - sourceY) * 0.5;
           return `M ${sourceX},${sourceY}
                   L ${sourceX},${midY}
                   L ${targetX},${midY}
-                  L ${targetX},${targetY}`;
-        } else {
-          // Lien Niveaux profonds (vertical) - Ligne verticale droite
-          return `M ${sourceX},${sourceY}
                   L ${targetX},${targetY}`;
         }
       })
       .attr('stroke', d => {
         if (d.source.data.isCEO) return '#94a3b8';
         if (d.source.depth === 1) return '#3b82f6';
-        return '#cbd5e1';
+        return '#94a3b8';
       })
       .attr('stroke-width', d => {
         if (d.source.data.isCEO) return 2.5;
@@ -494,7 +470,7 @@ const Organigramme = () => {
         return `${prenom.charAt(0) || ''}${nom.charAt(0) || ''}`.toUpperCase();
       });
 
-    // Nom complet
+    // Nom complet - AVEC NOM NETTOYÉ SANS ABRÉVIATIONS
     node.append('text')
       .attr('class', 'node-name')
       .attr('text-anchor', 'middle')
