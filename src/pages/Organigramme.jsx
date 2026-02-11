@@ -279,8 +279,8 @@ const Organigramme = () => {
     const nodeHeight = 150;
     
     // Espacements différenciés
-    const horizontalSpacing = 20; // Espacement entre les cartes HORIZONTALES (niveau 1)
-    const verticalSpacing = 20;    // Espacement entre les cartes VERTICALES (équipes)
+    const horizontalSpacing = 100; // Espacement entre les cartes HORIZONTALES (niveau 1)
+    const verticalSpacing = 100;    // Espacement entre les cartes VERTICALES (équipes)
 
     const hierarchyData = buildHierarchy();
     const root = d3.hierarchy(hierarchyData);
@@ -328,7 +328,7 @@ const Organigramme = () => {
     
     const initialX = (containerWidth / 2) - (minX + treeWidth / 2);
     const initialY = 120;
-    const scale = 0.22;
+    const scale = 0.4;
 
     g.attr('transform', `translate(${initialX},${initialY}) scale(${scale})`);
 
