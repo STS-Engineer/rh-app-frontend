@@ -271,7 +271,7 @@ const Organigramme = () => {
     const nodeHeight = 150;
     
     // ESPACEMENTS
-    const horizontalSpacing = 380; // ESPACEMENT UNIFORME pour tous les nœuds niveau 1
+    const horizontalSpacing = 350; // ESPACEMENT UNIFORME pour tous les nœuds niveau 1
     const verticalSpacing = 180;    // Espacement vertical
 
     const hierarchyData = buildHierarchy();
@@ -333,7 +333,7 @@ const Organigramme = () => {
     
     const initialX = (containerWidth / 2) - (minX + treeWidth / 2);
     const initialY = 120;
-    const scale = 0.4;
+    const scale = 0.321;
 
     g.attr('transform', `translate(${initialX},${initialY}) scale(${scale})`);
 
