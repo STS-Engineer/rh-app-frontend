@@ -35,27 +35,38 @@ const Organigramme = () => {
     'Default': '#4b5563'
   };
 
-  // Nettoyer le nom COMPLÈTEMENT (élimine toutes les abréviations)
+  // NETTOYAGE COMPLET DU NOM - Supprime TOUTES les abréviations (FC, MM, RC, etc.)
   const cleanName = (prenom, nom) => {
     if (!prenom && !nom) return 'Sans nom';
     
-    // Fonction pour nettoyer une chaîne des abréviations
+    // Fonction pour nettoyer une chaîne de TOUTES les abréviations
     const removeAbbreviations = (str) => {
       if (!str) return '';
       
-      // Supprime les abréviations de 2 lettres ou plus à la fin (FC, MM, RC, etc.)
-      let cleaned = str.replace(/\s+[A-ZÀ-Ÿ]{2,}$/g, '');
+      let cleaned = str;
+      
+      // Supprime les abréviations en fin de chaîne (ex: "Jean Dupont FC" -> "Jean Dupont")
+      cleaned = cleaned.replace(/\s+[A-ZÀ-Ÿ]{2,}$/g, '');
       
       // Supprime les abréviations après un tiret (ex: "Jean-Paul FC" -> "Jean-Paul")
       cleaned = cleaned.replace(/[-–—]\s*[A-ZÀ-Ÿ]{2,}$/g, '');
       
-      // Supprime les abréviations au milieu si elles sont isolées
+      // Supprime les abréviations au milieu (ex: "Jean FC Dupont" -> "Jean Dupont")
       cleaned = cleaned.replace(/\s+[A-ZÀ-Ÿ]{2,}\s+/g, ' ');
       
-      // Supprime les abréviations au début si elles sont isolées
+      // Supprime les abréviations au début (ex: "FC Jean Dupont" -> "Jean Dupont")
       cleaned = cleaned.replace(/^[A-ZÀ-Ÿ]{2,}\s+/g, '');
       
-      return cleaned.trim();
+      // Supprime les abréviations entre parenthèses (ex: "Jean Dupont (FC)")
+      cleaned = cleaned.replace(/\s*\([A-ZÀ-Ÿ]{2,}\)\s*/g, ' ');
+      
+      // Supprime les abréviations entre crochets (ex: "Jean Dupont [FC]")
+      cleaned = cleaned.replace(/\s*\[[A-ZÀ-Ÿ]{2,}\]\s*/g, ' ');
+      
+      // Supprime les espaces multiples
+      cleaned = cleaned.replace(/\s+/g, ' ').trim();
+      
+      return cleaned;
     };
 
     let cleanPrenom = removeAbbreviations(prenom || '');
@@ -145,26 +156,25 @@ const Organigramme = () => {
 
     const processed = new Set([fethiEmail]);
 
-    // NIVEAU 1: Rapports directs de Fethi - DISPOSITION HORIZONTALE
+    // NIVEAU 1: Rapports directs de Fethi
     const directReports = employees.filter(e => {
       const email = e.adresse_mail?.toLowerCase();
       return email !== fethiEmail && e.mail_responsable1?.toLowerCase() === fethiEmail;
     });
 
-    // Ajouter les rapports directs comme enfants HORIZONTAUX de Fethi
+    // Ajouter les rapports directs
     directReports.forEach(emp => {
       const email = emp.adresse_mail?.toLowerCase();
       if (email && employeeMap.has(email) && !processed.has(email)) {
         const node = employeeMap.get(email);
         node.depth = 1;
         node.parentId = fethiEmail;
-        node.layout = 'horizontal';
         fethiNode.children.push(node);
         processed.add(email);
       }
     });
 
-    // NIVEAUX SUIVANTS: Équipes - DISPOSITION VERTICALE
+    // NIVEAUX SUIVANTS: Équipes
     const processManager = (managerEmail) => {
       const manager = employeeMap.get(managerEmail);
       if (!manager || !manager.isManager) return;
@@ -185,7 +195,6 @@ const Organigramme = () => {
             const subNode = employeeMap.get(email);
             subNode.depth = manager.depth + 1;
             subNode.parentId = managerEmail;
-            subNode.layout = 'vertical';
             
             if (!manager.children) manager.children = [];
             manager.children.push(subNode);
@@ -248,7 +257,7 @@ const Organigramme = () => {
     }
   }, [searchTerm, employees]);
 
-  // Dessiner l'organigramme
+  // DESSINER L'ORGANIGRAMME - VERSION CORRIGÉE
   useEffect(() => {
     if (loading || !svgRef.current || filteredEmployees.length === 0) return;
 
@@ -261,37 +270,51 @@ const Organigramme = () => {
     const nodeWidth = 340;
     const nodeHeight = 150;
     
-    // Espacements différenciés
-    const horizontalSpacing = 400; // AUGMENTÉ pour espace normal entre les managers (comme les autres nœuds horizontaux)
+    // ESPACEMENTS
+    const horizontalSpacing = 380; // ESPACEMENT UNIFORME pour tous les nœuds niveau 1
     const verticalSpacing = 180;    // Espacement vertical
 
     const hierarchyData = buildHierarchy();
     const root = d3.hierarchy(hierarchyData);
 
-    // Configuration D3
+    // Calcul de base avec D3
     const tree = d3.tree()
       .nodeSize([horizontalSpacing, verticalSpacing * 2])
-      .separation((a, b) => {
-        if (a.depth === 0) return 2; // Fethi
-        if (a.depth === 1) return 1.2; // ESPACEMENT NORMAL pour les managers niveau 1
-        return 1; // Niveaux verticaux
-      });
-
-    tree(root);
-
-    const nodes = root.descendants();
+      .separation(() => 1);
     
-    // AJUSTEMENT DES POSITIONS POUR DISPOSITION VERTICALE
+    tree(root);
+    
+    const nodes = root.descendants();
+
+    // ===== CORRECTION DES POSITIONS =====
+    // BUT: Espacement PARFAITEMENT UNIFORME entre TOUS les nœuds de niveau 1
     nodes.forEach(node => {
-      if (node.depth >= 2) {
+      if (node.depth === 0) {
+        // CEO - centré
+        node.x = 0;
+        node.y = 0;
+      }
+      else if (node.depth === 1) {
+        // NIVEAU 1 - ESPACEMENT HORIZONTAL UNIFORME
+        const siblings = node.parent.children;
+        const index = siblings.indexOf(node);
+        const count = siblings.length;
+        
+        // Distribution linéaire parfaite
+        // Chaque nœud est espacé de EXACTEMENT horizontalSpacing
+        const totalWidth = (count - 1) * horizontalSpacing;
+        const startX = -totalWidth / 2;
+        
+        node.x = startX + (index * horizontalSpacing);
+        node.y = verticalSpacing;
+      }
+      else if (node.depth >= 2) {
+        // NIVEAUX 2+ - Alignement vertical PARFAIT sous le parent
         const parent = node.parent;
         if (parent && parent.children) {
           const index = parent.children.indexOf(node);
-          if (index >= 0) {
-            // Position verticale alignée sous le parent
-            node.x = parent.x;
-            node.y = parent.y + verticalSpacing * (index + 1);
-          }
+          node.x = parent.x; // MÊME X que le parent
+          node.y = parent.y + verticalSpacing * (index + 1);
         }
       }
     });
@@ -331,27 +354,23 @@ const Organigramme = () => {
     managerGradient.append('stop').attr('offset', '0%').attr('stop-color', '#1e40af');
     managerGradient.append('stop').attr('offset', '100%').attr('stop-color', '#3b82f6');
 
-    // DESSINER LES LIENS - TOUS DROITS
+    // ===== DESSINER LES LIENS - TOUS DROITS À 90° =====
     const links = root.links();
     
     g.selectAll('.link')
       .data(links)
       .enter()
       .append('path')
-      .attr('class', d => {
-        if (d.source.depth === 0) return 'link link-ceo';
-        if (d.source.depth === 1) return 'link link-horizontal';
-        return 'link link-vertical';
-      })
+      .attr('class', 'link')
       .attr('d', d => {
         const sourceX = d.source.x;
         const sourceY = d.source.y + nodeHeight / 2;
         const targetX = d.target.x;
         const targetY = d.target.y - nodeHeight / 2;
         
-        // TOUS LES LIENS SONT DROITS - Lignes à 90 degrés
+        // TOUS LES LIENS SONT DES LIGNES DROITES À ANGLE DROIT
         if (sourceX === targetX) {
-          // Ligne verticale droite
+          // Ligne verticale parfaitement droite
           return `M ${sourceX},${sourceY}
                   L ${targetX},${targetY}`;
         } else {
@@ -363,20 +382,12 @@ const Organigramme = () => {
                   L ${targetX},${targetY}`;
         }
       })
-      .attr('stroke', d => {
-        if (d.source.data.isCEO) return '#94a3b8';
-        if (d.source.depth === 1) return '#3b82f6';
-        return '#94a3b8';
-      })
-      .attr('stroke-width', d => {
-        if (d.source.data.isCEO) return 2.5;
-        if (d.source.depth === 1) return 2;
-        return 1.5;
-      })
+      .attr('stroke', '#94a3b8')
+      .attr('stroke-width', 1.8)
       .attr('fill', 'none')
       .attr('opacity', 0.6);
 
-    // DESSINER LES NOEUDS
+    // ===== DESSINER LES NOEUDS =====
     const node = g.selectAll('.node')
       .data(nodes)
       .enter()
@@ -385,8 +396,6 @@ const Organigramme = () => {
         let classes = ['node'];
         if (d.data.isCEO) classes.push('node-ceo');
         if (d.data.isManager && !d.data.isCEO) classes.push('node-manager');
-        if (d.depth === 1) classes.push('node-horizontal');
-        if (d.depth >= 2) classes.push('node-vertical');
         return classes.join(' ');
       })
       .attr('transform', d => `translate(${d.x},${d.y})`)
@@ -470,7 +479,7 @@ const Organigramme = () => {
         return `${prenom.charAt(0) || ''}${nom.charAt(0) || ''}`.toUpperCase();
       });
 
-    // Nom complet - AVEC NOM NETTOYÉ SANS ABRÉVIATIONS
+    // NOM COMPLET - SANS AUCUNE ABRÉVIATION
     node.append('text')
       .attr('class', 'node-name')
       .attr('text-anchor', 'middle')
@@ -561,7 +570,7 @@ const Organigramme = () => {
 
     svg.call(zoom);
 
-    // Centrer
+    // Centrer sur le CEO
     const ceoNode = nodes.find(d => d.data.isCEO);
     if (ceoNode) {
       const finalX = containerWidth / 2 - ceoNode.x * scale;
@@ -616,7 +625,7 @@ const Organigramme = () => {
         <h1>Organigramme Hiérarchique</h1>
         <p className="subtitle">
           <span className="ceo-badge">Plant Manager: Fethi Chaouachi</span>
-          <span className="disposition-badge-horizontal">Niveau 1: Disposition horizontale</span>
+          <span className="disposition-badge-horizontal">Niveau 1: Espacement uniforme</span>
           <span className="disposition-badge-vertical">Équipes: Disposition verticale</span>
         </p>
       </div>
@@ -759,8 +768,8 @@ const Organigramme = () => {
                 </svg>
               </div>
               <div className="legend-text">
-                <span className="legend-title">Niveau 1 - Horizontal</span>
-                <span className="legend-desc">Rapports directs du Plant Manager</span>
+                <span className="legend-title">Niveau 1 - Espacement uniforme</span>
+                <span className="legend-desc">Tous les rapports directs espacés également</span>
               </div>
             </div>
             <div className="legend-item disposition-vertical-item">
@@ -802,7 +811,7 @@ const Organigramme = () => {
             <span className="stat-item"><User size={14} /> {stats.total} employés</span>
             <span className="stat-item"><Briefcase size={14} /> {stats.departments} départements</span>
             <span className="stat-item"><Users size={14} /> {stats.managers} managers</span>
-            <span className="stat-item disposition-horizontal-badge">→ Niveau 1: Horizontal</span>
+            <span className="stat-item disposition-horizontal-badge">→ Niveau 1: Espacement uniforme</span>
             <span className="stat-item disposition-vertical-badge">↓ Équipes: Vertical</span>
           </div>
         </div>
