@@ -141,7 +141,20 @@ const Login = () => {
                   aria-label={showPassword ? (t('hidePassword') || 'Hide password') : (t('showPassword') || 'Show password')}
                   title={showPassword ? (t('hidePassword') || 'Hide password') : (t('showPassword') || 'Show password')}
                 >
-                  {showPassword ? '🙈' : '👁️'}
+                  {showPassword ? (
+                        // Eye with slash (hide)
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M2 2L22 22" stroke="currentColor" strokeWidth="2"/>
+                          <path d="M10.58 10.58A2 2 0 0013.42 13.42" stroke="currentColor" strokeWidth="2"/>
+                          <path d="M9.88 5.09A9.77 9.77 0 0112 5c7 0 10 7 10 7a16.88 16.88 0 01-3.12 4.19M6.53 6.53C4.06 8.06 2 12 2 12s3 7 10 7a9.77 9.77 0 004.91-1.38" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
+                      ) : (
+                        // Normal eye (show)
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" stroke="currentColor" strokeWidth="2"/>
+                          <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                        </svg>
+                      )}
                 </button>
               </div>
             </div>
