@@ -5,6 +5,10 @@ import axios from 'axios';
 // =========================
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-rh.azurewebsites.net/api';
 
+// ✅ Token helper (localStorage OR sessionStorage)
+export const getToken = () =>
+  localStorage.getItem('token') || sessionStorage.getItem('token');
+
 // Création d'une instance axios
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -21,15 +25,13 @@ const api = axios.create({
 // Ajout automatique du token JWT aux requêtes
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Gestion globale des erreurs d'authentification
@@ -38,6 +40,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
       window.location.href = '/';
     }
     return Promise.reject(error);
@@ -49,20 +52,22 @@ api.interceptors.response.use(
 // =========================
 
 export const authAPI = {
-  // Login avec email et password
-  login: (email, password) => api.post('/auth/login', { email, password }),
-  
+  // ✅ Login with rememberMe
+  login: (email, password, rememberMe) =>
+    api.post('/auth/login', { email, password, rememberMe }),
+
   // Mot de passe oublié - envoi direct d'un nouveau mot de passe
   sendNewPassword: (email) => api.post('/auth/send-new-password', { email }),
-  
+
   logout: () => {
     localStorage.removeItem('token');
+    sessionStorage.removeItem('token');
     window.location.href = '/';
   },
-  
+
   // Vérifier si l'utilisateur est connecté
   isAuthenticated: () => {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     return !!token;
   }
 };
@@ -76,12 +81,11 @@ export const employeesAPI = {
   getById: (id) => api.get(`/employees/${id}`),
   create: (employeeData) => api.post('/employees', employeeData),
   update: (id, employeeData) => api.put(`/employees/${id}`, employeeData),
-  archiveEmployee: (employeeId, data) =>
-    api.put(`/employees/${employeeId}/archive`, data),
+  archiveEmployee: (employeeId, data) => api.put(`/employees/${employeeId}/archive`, data),
   search: (searchTerm, statut = 'actif') =>
     api.get(`/employees/search?q=${encodeURIComponent(searchTerm)}&statut=${encodeURIComponent(statut)}`),
   getArchives: () => api.get('/employees/archives'),
-  
+
   // Upload photo employé
   uploadPhoto: (photoFile) => {
     const formData = new FormData();
@@ -90,7 +94,7 @@ export const employeesAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
-  
+
   // Générer URL photo
   getPhotoUrl: (filename) => {
     const baseUrl = API_BASE_URL.replace('/api', '');
@@ -107,7 +111,7 @@ export const demandesAPI = {
   getById: (id) => api.get(`/demandes/${id}`),
   create: (data) => api.post('/demandes', data),
   update: (id, data) => api.put(`/demandes/${id}`, data),
-  updateStatus: (id, statut, commentaire_refus = null) => 
+  updateStatus: (id, statut, commentaire_refus = null) =>
     api.put(`/demandes/${id}/statut`, { statut, commentaire_refus }),
   delete: (id) => api.delete(`/demandes/${id}`)
 };
@@ -119,30 +123,26 @@ export const demandesAPI = {
 export const dossierRhAPI = {
   uploadPhotos: (photos) => {
     const formData = new FormData();
-    photos.forEach(photo => {
+    photos.forEach((photo) => {
       formData.append('photos', photo);
     });
     return api.post('/dossier-rh/upload-photos', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
-  
-  generatePDF: (employeeId, data) => 
-    api.post(`/dossier-rh/generate-pdf/${employeeId}`, data),
-  
+
+  generatePDF: (employeeId, data) => api.post(`/dossier-rh/generate-pdf/${employeeId}`, data),
+
   getPDFUrl: (filename) => {
     const baseUrl = API_BASE_URL.replace('/api', '');
     return `${baseUrl}/pdfs/${filename}`;
   }
 };
 
-
-
-
 // Fonction pour supprimer le dossier RH
 export const deleteDossierRH = async (employeeId) => {
   try {
-    const token = localStorage.getItem('token');
+    const token = getToken();
     if (!token) {
       throw new Error('Non authentifié');
     }
@@ -150,9 +150,9 @@ export const deleteDossierRH = async (employeeId) => {
     const response = await fetch(`${API_BASE_URL}/employees/${employeeId}/dossier-rh`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     });
 
     if (!response.ok) {
@@ -193,7 +193,7 @@ export const archiveAPI = {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
   },
-  
+
   getPDFUrl: (filename) => {
     const baseUrl = API_BASE_URL.replace('/api', '');
     return `${baseUrl}/archive-pdfs/${filename}`;
@@ -204,16 +204,10 @@ export const archiveAPI = {
 // Fonctions utilitaires (exportées individuellement)
 // =========================
 
-// Récupérer les employés archivés
 export const getArchivedEmployees = () => api.get('/employees/archives');
 
-// Rechercher des employés avec statut
 export const searchEmployeesWithStatus = (searchTerm, statut = 'actif') =>
-  api.get(
-    `/employees/search?q=${encodeURIComponent(searchTerm)}&statut=${encodeURIComponent(
-      statut
-    )}`
-  );
+  api.get(`/employees/search?q=${encodeURIComponent(searchTerm)}&statut=${encodeURIComponent(statut)}`);
 
 // =========================
 // API Utilitaires
@@ -221,8 +215,7 @@ export const searchEmployeesWithStatus = (searchTerm, statut = 'actif') =>
 
 export const utilsAPI = {
   healthCheck: () => api.get('/health'),
-  
-  // Vérifier la connexion
+
   checkConnection: async () => {
     try {
       const response = await api.get('/health');

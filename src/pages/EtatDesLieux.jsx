@@ -35,15 +35,21 @@ const EtatDesLieux = () => {
   const [employees, setEmployees] = useState([]);
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [dateRange, setDateRange] = useState({
     start: new Date(new Date().setDate(new Date().getDate() - new Date().getDay())),
     end: new Date(new Date().setDate(new Date().getDate() - new Date().getDay() + 6))
   });
-  const [filterType, setFilterType] = useState('week');
+
+  // ✅ NEW: custom start/end interval (separate start and end)
+  const [customStartDate, setCustomStartDate] = useState(null);
+  const [customEndDate, setCustomEndDate] = useState(null);
+
+  const [filterType, setFilterType] = useState('week'); // unused but kept
   const [selectedEmployee, setSelectedEmployee] = useState('all');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
-  const [viewMode, setViewMode] = useState('week');
+  const [viewMode, setViewMode] = useState('week'); // day | week | month | custom
   const [showDetailsPanel, setShowDetailsPanel] = useState(false);
   const [selectedAbsence, setSelectedAbsence] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -70,6 +76,12 @@ const EtatDesLieux = () => {
     'default': ICONS.PRESENT
   };
 
+  const normalizeDate = (d) => {
+    const x = new Date(d);
+    x.setHours(0, 0, 0, 0);
+    return x;
+  };
+
   useEffect(() => {
     loadData();
   }, []);
@@ -81,7 +93,7 @@ const EtatDesLieux = () => {
         employeesAPI.getAll(),
         demandesAPI.getAll()
       ]);
-      
+
       setEmployees(employeesRes.data);
       setDemandes(demandesRes.data.demandes || demandesRes.data);
       setLoading(false);
@@ -94,14 +106,14 @@ const EtatDesLieux = () => {
   // Fonction pour formater une période d'absence
   const formatAbsencePeriod = (demande) => {
     if (!demande) return '';
-    
+
     const dateDepart = new Date(demande.date_depart);
     const dateRetour = demande.date_retour ? new Date(demande.date_retour) : dateDepart;
-    
+
     const formatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
     const formattedDepart = dateDepart.toLocaleDateString('fr-FR', formatOptions);
     const formattedRetour = dateRetour.toLocaleDateString('fr-FR', formatOptions);
-    
+
     if (dateDepart.toDateString() === dateRetour.toDateString()) {
       return `Le ${formattedDepart}`;
     } else {
@@ -111,20 +123,24 @@ const EtatDesLieux = () => {
 
   const datesToDisplay = useMemo(() => {
     const dates = [];
-    
+
     switch (viewMode) {
       case 'day':
         dates.push(selectedDate);
         break;
-      case 'week':
+
+      case 'week': {
         const startOfWeek = new Date(dateRange.start);
+        startOfWeek.setHours(0, 0, 0, 0);
         for (let i = 0; i < 7; i++) {
           const date = new Date(startOfWeek);
           date.setDate(startOfWeek.getDate() + i);
           dates.push(date);
         }
         break;
-      case 'month':
+      }
+
+      case 'month': {
         const year = selectedDate.getFullYear();
         const month = selectedDate.getMonth();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -132,80 +148,96 @@ const EtatDesLieux = () => {
           dates.push(new Date(year, month, i));
         }
         break;
+      }
+
+      // ✅ NEW: custom interval
+      case 'custom': {
+        if (!customStartDate || !customEndDate) return [];
+        const start = normalizeDate(customStartDate);
+        const end = normalizeDate(customEndDate);
+        if (start > end) return [];
+
+        const cursor = new Date(start);
+
+        // Safety limit to avoid rendering huge table
+        const MAX_DAYS = 62;
+
+        while (cursor <= end && dates.length < MAX_DAYS) {
+          dates.push(new Date(cursor));
+          cursor.setDate(cursor.getDate() + 1);
+        }
+        break;
+      }
+
       default:
         dates.push(selectedDate);
     }
-    
+
     return dates;
-  }, [viewMode, selectedDate, dateRange]);
+  }, [viewMode, selectedDate, dateRange, customStartDate, customEndDate]);
 
   const filteredEmployees = useMemo(() => {
     let filtered = employees;
-    
+
     if (selectedDepartment !== 'all') {
       filtered = filtered.filter(emp => emp.departement === selectedDepartment);
     }
-    
+
     if (searchQuery) {
-      filtered = filtered.filter(emp => 
+      filtered = filtered.filter(emp =>
         `${emp.prenom} ${emp.nom}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        emp.matricule.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        emp.poste.toLowerCase().includes(searchQuery.toLowerCase())
+        (emp.matricule || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (emp.poste || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
+
     if (selectedEmployee !== 'all') {
-      filtered = filtered.filter(emp => 
+      filtered = filtered.filter(emp =>
         emp.id.toString() === selectedEmployee
       );
     }
-    
+
     return filtered;
   }, [employees, selectedDepartment, searchQuery, selectedEmployee]);
 
   const getEmployeeStatusOnDate = (employeeId, date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    
     // Chercher toutes les demandes approuvées pour cet employé
-    const demandesApprouvees = demandes.filter(d => 
+    const demandesApprouvees = demandes.filter(d =>
       d.employe_id === employeeId && d.statut === 'approuve'
     );
-    
+
     // Chercher une demande qui couvre la date spécifiée
     const demande = demandesApprouvees.find(d => {
       const dateDepart = new Date(d.date_depart);
       const dateRetour = d.date_retour ? new Date(d.date_retour) : dateDepart;
-      
+
       // Normaliser les dates (ignorer l'heure)
       const dateDepartStr = dateDepart.toISOString().split('T')[0];
       const dateRetourStr = dateRetour.toISOString().split('T')[0];
       const currentDateStr = date.toISOString().split('T')[0];
-      
-      // Comparer les chaînes de caractères des dates
+
       const dateDepartTime = new Date(dateDepartStr).getTime();
       const dateRetourTime = new Date(dateRetourStr).getTime();
       const currentDateTime = new Date(currentDateStr).getTime();
-      
-      // Vérifier si la date actuelle est dans l'intervalle [dateDepart, dateRetour]
-      // Note: date_retour est incluse dans le congé (c'est la dernière journée de congé)
+
       return currentDateTime >= dateDepartTime && currentDateTime <= dateRetourTime;
     });
-    
+
     if (!demande) {
       const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-      return { 
-        status: isWeekend ? 'weekend' : 'available', 
+      return {
+        status: isWeekend ? 'weekend' : 'available',
         color: isWeekend ? '#f3f4f6' : statusColors.default,
         icon: isWeekend ? '😴' : ICONS.PRESENT
       };
     }
-    
+
     let statusType = demande.type_demande || 'autorisation';
     if (statusType === 'congé') statusType = 'congé';
     if (statusType === 'mission') statusType = 'mission';
     if (statusType === 'formation') statusType = 'formation';
     if (statusType === 'maladie') statusType = 'maladie';
-    
+
     return {
       status: statusType,
       color: statusColors[statusType] || statusColors.default,
@@ -225,22 +257,32 @@ const EtatDesLieux = () => {
 
   const navigateDate = (direction) => {
     const newDate = new Date(selectedDate);
-    
+
     switch (viewMode) {
       case 'day':
         newDate.setDate(newDate.getDate() + direction);
         setSelectedDate(newDate);
         break;
-      case 'week':
+
+      case 'week': {
         const newStart = new Date(dateRange.start);
         newStart.setDate(newStart.getDate() + (direction * 7));
         const newEnd = new Date(newStart);
         newEnd.setDate(newEnd.getDate() + 6);
         setDateRange({ start: newStart, end: newEnd });
         break;
+      }
+
       case 'month':
         newDate.setMonth(newDate.getMonth() + direction);
         setSelectedDate(newDate);
+        break;
+
+      // ✅ custom interval: keep arrows doing nothing (simple)
+      case 'custom':
+        break;
+
+      default:
         break;
     }
   };
@@ -262,7 +304,6 @@ const EtatDesLieux = () => {
   };
 
   const exportToExcel = () => {
-    // Implémentez l'export Excel ici
     console.log('Exporting data...');
   };
 
@@ -281,6 +322,11 @@ const EtatDesLieux = () => {
     );
   }
 
+  const customLabel = () => {
+    if (!customStartDate || !customEndDate) return 'Choisir début et fin';
+    return `${customStartDate.toLocaleDateString('fr-FR')} → ${customEndDate.toLocaleDateString('fr-FR')}`;
+  };
+
   return (
     <div className="etat-des-lieux-container">
       <div className="etat-header">
@@ -290,26 +336,35 @@ const EtatDesLieux = () => {
             {t('real_time_monitoring')}
           </span>
         </h1>
-        
+
         <div className="main-navigation">
           <div className="view-controls">
-            <button 
+            <button
               className={`view-btn ${viewMode === 'day' ? 'active' : ''}`}
               onClick={() => setViewMode('day')}
             >
               {ICONS.CALENDAR} {t('today')}
             </button>
-            <button 
+            <button
               className={`view-btn ${viewMode === 'week' ? 'active' : ''}`}
               onClick={() => setViewMode('week')}
             >
               {ICONS.TEAM} {t('this_week')}
             </button>
-            <button 
+            <button
               className={`view-btn ${viewMode === 'month' ? 'active' : ''}`}
               onClick={() => setViewMode('month')}
             >
               {ICONS.STATS} {t('this_month')}
+            </button>
+
+            {/* ✅ NEW: custom start/end interval */}
+            <button
+              className={`view-btn ${viewMode === 'custom' ? 'active' : ''}`}
+              onClick={() => setViewMode('custom')}
+              title="Filtrer par intervalle"
+            >
+              {ICONS.CALENDAR} {t('custom_range') || 'Période'}
             </button>
           </div>
 
@@ -317,7 +372,7 @@ const EtatDesLieux = () => {
             <button className="nav-btn" onClick={() => navigateDate(-1)}>
               ← {t('previous')}
             </button>
-            
+
             {viewMode === 'day' && (
               <DatePicker
                 selected={selectedDate}
@@ -331,20 +386,45 @@ const EtatDesLieux = () => {
                 }
               />
             )}
-            
+
             {viewMode === 'week' && (
               <div className="week-display">
-                {formatDate(dateRange.start).split(' ')[0]} {dateRange.start.getDate()} - 
+                {formatDate(dateRange.start).split(' ')[0]} {dateRange.start.getDate()} -
                 {formatDate(dateRange.end).split(' ')[0]} {dateRange.end.getDate()} {dateRange.end.getFullYear()}
               </div>
             )}
-            
+
             {viewMode === 'month' && (
               <div className="month-display">
                 {selectedDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
               </div>
             )}
-            
+
+            {/* ✅ NEW: Start + End date pickers (not a range calendar selection) */}
+            {viewMode === 'custom' && (
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <DatePicker
+                  selected={customStartDate}
+                  onChange={(d) => setCustomStartDate(d)}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="Date début"
+                  className="date-picker"
+                />
+                <span style={{ opacity: 0.8 }}>→</span>
+                <DatePicker
+                  selected={customEndDate}
+                  onChange={(d) => setCustomEndDate(d)}
+                  dateFormat="dd/MM/yyyy"
+                  placeholderText="Date fin"
+                  className="date-picker"
+                  minDate={customStartDate || undefined}
+                />
+                <span style={{ fontSize: 12, color: '#64748b' }}>
+                  {customLabel()}
+                </span>
+              </div>
+            )}
+
             <button className="nav-btn" onClick={() => navigateDate(1)}>
               {t('next')} →
             </button>
@@ -372,7 +452,7 @@ const EtatDesLieux = () => {
               className="employee-search"
             />
           </div>
-          
+
           <div className="filter-group">
             <label className="filter-label">{ICONS.DEPARTMENT} {t('department')}</label>
             <select
@@ -386,7 +466,7 @@ const EtatDesLieux = () => {
               ))}
             </select>
           </div>
-          
+
           <div className="filter-group">
             <label className="filter-label">{ICONS.EMPLOYEE} {t('specific_employee')}</label>
             <select
@@ -440,10 +520,13 @@ const EtatDesLieux = () => {
             {ICONS.TEAM} {t('presence_overview')}
             <span style={{ fontSize: '14px', fontWeight: 'normal', opacity: 0.9 }}>
               {filteredEmployees.length} {t('employees')} • {datesToDisplay.length} {t('days')}
+              {viewMode === 'custom' && customStartDate && customEndDate && datesToDisplay.length === 62 && (
+                <span style={{ marginLeft: 8 }}>(max 62 jours)</span>
+              )}
             </span>
           </h2>
         </div>
-        
+
         <div className="table-scroll-container">
           <table className="presence-table">
             <thead>
@@ -485,16 +568,16 @@ const EtatDesLieux = () => {
                       </div>
                     </div>
                   </td>
-                  
+
                   {datesToDisplay.map((date, dateIndex) => {
                     const status = getEmployeeStatusOnDate(employee.id, date);
                     const isToday = new Date().toDateString() === date.toDateString();
-                    
+
                     return (
-                      <td 
-                        key={dateIndex} 
+                      <td
+                        key={dateIndex}
                         className="status-cell"
-                        style={{ 
+                        style={{
                           background: status.color,
                           border: isToday ? '3px solid #667eea' : '1px solid #e5e7eb'
                         }}
@@ -535,16 +618,16 @@ const EtatDesLieux = () => {
           <h3>
             {ICONS.CALENDAR} {t('daily_details')} - {formatDate(selectedDate)}
           </h3>
-          
+
           <div className="absences-grid">
             {filteredEmployees.map(employee => {
               const status = getEmployeeStatusOnDate(employee.id, selectedDate);
-              
+
               if (status.status === 'available' || status.status === 'weekend') return null;
-              
+
               return (
-                <div 
-                  key={employee.id} 
+                <div
+                  key={employee.id}
                   className="absence-card"
                   style={{ borderLeftColor: status.color.split(' ')[2] }}
                   onClick={() => {
@@ -562,14 +645,14 @@ const EtatDesLieux = () => {
                         <div className="employee-role">{employee.poste}</div>
                       </div>
                     </div>
-                    <div 
+                    <div
                       className="absence-type-badge"
                       style={{ background: status.color }}
                     >
                       {status.icon} {t(status.status)}
                     </div>
                   </div>
-                  
+
                   <div className="absence-details">
                     <div className="detail-row">
                       <span className="detail-label">
@@ -595,8 +678,8 @@ const EtatDesLieux = () => {
                 </div>
               );
             })}
-            
-            {!filteredEmployees.some(emp => 
+
+            {!filteredEmployees.some(emp =>
               getEmployeeStatusOnDate(emp.id, selectedDate).status !== 'available' &&
               getEmployeeStatusOnDate(emp.id, selectedDate).status !== 'weekend'
             ) && (
@@ -615,43 +698,45 @@ const EtatDesLieux = () => {
           <div className="stat-value">{filteredEmployees.length}</div>
           <div className="stat-label">{t('total_employees')}</div>
         </div>
-        
+
         <div className="stat-card">
           <div className="stat-icon">{ICONS.CONGE}</div>
           <div className="stat-value">
-            {filteredEmployees.filter(emp => 
+            {filteredEmployees.filter(emp =>
               getEmployeeStatusOnDate(emp.id, selectedDate).status === 'congé'
             ).length}
           </div>
           <div className="stat-label">{t('on_leave')}</div>
         </div>
-        
+
         <div className="stat-card">
           <div className="stat-icon">{ICONS.MISSION}</div>
           <div className="stat-value">
-            {filteredEmployees.filter(emp => 
+            {filteredEmployees.filter(emp =>
               getEmployeeStatusOnDate(emp.id, selectedDate).status === 'mission'
             ).length}
           </div>
           <div className="stat-label">{t('on_mission')}</div>
         </div>
-        
+
         <div className="stat-card">
           <div className="stat-icon">{ICONS.AUTORISATION}</div>
           <div className="stat-value">
-            {filteredEmployees.filter(emp => 
+            {filteredEmployees.filter(emp =>
               getEmployeeStatusOnDate(emp.id, selectedDate).status === 'autorisation'
             ).length}
           </div>
           <div className="stat-label">{t('authorized_absences')}</div>
         </div>
-        
+
         <div className="stat-card">
           <div className="stat-icon">📊</div>
           <div className="stat-value">
-            {((filteredEmployees.filter(emp => 
-              getEmployeeStatusOnDate(emp.id, selectedDate).status === 'available'
-            ).length / filteredEmployees.length) * 100).toFixed(1)}%
+            {filteredEmployees.length
+              ? ((filteredEmployees.filter(emp =>
+                getEmployeeStatusOnDate(emp.id, selectedDate).status === 'available'
+              ).length / filteredEmployees.length) * 100).toFixed(1)
+              : '0.0'}%
           </div>
           <div className="stat-label">{t('presence_rate')}</div>
         </div>
@@ -667,7 +752,7 @@ const EtatDesLieux = () => {
                 ×
               </button>
             </div>
-            
+
             <div className="panel-content">
               <div className="absence-header">
                 <div className="employee-info-small">
@@ -680,25 +765,25 @@ const EtatDesLieux = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="absence-details">
                 <div className="detail-row">
                   <span className="detail-label">{t('date')}:</span>
                   <span className="detail-value">{formatDate(selectedAbsence.date)}</span>
                 </div>
-                
+
                 <div className="detail-row">
                   <span className="detail-label">{t('period')}:</span>
                   <span className="detail-value">
                     {formatAbsencePeriod(selectedAbsence.demande)}
                   </span>
                 </div>
-                
+
                 <div className="detail-row">
                   <span className="detail-label">{t('type')}:</span>
-                  <span 
+                  <span
                     className="detail-value"
-                    style={{ 
+                    style={{
                       color: selectedAbsence.color.split(' ')[2],
                       fontWeight: 'bold'
                     }}
@@ -706,19 +791,19 @@ const EtatDesLieux = () => {
                     {selectedAbsence.icon} {t(selectedAbsence.status)}
                   </span>
                 </div>
-                
+
                 {selectedAbsence.demande && (
                   <>
                     <div className="detail-row">
                       <span className="detail-label">{t('title')}:</span>
                       <span className="detail-value">{selectedAbsence.demande.titre}</span>
                     </div>
-                    
+
                     <div className="detail-row">
                       <span className="detail-label">{t('description')}:</span>
                       <span className="detail-value">{selectedAbsence.demande.description || '-'}</span>
                     </div>
-                    
+
                     <div className="detail-row">
                       <span className="detail-label">{t('time')}:</span>
                       <span className="detail-value">
@@ -726,17 +811,17 @@ const EtatDesLieux = () => {
                         {selectedAbsence.demande.heure_retour && ` - ${selectedAbsence.demande.heure_retour.substring(0, 5)}`}
                       </span>
                     </div>
-                    
+
                     <div className="detail-row">
                       <span className="detail-label">{t('location')}:</span>
                       <span className="detail-value">{selectedAbsence.demande.lieu || '-'}</span>
                     </div>
-                    
+
                     <div className="detail-row">
                       <span className="detail-label">{t('approved_by')}:</span>
                       <span className="detail-value">{selectedAbsence.demande.approuve_par || '-'}</span>
                     </div>
-                    
+
                     <div className="detail-row">
                       <span className="detail-label">{t('status')}:</span>
                       <span className="detail-value" style={{ color: '#48bb78' }}>
@@ -746,7 +831,7 @@ const EtatDesLieux = () => {
                   </>
                 )}
               </div>
-              
+
               <div className="action-buttons" style={{ marginTop: '20px' }}>
                 <button className="action-btn primary-btn">
                   {ICONS.DOCUMENT} {t('view_documents')}

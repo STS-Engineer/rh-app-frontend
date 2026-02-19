@@ -246,11 +246,26 @@
   background: linear-gradient(45deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 100%);
 }
 
+/* ✅ Horizontal scroll wrapper for the table (desktop + mobile) */
+.table-scroll-container {
+  width: 100%;
+  overflow-x: auto;      /* shows horizontal scrollbar when needed */
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch; /* smooth scroll on mobile */
+}
+
+/* Optional: keep it from shrinking and ensure scroll appears */
+.presence-table {
+  width: max-content;    /* table can be wider than container */
+  min-width: 1000px;     /* keep your existing min width */
+}
+
+
 /* Tableau principal - Design moderne */
 .presence-table-container {
   background: var(--card-bg);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow: visible;
   box-shadow: var(--shadow-lg);
   margin-bottom: 40px;
   border: 1px solid var(--border-color);

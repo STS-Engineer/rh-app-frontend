@@ -8,13 +8,20 @@ import logoo from './logo_sts.png';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+
+  // ✅ NEW
+  const [rememberMe, setRememberMe] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotLoading, setForgotLoading] = useState(false);
   const [forgotMessage, setForgotMessage] = useState('');
   const [forgotError, setForgotError] = useState('');
+
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -24,10 +31,20 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await authAPI.login(email, password);
-      
+      const response = await authAPI.login(email, password, rememberMe);
+
       if (response.data.success) {
-        localStorage.setItem('token', response.data.token);
+        const token = response.data.token;
+
+        // ✅ Remember me storage behavior
+        if (rememberMe) {
+          localStorage.setItem('token', token);
+          sessionStorage.removeItem('token');
+        } else {
+          sessionStorage.setItem('token', token);
+          localStorage.removeItem('token');
+        }
+
         navigate('/dashboard');
       } else {
         setError(t('emailPasswordIncorrect'));
@@ -53,11 +70,11 @@ const Login = () => {
 
     try {
       const response = await authAPI.sendNewPassword(forgotEmail);
-      
+
       if (response.data.success) {
         setForgotMessage(t('newPasswordSent'));
         setForgotEmail('');
-        
+
         setTimeout(() => {
           setShowForgotPassword(false);
           setForgotMessage('');
@@ -82,70 +99,94 @@ const Login = () => {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-           <img src={logoo} alt="Logo" className="header-logo" />
+          <img src={logoo} alt="Logo" className="header-logo" />
           <p>{t('loginToYourAccount')}</p>
         </div>
 
         {!showForgotPassword ? (
-          <>
-            <form onSubmit={handleSubmit} className="login-form">
-              {error && <div className="error-message">{error}</div>}
-              
-              <div className="form-group">
-                <label htmlFor="email">{t('email')}</label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  placeholder="votre@email.com"
-                  autoComplete="email"
-                />
-              </div>
+          <form onSubmit={handleSubmit} className="login-form">
+            {error && <div className="error-message">{error}</div>}
 
-              <div className="form-group">
-                <label htmlFor="password">{t('password')}</label>
+            <div className="form-group">
+              <label htmlFor="email">{t('email')}</label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="votre@email.com"
+                autoComplete="email"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="password">{t('password')}</label>
+
+              <div className="password-field">
                 <input
                   id="password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   placeholder={t('yourPassword')}
                   autoComplete="current-password"
                 />
-              </div>
 
-              <button type="submit" disabled={loading} className="login-btn">
-                {loading ? (
-                  <>
-                    <span className="spinner"></span>
-                    {t('loggingIn')}
-                  </>
-                ) : t('login')}
-              </button>
-
-              <div className="forgot-password-link">
-                <button 
-                  type="button" 
-                  className="forgot-btn"
-                  onClick={() => setShowForgotPassword(true)}
+                <button
+                  type="button"
+                  className="toggle-password-btn"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? (t('hidePassword') || 'Hide password') : (t('showPassword') || 'Show password')}
+                  title={showPassword ? (t('hidePassword') || 'Hide password') : (t('showPassword') || 'Show password')}
                 >
-                  {t('forgotPassword')}
+                  {showPassword ? '🙈' : '👁️'}
                 </button>
               </div>
-            </form>
-          </>
+            </div>
+
+            <div className="remember-row">
+              <label className="remember-me">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <span>{t('rememberMe') || 'Remember me (30 days)'}</span>
+              </label>
+            </div>
+
+            <button type="submit" disabled={loading} className="login-btn">
+              {loading ? (
+                <>
+                  <span className="spinner"></span>
+                  {t('loggingIn')}
+                </>
+              ) : (
+                t('login')
+              )}
+            </button>
+
+            <div className="forgot-password-link">
+              <button
+                type="button"
+                className="forgot-btn"
+                onClick={() => setShowForgotPassword(true)}
+              >
+                {t('forgotPassword')}
+              </button>
+            </div>
+          </form>
         ) : (
           <div className="forgot-password-form">
             <h3>🔐 {t('forgotPassword')}</h3>
             <p>{t('enterEmailForNewPassword')}</p>
-            
+
             <form onSubmit={handleForgotPassword}>
               {forgotMessage && <div className="success-message">{forgotMessage}</div>}
               {forgotError && <div className="error-message">{forgotError}</div>}
-              
+
               <div className="form-group">
                 <label htmlFor="forgot-email">{t('email')}</label>
                 <input
@@ -160,21 +201,19 @@ const Login = () => {
               </div>
 
               <div className="forgot-password-actions">
-                <button 
-                  type="submit" 
-                  disabled={forgotLoading} 
-                  className="forgot-submit-btn"
-                >
+                <button type="submit" disabled={forgotLoading} className="forgot-submit-btn">
                   {forgotLoading ? (
                     <>
                       <span className="spinner"></span>
                       {t('sending')}
                     </>
-                  ) : t('sendNewPassword')}
+                  ) : (
+                    t('sendNewPassword')
+                  )}
                 </button>
-                
-                <button 
-                  type="button" 
+
+                <button
+                  type="button"
                   className="back-to-login-btn"
                   onClick={() => {
                     setShowForgotPassword(false);
@@ -187,8 +226,6 @@ const Login = () => {
                 </button>
               </div>
             </form>
-            
-            
           </div>
         )}
 
