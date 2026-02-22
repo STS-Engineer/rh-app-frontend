@@ -880,3 +880,82 @@
     border: 1px solid #ccc;
   }
 }
+/* =========================
+   Impression
+   ========================= */
+
+@media print {
+  /* Page setup */
+  @page {
+    size: landscape;
+    margin: 10mm;
+  }
+
+  /* Background white + remove shadows */
+  body,
+  .organigramme-container {
+    background: #ffffff !important;
+  }
+
+  /* Hide non-essential UI */
+  .organigramme-controls,
+  .organigramme-footer,
+  .legend-section,
+  .employee-details-panel {
+    display: none !important;
+  }
+
+  /* Keep header small (optional) */
+  .organigramme-header {
+    box-shadow: none !important;
+    border: none !important;
+    margin-bottom: 10px !important;
+  }
+
+  /* Make chart printable */
+  .organigramme-main,
+  .chart-container-wrapper,
+  .chart-container {
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  /* SVG should not be clipped */
+  .organigramme-svg {
+    width: 100% !important;
+    height: auto !important;
+  }
+}
+
+/* Optional: styles when printing is triggered */
+body.print-mode .organigramme-controls,
+body.print-mode .organigramme-footer,
+body.print-mode .legend-section,
+body.print-mode .employee-details-panel {
+  display: none;
+}
+
+/* Button style (match your UI) */
+.print-btn {
+  background: linear-gradient(135deg, #334155 0%, #475569 100%);
+  color: white;
+  border: none;
+  padding: 12px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+}
+
+.print-btn:hover {
+  transform: translateY(-2px);
+}
+.export-controls{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}

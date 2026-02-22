@@ -3,7 +3,7 @@ import axios from 'axios';
 // =========================
 // Configuration de l'API
 // =========================
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-rh.azurewebsites.net/api';
+const API_BASE_URL ='https://backend-rh.azurewebsites.net/api';
 
 // ✅ Token helper (localStorage OR sessionStorage)
 export const getToken = () =>

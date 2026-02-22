@@ -20,9 +20,22 @@ const Settings = () => {
     const labels = {
       fr: 'Français',
       en: 'English',
-      zh: '中文 (Chinese)'
+      zh: '中文 (Chinese)',
+      ko: '한국어 (Korean)',
+      hi: 'हिन्दी (Hindi)'
     };
     return labels[lang] || lang;
+  };
+
+  const getLanguageFlag = (lang) => {
+    const flags = {
+      fr: '🇫🇷',
+      en: '🇬🇧',
+      zh: '🇨🇳',
+      ko: '🇰🇷',
+      hi: '🇮🇳'
+    };
+    return flags[lang] || '🌐';
   };
 
   const handleNotificationChange = (key) => {
@@ -89,12 +102,36 @@ const Settings = () => {
                   </div>
                   {language === 'zh' && <span className="checkmark">✓</span>}
                 </button>
+
+                <button 
+                  className={`language-option ${language === 'ko' ? 'active' : ''}`}
+                  onClick={() => handleLanguageChange('ko')}
+                >
+                  <span className="flag">🇰🇷</span>
+                  <div className="language-info">
+                    <strong>한국어</strong>
+                    <small>Korean language</small>
+                  </div>
+                  {language === 'ko' && <span className="checkmark">✓</span>}
+                </button>
+
+                <button 
+                  className={`language-option ${language === 'hi' ? 'active' : ''}`}
+                  onClick={() => handleLanguageChange('hi')}
+                >
+                  <span className="flag">🇮🇳</span>
+                  <div className="language-info">
+                    <strong>हिन्दी</strong>
+                    <small>Hindi language</small>
+                  </div>
+                  {language === 'hi' && <span className="checkmark">✓</span>}
+                </button>
               </div>
               
               <div className="current-language-info">
                 <div className="current-language-label">{t('currentLanguage')}:</div>
                 <div className="current-language-value">
-                  <span className="flag">{language === 'fr' ? '🇫🇷' : language === 'en' ? '🇬🇧' : '🇨🇳'}</span>
+                  <span className="flag">{getLanguageFlag(language)}</span>
                   {getLanguageLabel(language)}
                 </div>
                 <p className="language-note">
@@ -104,13 +141,7 @@ const Settings = () => {
               </div>
             </div>
           </div>
-
-        
-
-         
         </div>
-
-       
       </div>
     </div>
   );

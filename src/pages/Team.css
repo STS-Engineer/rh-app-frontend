@@ -657,10 +657,21 @@
 
 .filters-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;     /* ✅ force one line */
   gap: 16px;
   align-items: end;
-  margin-top: 10px;
+  overflow-x: auto;      /* ✅ if screen is smaller, scroll horizontally */
+  padding-bottom: 6px;   /* small space for scrollbar */
+}
+
+.filter {
+  min-width: 190px;      /* you can reduce from 200px */
+  flex: 0 0 auto;        /* ✅ prevent shrinking weirdly */
+}
+
+.filter-actions {
+  margin-left: auto;     /* keeps button at far right */
+  flex: 0 0 auto;
 }
 
 .filter-group {
@@ -774,6 +785,146 @@
   }
 
   .clear-filters-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+@media (max-width: 1200px) {
+  .filters-row {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  .filter {
+    flex: 1 1 240px;
+    min-width: 240px;
+  }
+  .filter-actions {
+    margin-left: 0;
+  }
+}
+
+/* =========================
+   Toolbar compact (FR)
+   ========================= */
+
+.toolbar {
+  margin: 0 0 30px;
+  padding: 16px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--card-background) 0%, rgba(255,255,255,0.95) 100%);
+  box-shadow: 0 10px 35px rgba(4, 110, 175, 0.08);
+  border: 1px solid rgba(229, 231, 235, 0.5);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.toolbar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-blue) 0%, var(--primary-orange) 50%, var(--primary-blue-dark) 100%);
+}
+
+.toolbar {
+  display: grid;
+  grid-template-columns: 2.2fr 1.1fr 1.1fr 1.2fr 1.1fr 1.1fr 1.1fr 1.1fr;
+  gap: 12px;
+  align-items: end;
+}
+
+.toolbar-label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--primary-blue-dark);
+  margin-bottom: 6px;
+}
+
+.toolbar-field,
+.toolbar-search {
+  min-width: 0;
+}
+
+.toolbar-control {
+  width: 100%;
+  padding: 10px 12px;         /* ✅ plus compact */
+  border-radius: 12px;
+  border: 2px solid var(--neutral-grey);
+  background: var(--card-background);
+  font-size: 0.95rem;          /* ✅ plus petit */
+  font-weight: 600;
+  color: var(--text-dark);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+}
+
+.toolbar .search-bar {
+  max-width: none; /* allow full grid cell width */
+}
+
+.toolbar .search-input {
+  padding: 10px 42px 10px 12px; /* compact + icon space */
+}
+
+.toolbar .search-icon {
+  right: 14px;
+  font-size: 1rem;
+}
+
+.toolbar-actions {
+  grid-column: 1 / -1;         /* ✅ actions sur une ligne en dessous */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
+/* count smaller */
+.toolbar-actions .employees-count {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+}
+
+/* buttons slightly smaller */
+.toolbar-actions .refresh-btn,
+.toolbar-actions .add-employee-btn,
+.toolbar-actions .clear-filters-btn {
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+}
+
+/* ✅ Responsive: it will wrap into 2-3 rows without horizontal scroll */
+@media (max-width: 1400px) {
+  .toolbar {
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+  }
+}
+
+@media (max-width: 992px) {
+  .toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .toolbar-actions {
+    justify-content: stretch;
+  }
+
+  .toolbar-actions .refresh-btn,
+  .toolbar-actions .add-employee-btn,
+  .toolbar-actions .clear-filters-btn {
     width: 100%;
     justify-content: center;
   }

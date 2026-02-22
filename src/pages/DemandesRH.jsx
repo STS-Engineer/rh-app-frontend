@@ -1,131 +1,174 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './DemandesRH.css';
 import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const DemandesRH = () => {
   const { t } = useLanguage();
+  const location = useLocation();
+  const navigate = useNavigate();
+
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({
+
+  const defaultFilters = {
     statut: '',
-    employe_id: '', // Changé de type_demande à employe_id
+    employe_id: '',
     date_debut: '',
     date_fin: ''
-  });
-  const [employes, setEmployes] = useState([]); // Nouvel état pour la liste des employés
+  };
+
+  const [filters, setFilters] = useState(defaultFilters);
+  const [employes, setEmployes] = useState([]);
   const [loadingEmployes, setLoadingEmployes] = useState(false);
   const [filtersApplied, setFiltersApplied] = useState(false);
-  const [timeoutId, setTimeoutId] = useState(null);
   const [lastResponse, setLastResponse] = useState(null);
   const [selectedDemande, setSelectedDemande] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
+  // Track the demande id that should auto-open from a notification
+  const pendingOpenIdRef = useRef(null);
+  // Prevent the filters useEffect from running on first mount
+  const isFirstMount = useRef(true);
 
+  const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
   const statuts = ['en_attente', 'approuve', 'refuse'];
+
+  // ─── helpers ────────────────────────────────────────────────────────────────
 
   const getActiveFiltersCount = () => {
     let count = 0;
     if (filters.statut) count++;
-    if (filters.employe_id) count++; // Changé de type_demande à employe_id
+    if (filters.employe_id) count++;
     if (filters.date_debut) count++;
     if (filters.date_fin) count++;
     return count;
   };
-
   const activeFiltersCount = getActiveFiltersCount();
 
   const getStatutLabel = (statut) => {
-    const labels = {
-      'en_attente': t('pending'),
-      'approuve': t('approved'),
-      'refuse': t('refused')
-    };
+    const labels = { en_attente: t('pending'), approuve: t('approved'), refuse: t('refused') };
     return labels[statut] || statut;
   };
 
   const getTypeDemandeLabel = (type) => {
     const labels = {
       'congé': t('leave'),
-      'autorisation_absence': t('absenceAuthorization'),
-      'mission': t('mission')
+      autorisation_absence: t('absenceAuthorization'),
+      mission: t('mission')
     };
     return labels[type] || type;
   };
 
-  const getResponsableStatus = (demande, responsableNum) => {
-    if (responsableNum === 1) {
-      if (demande.approuve_responsable1 === true) return 'approved';
-      if (demande.approuve_responsable1 === false) return 'refused';
-      return 'pending';
-    } else {
-      if (demande.approuve_responsable2 === true) return 'approved';
-      if (demande.approuve_responsable2 === false) return 'refused';
-      return 'pending';
-    }
+  const getResponsableStatus = (demande, num) => {
+    const key = num === 1 ? 'approuve_responsable1' : 'approuve_responsable2';
+    if (demande[key] === true) return 'approved';
+    if (demande[key] === false) return 'refused';
+    return 'pending';
   };
 
   const getResponsableStatusLabel = (status) => {
-    const labels = {
-      'approved': t('approved'),
-      'refused': t('refused'),
-      'pending': t('pending')
-    };
+    const labels = { approved: t('approved'), refused: t('refused'), pending: t('pending') };
     return labels[status] || status;
   };
 
   const getResponsableStatusClass = (status) => {
-    const classes = {
-      'approved': 'status-approved',
-      'refused': 'status-refused',
-      'pending': 'status-pending'
-    };
+    const classes = { approved: 'status-approved', refused: 'status-refused', pending: 'status-pending' };
     return classes[status] || '';
   };
 
-  // Fonction pour récupérer la liste des employés
+  const getStatutBadge = (statut) => {
+    const cfg = {
+      en_attente: { label: t('pending'), class: 'statut-en-attente' },
+      approuve:   { label: t('approved'), class: 'statut-approuve' },
+      refuse:     { label: t('refused'),  class: 'statut-refuse' }
+    };
+    const c = cfg[statut] || { label: statut, class: 'statut-default' };
+    return <span className={`statut-badge ${c.class}`}>{c.label}</span>;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return t('na');
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleDateString('fr-FR');
+  };
+
+  const formatDateTime = (dateString) => {
+    if (!dateString) return t('na');
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return dateString;
+    return date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR');
+  };
+
+  const getTypeIcon = (type) => {
+    const icons = { 'congé': '🏖️', autorisation_absence: '⏰', mission: '✈️' };
+    return icons[type] || '📄';
+  };
+
+  const calculateWorkingDays = (dateDepart, dateRetour, demiJournee) => {
+    if (!dateDepart || !dateRetour) return '';
+    try {
+      const start = new Date(dateDepart);
+      const end = new Date(dateRetour);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return '';
+      let count = 0;
+      const current = new Date(start);
+      while (current <= end) {
+        const day = current.getDay();
+        if (day !== 0 && day !== 6) count++;
+        current.setDate(current.getDate() + 1);
+      }
+      if (demiJournee && count > 0) return `${count - 0.5} ${t('workingDays')}`;
+      return `${count} ${count > 1 ? t('workingDays') : t('workingDay')}`;
+    } catch (e) {
+      return '';
+    }
+  };
+
+  const getEmployeNameById = (id) => {
+    const emp = employes.find(e => e.id === parseInt(id));
+    return emp ? `${emp.prenom} ${emp.nom}` : '';
+  };
+
+  // ─── API calls ───────────────────────────────────────────────────────────────
+
+  const fetchDemandeById = useCallback(async (id) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+      const response = await fetch(`${API_BASE_URL}/api/demandes/${id}`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        cache: 'no-cache'
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data?.demande || (data?.id ? data : null);
+    } catch (e) {
+      return null;
+    }
+  }, [API_BASE_URL]);
+
   const fetchEmployes = useCallback(async () => {
     try {
       setLoadingEmployes(true);
       const token = localStorage.getItem('token');
-      
-      if (!token) {
-        console.log('❌ Token non trouvé');
-        return;
-      }
-
+      if (!token) return;
       const response = await fetch(`${API_BASE_URL}/api/employee`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
       });
-
-      if (!response.ok) {
-        console.error('❌ Erreur récupération employés:', response.status, response.statusText);
-        throw new Error(`Erreur ${response.status}: ${response.statusText}`);
-      }
-
+      if (!response.ok) throw new Error('Erreur chargement employés');
       const data = await response.json();
-      
       if (Array.isArray(data)) {
-        // Trier les employés par nom et prénom
-        const sortedEmployes = data.sort((a, b) => {
-          const nameA = `${a.prenom} ${a.nom}`.toLowerCase();
-          const nameB = `${b.prenom} ${b.nom}`.toLowerCase();
-          return nameA.localeCompare(nameB);
-        });
-        setEmployes(sortedEmployes);
-        console.log(`✅ ${sortedEmployes.length} employés chargés`);
+        setEmployes(data.sort((a, b) =>
+          `${a.prenom} ${a.nom}`.toLowerCase().localeCompare(`${b.prenom} ${b.nom}`.toLowerCase())
+        ));
       } else {
-        console.error('❌ Format de données invalide pour les employés');
         setEmployes([]);
       }
-      
-    } catch (error) {
-      console.error('❌ Erreur récupération employés:', error);
+    } catch (e) {
       setEmployes([]);
     } finally {
       setLoadingEmployes(false);
@@ -137,201 +180,114 @@ const DemandesRH = () => {
       setLoading(true);
       setError(null);
       const token = localStorage.getItem('token');
-      
       if (!token) {
         setError(t('missingAuthToken'));
         setDemandes([]);
         setLoading(false);
         return;
       }
-
       const queryParams = new URLSearchParams();
-      
-      if (filters.statut) {
-        queryParams.append('statut', filters.statut);
-      }
-      
-      if (filters.employe_id) { // Changé de type_demande à employe_id
-        queryParams.append('employe_id', filters.employe_id);
-      }
-      
-      if (filters.date_debut) {
-        queryParams.append('date_debut', filters.date_debut);
-      }
-      
-      if (filters.date_fin) {
-        queryParams.append('date_fin', filters.date_fin);
-      }
+      if (filters.statut)     queryParams.append('statut',     filters.statut);
+      if (filters.employe_id) queryParams.append('employe_id', filters.employe_id);
+      if (filters.date_debut) queryParams.append('date_debut', filters.date_debut);
+      if (filters.date_fin)   queryParams.append('date_fin',   filters.date_fin);
+      if (force)              queryParams.append('_t',         Date.now());
 
-      if (force) {
-        queryParams.append('_t', Date.now());
-      }
-
-      const url = `${API_BASE_URL}/api/demandes?${queryParams}`;
-      
-      console.log('📡 Requête demandes:', url);
-      
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+      const response = await fetch(`${API_BASE_URL}/api/demandes?${queryParams}`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         cache: 'no-cache'
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ ' + t('serverError'), response.status, errorText);
-        throw new Error(`${t('error')} ${response.status}: ${response.statusText}`);
-      }
-
+      if (!response.ok) throw new Error('Erreur serveur');
       const data = await response.json();
-      
       setLastResponse(data);
-      
-      if (data.success && Array.isArray(data.demandes)) {
-        setDemandes(data.demandes);
-        console.log(`✅ ${data.demandes.length} demandes récupérées`);
-      } else {
-        console.log('⚠️ Aucune demande trouvée ou format invalide');
-        setDemandes([]);
-      }
-      
-    } catch (error) {
-      console.error('❌ ' + t('errorFetchingRequests'), error);
-      setError(`${t('connectionError')}: ${error.message}`);
+      setDemandes(data.success && Array.isArray(data.demandes) ? data.demandes : []);
+    } catch (err) {
+      setError(`${t('connectionError')}: ${err.message}`);
       setDemandes([]);
     } finally {
       setLoading(false);
     }
   }, [filters, API_BASE_URL, t]);
 
-  useEffect(() => {
-    fetchDemandes(true);
-    fetchEmployes(); // Charger la liste des employés
-  }, []);
+  // ─── Effects ─────────────────────────────────────────────────────────────────
 
+  // 1. On mount: read location state FIRST, then fetch
   useEffect(() => {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
+    const openId = location.state?.openDemandeId;
+
+    if (openId) {
+      // Store the id we need to open
+      pendingOpenIdRef.current = String(openId);
+      // Clean the router state immediately so back/forward doesn't re-trigger
+      navigate(location.pathname, { replace: true, state: {} });
     }
-    
+
+    // Always fetch the full list on mount (no filters active yet)
+    fetchDemandes(true);
+    fetchEmployes();
+  }, []); // eslint-disable-line
+
+  // 2. After demandes load, open the pending modal if any
+  useEffect(() => {
+    if (!pendingOpenIdRef.current) return;
+    if (loading) return; // wait until fetch is done
+
+    const id = pendingOpenIdRef.current;
+    const found = demandes.find(d => String(d.id) === id);
+
+    if (found) {
+      setSelectedDemande(found);
+      setShowModal(true);
+      pendingOpenIdRef.current = null;
+    } else {
+      // Not in the list (maybe filtered out or different page) — fetch individually
+      fetchDemandeById(id).then(demand => {
+        if (demand) {
+          setSelectedDemande(demand);
+          setShowModal(true);
+        }
+        pendingOpenIdRef.current = null;
+      });
+    }
+  }, [loading, demandes]); // eslint-disable-line
+
+  // 3. Re-fetch when filters change (skip on first mount to avoid double fetch)
+  useEffect(() => {
+    if (isFirstMount.current) {
+      isFirstMount.current = false;
+      return;
+    }
+
     const hasActiveFilters = activeFiltersCount > 0;
     setFiltersApplied(hasActiveFilters);
-    
-    const newTimeoutId = setTimeout(() => {
-      fetchDemandes(true);
-    }, 300);
-    
-    setTimeoutId(newTimeoutId);
-    
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [filters]);
+
+    const timer = setTimeout(() => fetchDemandes(true), 300);
+    return () => clearTimeout(timer);
+  }, [filters]); // eslint-disable-line
+
+  // ─── Handlers ────────────────────────────────────────────────────────────────
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
+    setFilters(prev => ({ ...prev, [key]: value }));
   };
 
   const clearFilters = () => {
-    setFilters({
-      statut: '',
-      employe_id: '', // Changé de type_demande à employe_id
-      date_debut: '',
-      date_fin: ''
-    });
+    setFilters(defaultFilters);
     setFiltersApplied(false);
     setTimeout(() => fetchDemandes(true), 100);
   };
 
-  const retryFetch = () => {
-    fetchDemandes(true);
-  };
-
-  const getStatutBadge = (statut) => {
-    const statutConfig = {
-      'en_attente': { label: t('pending'), class: 'statut-en-attente' },
-      'approuve': { label: t('approved'), class: 'statut-approuve' },
-      'refuse': { label: t('refused'), class: 'statut-refuse' }
-    };
-    
-    const config = statutConfig[statut] || { label: statut, class: 'statut-default' };
-    return <span className={`statut-badge ${config.class}`}>{config.label}</span>;
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return t('na');
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return dateString;
-      return date.toLocaleDateString('fr-FR');
-    } catch (e) {
-      return dateString;
-    }
-  };
-
-  const formatDateTime = (dateString) => {
-    if (!dateString) return t('na');
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return dateString;
-      return date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR');
-    } catch (e) {
-      return dateString;
-    }
-  };
-
-  const getTypeIcon = (type) => {
-    const icons = {
-      'congé': '🏖️',
-      'autorisation_absence': '⏰',
-      'mission': '✈️'
-    };
-    return icons[type] || '📄';
-  };
+  const retryFetch = () => fetchDemandes(true);
 
   const handleViewDetails = (demande) => {
     setSelectedDemande(demande);
     setShowModal(true);
   };
 
-  const calculateWorkingDays = (dateDepart, dateRetour, demiJournee) => {
-    if (!dateDepart || !dateRetour) return '';
-    
-    try {
-      const start = new Date(dateDepart);
-      const end = new Date(dateRetour);
-      
-      if (isNaN(start.getTime()) || isNaN(end.getTime())) return '';
-      
-      let count = 0;
-      const current = new Date(start);
-      
-      // Parcourir tous les jours entre la date de départ et de retour (inclus)
-      while (current <= end) {
-        const dayOfWeek = current.getDay();
-        // 0 = Dimanche, 6 = Samedi - On compte uniquement du lundi (1) au vendredi (5)
-        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-          count++;
-        }
-        current.setDate(current.getDate() + 1);
-      }
-      
-      // Si c'est une demi-journée, on soustrait 0.5
-      if (demiJournee && count > 0) {
-        return `${count - 0.5} ${t('workingDays')}`;
-      }
-      
-      return `${count} ${count > 1 ? t('workingDays') : t('workingDay')}`;
-    } catch (e) {
-      return '';
-    }
+  // Closing modal — just close, list is already loaded
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelectedDemande(null);
   };
 
   const handleExportExcel = () => {
@@ -339,45 +295,24 @@ const DemandesRH = () => {
       alert(t('noRequestsToExport'));
       return;
     }
-
     const headers = [
-      'ID',
-      t('title'),
-      t('type'),
-      t('leaveType'),
-      t('status'),
-      t('employee'),
-      t('employeeID'),
-      t('position'),
-      t('startDateReq'),
-      t('returnDate'),
-      t('departureTime'),
-      t('returnTime'),
-      t('numberOfWorkingDays'),
-      t('halfDay'),
-      t('travelExpenses'),
-      t('supervisor1'),
-      t('supervisor1Status'),
-      t('supervisor2'),
-      t('supervisor2Status'),
-      t('refusalComment'),
-      t('creationDate'),
-      t('lastUpdated')
+      'ID', t('title'), t('type'), t('leaveType'), t('status'),
+      t('employee'), t('employeeID'), t('position'),
+      t('startDateReq'), t('returnDate'), t('departureTime'), t('returnTime'),
+      t('numberOfWorkingDays'), t('halfDay'), t('travelExpenses'),
+      t('supervisor1'), t('supervisor1Status'),
+      t('supervisor2'), t('supervisor2Status'),
+      t('refusalComment'), t('creationDate'), t('lastUpdated')
     ];
-    
     const rows = demandes.map(d => [
-      d.id,
-      d.titre,
+      d.id, d.titre,
       getTypeDemandeLabel(d.type_demande),
       d.type_conge === 'autre' ? d.type_conge_autre || t('other') : d.type_conge || '',
       getStatutLabel(d.statut),
       `${d.employe_prenom} ${d.employe_nom}`,
-      d.employe_matricule || '',
-      d.employe_poste || '',
-      formatDate(d.date_depart),
-      formatDate(d.date_retour),
-      d.heure_depart || '',
-      d.heure_retour || '',
+      d.employe_matricule || '', d.employe_poste || '',
+      formatDate(d.date_depart), formatDate(d.date_retour),
+      d.heure_depart || '', d.heure_retour || '',
       calculateWorkingDays(d.date_depart, d.date_retour, d.demi_journee),
       d.demi_journee ? t('yes') : t('no'),
       d.frais_deplacement ? `${d.frais_deplacement} DT` : '',
@@ -386,16 +321,12 @@ const DemandesRH = () => {
       d.mail_responsable2 || t('notRequired'),
       d.mail_responsable2 ? getResponsableStatusLabel(getResponsableStatus(d, 2)) : '',
       d.commentaire_refus || '',
-      formatDateTime(d.created_at),
-      formatDateTime(d.updated_at)
+      formatDateTime(d.created_at), formatDateTime(d.updated_at)
     ]);
-
-    const csvContent = [headers, ...rows]
+    const csv = [headers, ...rows]
       .map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(';'))
       .join('\n');
-
-    const BOM = '\uFEFF';
-    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -406,17 +337,18 @@ const DemandesRH = () => {
     URL.revokeObjectURL(url);
   };
 
+  // ─── Modal ───────────────────────────────────────────────────────────────────
+
   const Modal = ({ demande, onClose }) => {
     if (!demande) return null;
-
     return (
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal-content" onClick={e => e.stopPropagation()}>
           <div className="modal-header">
-            <h2>📑​{t('requestDetails')}</h2>
+            <h2>📑 {t('requestDetails')}</h2>
             <button className="modal-close" onClick={onClose}>×</button>
           </div>
-          
+
           <div className="modal-body">
             <div className="modal-section">
               <h3>{t('generalInfo')}</h3>
@@ -429,8 +361,9 @@ const DemandesRH = () => {
                 </div>
                 {demande.type_conge && (
                   <div className="info-item">
-                    <strong>{t('leaveType')}:</strong> {demande.type_conge === 'autre' 
-                      ? demande.type_conge_autre || t('other') 
+                    <strong>{t('leaveType')}:</strong>{' '}
+                    {demande.type_conge === 'autre'
+                      ? demande.type_conge_autre || t('other')
                       : demande.type_conge}
                   </div>
                 )}
@@ -477,7 +410,6 @@ const DemandesRH = () => {
                     <p><strong>{t('email')}:</strong> {demande.mail_responsable1 || t('na')}</p>
                   </div>
                 </div>
-
                 <div className="approval-step">
                   <div className="step-header">
                     <span className="step-title">{t('supervisor2')}</span>
@@ -521,7 +453,6 @@ const DemandesRH = () => {
                     <span className="detail-value">{demande.heure_retour}</span>
                   </div>
                 )}
-                {/* AJOUT ICI - Afficher demi-journée si true */}
                 {demande.demi_journee && (
                   <div className="detail-row">
                     <span className="detail-label">🕐 {t('halfDay')}:</span>
@@ -557,16 +488,12 @@ const DemandesRH = () => {
     );
   };
 
-  // Fonction pour obtenir le nom complet d'un employé par son ID
-  const getEmployeNameById = (id) => {
-    const employe = employes.find(e => e.id === parseInt(id));
-    return employe ? `${employe.prenom} ${employe.nom}` : '';
-  };
+  // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="demandes-rh">
       <Sidebar />
-      
+
       <div className="demandes-header">
         <h1>📋 {t('hrRequests')}</h1>
         <p>{t('requestTracking')}</p>
@@ -604,14 +531,11 @@ const DemandesRH = () => {
             )}
           </div>
         </div>
-        
+
         <div className="filters-grid">
           <div className="filter-group">
             <label>{t('status')}</label>
-            <select 
-              value={filters.statut} 
-              onChange={(e) => handleFilterChange('statut', e.target.value)}
-            >
+            <select value={filters.statut} onChange={(e) => handleFilterChange('statut', e.target.value)}>
               <option value="">{t('allStatus')}</option>
               {statuts.map(s => (
                 <option key={s} value={s}>{getStatutLabel(s)}</option>
@@ -619,20 +543,19 @@ const DemandesRH = () => {
             </select>
           </div>
 
-          {/* FILTRE PAR EMPLOYÉ avec liste déroulante */}
           <div className="filter-group">
             <label>{t('employee')}</label>
-            <select 
-              value={filters.employe_id} 
+            <select
+              value={filters.employe_id}
               onChange={(e) => handleFilterChange('employe_id', e.target.value)}
               disabled={loadingEmployes}
             >
               <option value="">{t('allEmployees')}</option>
-              {employes.map(employe => (
-                <option key={employe.id} value={employe.id}>
-                  {employe.prenom} {employe.nom}
-                  {employe.poste ? ` - ${employe.poste}` : ''}
-                  {employe.matricule ? ` (${employe.matricule})` : ''}
+              {employes.map(emp => (
+                <option key={emp.id} value={emp.id}>
+                  {emp.prenom} {emp.nom}
+                  {emp.poste ? ` - ${emp.poste}` : ''}
+                  {emp.matricule ? ` (${emp.matricule})` : ''}
                 </option>
               ))}
             </select>
@@ -646,8 +569,8 @@ const DemandesRH = () => {
 
           <div className="filter-group">
             <label>{t('fromDate')}</label>
-            <input 
-              type="date" 
+            <input
+              type="date"
               value={filters.date_debut}
               onChange={(e) => handleFilterChange('date_debut', e.target.value)}
             />
@@ -655,8 +578,8 @@ const DemandesRH = () => {
 
           <div className="filter-group">
             <label>{t('toDate')}</label>
-            <input 
-              type="date" 
+            <input
+              type="date"
               value={filters.date_fin}
               onChange={(e) => handleFilterChange('date_fin', e.target.value)}
             />
@@ -671,24 +594,16 @@ const DemandesRH = () => {
               </span>
               <div className="filter-tags">
                 {filters.statut && (
-                  <span className="tag">
-                    {t('status')}: {getStatutLabel(filters.statut)}
-                  </span>
+                  <span className="tag">{t('status')}: {getStatutLabel(filters.statut)}</span>
                 )}
                 {filters.employe_id && (
-                  <span className="tag">
-                    {t('employee')}: {getEmployeNameById(filters.employe_id) || filters.employe_id}
-                  </span>
+                  <span className="tag">{t('employee')}: {getEmployeNameById(filters.employe_id) || filters.employe_id}</span>
                 )}
                 {filters.date_debut && (
-                  <span className="tag">
-                    {t('fromDate')}: {formatDate(filters.date_debut)}
-                  </span>
+                  <span className="tag">{t('fromDate')}: {formatDate(filters.date_debut)}</span>
                 )}
                 {filters.date_fin && (
-                  <span className="tag">
-                    {t('toDate')}: {formatDate(filters.date_fin)}
-                  </span>
+                  <span className="tag">{t('toDate')}: {formatDate(filters.date_fin)}</span>
                 )}
               </div>
             </div>
@@ -719,7 +634,7 @@ const DemandesRH = () => {
           </div>
         </div>
         <div className="stat-card refused">
-          <div className="stat-icon">​📛​</div>
+          <div className="stat-icon">📛</div>
           <div className="stat-content">
             <div className="stat-number">{demandes.filter(d => d.statut === 'refuse').length}</div>
             <div className="stat-label">{t('refused')}</div>
@@ -739,20 +654,13 @@ const DemandesRH = () => {
             <div className="error-icon">⚠️</div>
             <h3>{t('loadingError')}</h3>
             <p>{error}</p>
-            <button className="btn-retry" onClick={retryFetch}>
-              {t('retry')}
-            </button>
+            <button className="btn-retry" onClick={retryFetch}>{t('retry')}</button>
           </div>
         ) : demandes.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon">📭</div>
             <h3>{t('noRequests')}</h3>
-            <p>
-              {filtersApplied 
-                ? t('noMatchingCriteria') 
-                : t('noRequestsAvailable')
-              }
-            </p>
+            <p>{filtersApplied ? t('noMatchingCriteria') : t('noRequestsAvailable')}</p>
             {filtersApplied && (
               <button className="btn-clear-all" onClick={clearFilters}>
                 {t('showAllRequests')}
@@ -771,7 +679,7 @@ const DemandesRH = () => {
                 )}
               </div>
             </div>
-            
+
             <div className="demandes-grid">
               {demandes.map((demande, index) => (
                 <div key={demande.id} className="demande-card" style={{ animationDelay: `${index * 0.1}s` }}>
@@ -780,23 +688,21 @@ const DemandesRH = () => {
                       <span className="type-icon">{getTypeIcon(demande.type_demande)}</span>
                       <span className="type-label">{getTypeDemandeLabel(demande.type_demande)}</span>
                     </div>
-                    <div className="demande-status">
-                      {getStatutBadge(demande.statut)}
-                    </div>
+                    <div className="demande-status">{getStatutBadge(demande.statut)}</div>
                   </div>
-                  
+
                   <div className="card-body">
                     <h3 className="demande-title">{demande.titre}</h3>
-                    
+
                     <div className="employe-info">
                       <div className="avatar">
                         {demande.employe_photo ? (
-                          <img 
-                            src={demande.employe_photo} 
+                          <img
+                            src={demande.employe_photo}
                             alt={`${demande.employe_prenom} ${demande.employe_nom}`}
                             onError={(e) => {
                               e.target.style.display = 'none';
-                              e.target.parentElement.innerHTML = 
+                              e.target.parentElement.innerHTML =
                                 `<div class="avatar-default">${demande.employe_prenom?.[0] || ''}${demande.employe_nom?.[0] || ''}</div>`;
                             }}
                           />
@@ -811,22 +717,22 @@ const DemandesRH = () => {
                         <p>{demande.employe_poste} • {t('employeeID')}: {demande.employe_matricule || t('na')}</p>
                       </div>
                     </div>
-                    
+
                     {demande.type_conge && (
                       <div className="detail type-conge">
                         <span className="label">🎯 {t('leaveType')}:</span>
                         <span className="value">
-                          {demande.type_conge === 'autre' 
-                            ? demande.type_conge_autre || t('other') 
+                          {demande.type_conge === 'autre'
+                            ? demande.type_conge_autre || t('other')
                             : demande.type_conge}
                         </span>
                       </div>
                     )}
-                    
+
                     <div className="approval-status">
                       <strong>{t('approvalProcess')}:</strong>
                     </div>
-                    
+
                     <div className="responsables-section">
                       <div className="responsable-card">
                         <div className="responsable-header">
@@ -838,7 +744,7 @@ const DemandesRH = () => {
                           {demande.mail_responsable1 || t('emailNotAvailable')}
                         </div>
                       </div>
-                      
+
                       <div className="responsable-card">
                         <div className="responsable-header">
                           {demande.mail_responsable2 && (
@@ -852,7 +758,7 @@ const DemandesRH = () => {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="demande-details">
                       {demande.date_depart && (
                         <div className="detail">
@@ -860,61 +766,53 @@ const DemandesRH = () => {
                           <span className="value">{formatDate(demande.date_depart)}</span>
                         </div>
                       )}
-                      
                       {demande.date_retour && (
                         <div className="detail">
                           <span className="label">📅 {t('returnDate')}:</span>
                           <span className="value">{formatDate(demande.date_retour)}</span>
                         </div>
                       )}
-                      
                       {demande.heure_depart && (
                         <div className="detail">
                           <span className="label">⏰ {t('departureTime')}:</span>
                           <span className="value">{demande.heure_depart}</span>
                         </div>
                       )}
-
                       {demande.heure_retour && (
                         <div className="detail">
                           <span className="label">⏰ {t('returnTime')}:</span>
                           <span className="value">{demande.heure_retour}</span>
                         </div>
                       )}
-                      
-                      {/* AJOUT ICI - Afficher demi-journée dans la carte */}
                       {demande.demi_journee && (
                         <div className="detail">
                           <span className="label">🕐 {t('halfDay')}:</span>
                           <span className="value">{t('yes')}</span>
                         </div>
                       )}
-                      
                       {demande.frais_deplacement && (
                         <div className="detail">
                           <span className="label">💰 {t('travelExpenses')}:</span>
                           <span className="value">{demande.frais_deplacement} DT</span>
                         </div>
                       )}
-                      
                       <div className="detail">
                         <span className="label">📝 {t('createdOn')}:</span>
                         <span className="value">{formatDate(demande.created_at)}</span>
                       </div>
-                      
                       <div className="detail">
                         <span className="label">🔄 {t('lastUpdated')}:</span>
                         <span className="value">{formatDate(demande.updated_at)}</span>
                       </div>
                     </div>
-                    
+
                     {demande.commentaire_refus && (
                       <div className="commentaire">
                         <div className="comment-label">💬 {t('refusalComment')}:</div>
                         <p>{demande.commentaire_refus}</p>
                       </div>
                     )}
-                    
+
                     <div className="card-actions">
                       <button className="btn-action btn-view" onClick={() => handleViewDetails(demande)}>
                         👁️ {t('viewDetails')}
@@ -928,7 +826,7 @@ const DemandesRH = () => {
         )}
       </div>
 
-      {showModal && <Modal demande={selectedDemande} onClose={() => setShowModal(false)} />}
+      {showModal && <Modal demande={selectedDemande} onClose={handleCloseModal} />}
     </div>
   );
 };
