@@ -206,7 +206,10 @@ const EtatDesLieux = () => {
       const retourStr = toLocalDateString(d.date_retour || d.date_depart);
       if (!departStr || !retourStr || !currentDateStr) return false;
       // date_retour = jour de retour au travail → exclu de la période d'absence
-      // donc on utilise < et non <= pour retourStr
+      // SAUF si date_depart === date_retour → congé d'1 seul jour, on l'inclut
+      if (departStr === retourStr) {
+        return currentDateStr === departStr;
+      }
       return currentDateStr >= departStr && currentDateStr < retourStr;
     });
 
