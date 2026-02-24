@@ -28,12 +28,16 @@ const DemandesRH = () => {
   const [selectedDemande, setSelectedDemande] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  // Track the demande id that should auto-open from a notification
+  const [actionLoading, setActionLoading] = useState(false);
+  const [rejectMode, setRejectMode] = useState(false);
+  const [rejectComment, setRejectComment] = useState('');
+
   const pendingOpenIdRef = useRef(null);
-  // Prevent the filters useEffect from running on first mount
   const isFirstMount = useRef(true);
 
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
+  const DEMANDE_API_BASE_URL = 'https://hr-back.azurewebsites.net';
+
   const statuts = ['en_attente', 'approuve', 'refuse'];
 
   // ─── helpers ────────────────────────────────────────────────────────────────
@@ -82,8 +86,8 @@ const DemandesRH = () => {
   const getStatutBadge = (statut) => {
     const cfg = {
       en_attente: { label: t('pending'), class: 'statut-en-attente' },
-      approuve:   { label: t('approved'), class: 'statut-approuve' },
-      refuse:     { label: t('refused'),  class: 'statut-refuse' }
+      approuve: { label: t('approved'), class: 'statut-approuve' },
+      refuse: { label: t('refused'), class: 'statut-refuse' }
     };
     const c = cfg[statut] || { label: statut, class: 'statut-default' };
     return <span className={`statut-badge ${c.class}`}>{c.label}</span>;
@@ -187,11 +191,11 @@ const DemandesRH = () => {
         return;
       }
       const queryParams = new URLSearchParams();
-      if (filters.statut)     queryParams.append('statut',     filters.statut);
+      if (filters.statut) queryParams.append('statut', filters.statut);
       if (filters.employe_id) queryParams.append('employe_id', filters.employe_id);
       if (filters.date_debut) queryParams.append('date_debut', filters.date_debut);
-      if (filters.date_fin)   queryParams.append('date_fin',   filters.date_fin);
-      if (force)              queryParams.append('_t',         Date.now());
+      if (filters.date_fin) queryParams.append('date_fin', filters.date_fin);
+      if (force) queryParams.append('_t', Date.now());
 
       const response = await fetch(`${API_BASE_URL}/api/demandes?${queryParams}`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -209,38 +213,84 @@ const DemandesRH = () => {
     }
   }, [filters, API_BASE_URL, t]);
 
+  // ─── Approve / Reject ────────────────────────────────────────────────────────
+
+  // [CHANGE 3] Accept optional demande param so card buttons can call directly without modal
+  const approveSelected = async (demandeToAct = selectedDemande) => {
+    if (!demandeToAct) return;
+    setActionLoading(true);
+    try {
+      const niveau = 1;
+      const response = await fetch(
+        `${DEMANDE_API_BASE_URL}/api/demandes/${demandeToAct.id}/approuver`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ niveau })
+        }
+      );
+      if (!response.ok) throw new Error('approve failed');
+      await fetchDemandes(true);
+      handleCloseModal();
+    } catch (e) {
+      alert(t('connectionError') || 'Erreur');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // [CHANGE 3] Accept optional demande param so card buttons can call directly without modal
+  const rejectSelected = async (demandeToAct = selectedDemande) => {
+    if (!demandeToAct) return;
+    if (!rejectComment.trim()) {
+      alert(t('refusalComment') || 'Motif du refus requis');
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const niveau = 1;
+      const response = await fetch(
+        `${DEMANDE_API_BASE_URL}/api/demandes/${demandeToAct.id}/refuser`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ niveau, commentaire: rejectComment })
+        }
+      );
+      if (!response.ok) throw new Error('reject failed');
+      await fetchDemandes(true);
+      handleCloseModal();
+    } catch (e) {
+      alert(t('connectionError') || 'Erreur');
+    } finally {
+      setActionLoading(false);
+      setRejectMode(false);
+      setRejectComment('');
+    }
+  };
+
   // ─── Effects ─────────────────────────────────────────────────────────────────
 
-  // 1. On mount: read location state FIRST, then fetch
   useEffect(() => {
     const openId = location.state?.openDemandeId;
-
     if (openId) {
-      // Store the id we need to open
       pendingOpenIdRef.current = String(openId);
-      // Clean the router state immediately so back/forward doesn't re-trigger
       navigate(location.pathname, { replace: true, state: {} });
     }
-
-    // Always fetch the full list on mount (no filters active yet)
     fetchDemandes(true);
     fetchEmployes();
   }, []); // eslint-disable-line
 
-  // 2. After demandes load, open the pending modal if any
   useEffect(() => {
     if (!pendingOpenIdRef.current) return;
-    if (loading) return; // wait until fetch is done
-
+    if (loading) return;
     const id = pendingOpenIdRef.current;
     const found = demandes.find(d => String(d.id) === id);
-
     if (found) {
       setSelectedDemande(found);
       setShowModal(true);
       pendingOpenIdRef.current = null;
     } else {
-      // Not in the list (maybe filtered out or different page) — fetch individually
       fetchDemandeById(id).then(demand => {
         if (demand) {
           setSelectedDemande(demand);
@@ -251,16 +301,13 @@ const DemandesRH = () => {
     }
   }, [loading, demandes]); // eslint-disable-line
 
-  // 3. Re-fetch when filters change (skip on first mount to avoid double fetch)
   useEffect(() => {
     if (isFirstMount.current) {
       isFirstMount.current = false;
       return;
     }
-
     const hasActiveFilters = activeFiltersCount > 0;
     setFiltersApplied(hasActiveFilters);
-
     const timer = setTimeout(() => fetchDemandes(true), 300);
     return () => clearTimeout(timer);
   }, [filters]); // eslint-disable-line
@@ -280,14 +327,17 @@ const DemandesRH = () => {
   const retryFetch = () => fetchDemandes(true);
 
   const handleViewDetails = (demande) => {
+    setRejectMode(false);
+    setRejectComment('');
     setSelectedDemande(demande);
     setShowModal(true);
   };
 
-  // Closing modal — just close, list is already loaded
   const handleCloseModal = () => {
     setShowModal(false);
     setSelectedDemande(null);
+    setRejectMode(false);
+    setRejectComment('');
   };
 
   const handleExportExcel = () => {
@@ -341,6 +391,8 @@ const DemandesRH = () => {
 
   const Modal = ({ demande, onClose }) => {
     if (!demande) return null;
+    const canAct = demande.statut === 'en_attente';
+
     return (
       <div className="modal-overlay" onClick={onClose}>
         <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -476,12 +528,68 @@ const DemandesRH = () => {
                 </div>
               </div>
             )}
+
+            {canAct && rejectMode && (
+              <div className="modal-section">
+                <h3>❌ {t('refusalComment')}</h3>
+                <textarea
+                  value={rejectComment}
+                  onChange={(e) => setRejectComment(e.target.value)}
+                  placeholder={t('refusalComment') || 'Motif du refus'}
+                  rows={3}
+                  style={{ width: '100%' }}
+                  disabled={actionLoading}
+                />
+              </div>
+            )}
           </div>
 
-          <div className="modal-footer">
-            <button className="btn-close-modal" onClick={onClose}>
-              {t('close')}
-            </button>
+          {/* ── Modal footer ──
+              [CHANGE 1] "Fermer" button REMOVED
+              [CHANGE 2] Labels hardcoded in French: "Approuver" / "Refuser"
+              [CHANGE 4] Green (#16a34a) and red (#dc2626) inline styles          */}
+          <div className="modal-footer" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            {canAct && !rejectMode && (
+              <>
+                <button
+                  className="btn-action btn-approve"
+                  onClick={approveSelected}
+                  disabled={actionLoading}
+                  style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                >
+                  ✅ {actionLoading ? (t('processing') || 'Traitement...') : 'Approuver'}
+                </button>
+                <button
+                  className="btn-action btn-reject"
+                  onClick={() => setRejectMode(true)}
+                  disabled={actionLoading}
+                  style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                >
+                  ❌ Refuser
+                </button>
+              </>
+            )}
+
+            {canAct && rejectMode && (
+              <>
+                <button
+                  className="btn-action btn-reject"
+                  onClick={rejectSelected}
+                  disabled={actionLoading}
+                  style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                >
+                  ❌ {actionLoading ? (t('processing') || 'Traitement...') : 'Confirmer le refus'}
+                </button>
+                <button
+                  className="btn-close-modal"
+                  onClick={() => { setRejectMode(false); setRejectComment(''); }}
+                  disabled={actionLoading}
+                >
+                  {t('cancel') || 'Annuler'}
+                </button>
+              </>
+            )}
+            {/* "Fermer" button intentionally removed per requirements */}
           </div>
         </div>
       </div>
@@ -813,10 +921,38 @@ const DemandesRH = () => {
                       </div>
                     )}
 
-                    <div className="card-actions">
+                    {/* [CHANGE 3] Approve/Reject buttons always visible on each card
+                        [CHANGE 4] Green and red colors
+                        Only shown for "en_attente" requests                         */}
+                    <div className="card-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
                       <button className="btn-action btn-view" onClick={() => handleViewDetails(demande)}>
                         👁️ {t('viewDetails')}
                       </button>
+
+                      {demande.statut === 'en_attente' && (
+                        <>
+                          <button
+                            className="btn-action btn-approve"
+                            disabled={actionLoading}
+                            onClick={() => approveSelected(demande)}
+                            style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                          >
+                            ✅ Approuver
+                          </button>
+                          <button
+                            className="btn-action btn-reject"
+                            disabled={actionLoading}
+                            onClick={() => {
+                              setSelectedDemande(demande);
+                              setRejectMode(true);
+                              setShowModal(true);
+                            }}
+                            style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                          >
+                            ❌ Refuser
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
