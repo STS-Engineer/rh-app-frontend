@@ -205,8 +205,9 @@ const EtatDesLieux = () => {
       const departStr = toLocalDateString(d.date_depart);
       const retourStr = toLocalDateString(d.date_retour || d.date_depart);
       if (!departStr || !retourStr || !currentDateStr) return false;
-      // String comparison works correctly for YYYY-MM-DD format
-      return currentDateStr >= departStr && currentDateStr <= retourStr;
+      // date_retour = jour de retour au travail → exclu de la période d'absence
+      // donc on utilise < et non <= pour retourStr
+      return currentDateStr >= departStr && currentDateStr < retourStr;
     });
 
     if (!demande) {
