@@ -4,6 +4,230 @@ import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 
+// ─── FIX 1: Modal moved OUTSIDE DemandesRH so it never gets redefined on re-render
+// This fixes the keystroke / button press causing modal to reset
+const Modal = ({
+  demande,
+  onClose,
+  rejectMode,
+  setRejectMode,
+  rejectComment,
+  setRejectComment,
+  actionLoading,
+  onApprove,
+  onReject,
+  t,
+  getTypeDemandeLabel,
+  getStatutBadge,
+  getResponsableStatus,
+  getResponsableStatusLabel,
+  getResponsableStatusClass,
+  formatDate,
+  formatDateTime,
+}) => {
+  if (!demande) return null;
+  const canAct = demande.statut === 'en_attente';
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>📑 {t('requestDetails')}</h2>
+          <button className="modal-close" onClick={onClose}>×</button>
+        </div>
+
+        <div className="modal-body">
+          <div className="modal-section">
+            <h3>{t('generalInfo')}</h3>
+            <div className="info-grid">
+              <div className="info-item">
+                <strong>{t('title')}:</strong> {demande.titre}
+              </div>
+              <div className="info-item">
+                <strong>{t('type')}:</strong> {getTypeDemandeLabel(demande.type_demande)}
+              </div>
+              {demande.type_conge && (
+                <div className="info-item">
+                  <strong>{t('leaveType')}:</strong>{' '}
+                  {demande.type_conge === 'autre'
+                    ? demande.type_conge_autre || t('other')
+                    : demande.type_conge}
+                </div>
+              )}
+              <div className="info-item">
+                <strong>{t('status')}:</strong> {getStatutBadge(demande.statut)}
+              </div>
+              <div className="info-item">
+                <strong>{t('createdOn')}:</strong> {formatDateTime(demande.created_at)}
+              </div>
+            </div>
+          </div>
+
+          <div className="modal-section">
+            <h3>{t('employeeInfo')}</h3>
+            <div className="employee-details">
+              <div className="employee-avatar-large">
+                {demande.employe_photo ? (
+                  <img src={demande.employe_photo} alt={`${demande.employe_prenom} ${demande.employe_nom}`} />
+                ) : (
+                  <div className="avatar-default-large">
+                    {demande.employe_prenom?.[0] || ''}{demande.employe_nom?.[0] || ''}
+                  </div>
+                )}
+              </div>
+              <div className="employee-info">
+                <h4>{demande.employe_prenom} {demande.employe_nom}</h4>
+                <p><strong>{t('position')}:</strong> {demande.employe_poste || t('na')}</p>
+                <p><strong>{t('employeeID')}:</strong> {demande.employe_matricule || t('na')}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="modal-section">
+            <h3>{t('approvalProcess')}</h3>
+            <div className="approval-process">
+              <div className="approval-step">
+                <div className="step-header">
+                  <span className="step-title">{t('supervisor1')}</span>
+                  <span className={`step-status ${getResponsableStatusClass(getResponsableStatus(demande, 1))}`}>
+                    {getResponsableStatusLabel(getResponsableStatus(demande, 1))}
+                  </span>
+                </div>
+                <div className="step-details">
+                  <p><strong>{t('email')}:</strong> {demande.mail_responsable1 || t('na')}</p>
+                </div>
+              </div>
+              <div className="approval-step">
+                <div className="step-header">
+                  <span className="step-title">{t('supervisor2')}</span>
+                  {demande.mail_responsable2 && (
+                    <span className={`step-status ${getResponsableStatusClass(getResponsableStatus(demande, 2))}`}>
+                      {getResponsableStatusLabel(getResponsableStatus(demande, 2))}
+                    </span>
+                  )}
+                </div>
+                <div className="step-details">
+                  <p><strong>{t('email')}:</strong> {demande.mail_responsable2 || t('notRequired')}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="modal-section">
+            <h3>{t('requestDetails')}</h3>
+            <div className="details-grid">
+              {demande.date_depart && (
+                <div className="detail-row">
+                  <span className="detail-label">📅 {t('startDateReq')}:</span>
+                  <span className="detail-value">{formatDate(demande.date_depart)}</span>
+                </div>
+              )}
+              {demande.date_retour && (
+                <div className="detail-row">
+                  <span className="detail-label">📅 {t('returnDate')}:</span>
+                  <span className="detail-value">{formatDate(demande.date_retour)}</span>
+                </div>
+              )}
+              {demande.heure_depart && (
+                <div className="detail-row">
+                  <span className="detail-label">⏰ {t('departureTime')}:</span>
+                  <span className="detail-value">{demande.heure_depart}</span>
+                </div>
+              )}
+              {demande.heure_retour && (
+                <div className="detail-row">
+                  <span className="detail-label">⏰ {t('returnTime')}:</span>
+                  <span className="detail-value">{demande.heure_retour}</span>
+                </div>
+              )}
+              {demande.demi_journee && (
+                <div className="detail-row">
+                  <span className="detail-label">🕐 {t('halfDay')}:</span>
+                  <span className="detail-value">{t('yes')}</span>
+                </div>
+              )}
+              {demande.frais_deplacement && (
+                <div className="detail-row">
+                  <span className="detail-label">💰 {t('travelExpenses')}:</span>
+                  <span className="detail-value">{demande.frais_deplacement} DT</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {demande.commentaire_refus && (
+            <div className="modal-section">
+              <h3>💬 {t('refusalComment')}</h3>
+              <div className="commentaire-box">
+                <p>{demande.commentaire_refus}</p>
+              </div>
+            </div>
+          )}
+
+          {canAct && rejectMode && (
+            <div className="modal-section">
+              <h3>❌ {t('refusalComment')}</h3>
+              <textarea
+                value={rejectComment}
+                onChange={(e) => setRejectComment(e.target.value)}
+                placeholder={t('refusalComment') || 'Motif du refus'}
+                rows={3}
+                style={{ width: '100%' }}
+                disabled={actionLoading}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="modal-footer" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          {canAct && !rejectMode && (
+            <>
+              <button
+                className="btn-action btn-approve"
+                onClick={onApprove}
+                disabled={actionLoading}
+                style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+              >
+                ✅ {actionLoading ? (t('processing') || 'Traitement...') : 'Approuver'}
+              </button>
+              <button
+                className="btn-action btn-reject"
+                onClick={() => setRejectMode(true)}
+                disabled={actionLoading}
+                style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+              >
+                ❌ Refuser
+              </button>
+            </>
+          )}
+
+          {canAct && rejectMode && (
+            <>
+              <button
+                className="btn-action btn-reject"
+                onClick={onReject}
+                disabled={actionLoading}
+                style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+              >
+                ❌ {actionLoading ? (t('processing') || 'Traitement...') : 'Confirmer le refus'}
+              </button>
+              <button
+                className="btn-close-modal"
+                onClick={() => { setRejectMode(false); setRejectComment(''); }}
+                disabled={actionLoading}
+              >
+                {t('cancel') || 'Annuler'}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const DemandesRH = () => {
   const { t } = useLanguage();
   const location = useLocation();
@@ -213,9 +437,9 @@ const DemandesRH = () => {
     }
   }, [filters, API_BASE_URL, t]);
 
-  // ─── Approve / Reject ────────────────────────────────────────────────────────
+  // ─── FIX 2: Approve / Reject — update local state instead of calling fetchDemandes
+  // This fixes the connection error banner appearing after a successful action
 
-  // [CHANGE 3] Accept optional demande param so card buttons can call directly without modal
   const approveSelected = async (demandeToAct = selectedDemande) => {
     if (!demandeToAct) return;
     setActionLoading(true);
@@ -230,7 +454,21 @@ const DemandesRH = () => {
         }
       );
       if (!response.ok) throw new Error('approve failed');
-      await fetchDemandes(true);
+
+      // ✅ Update local state directly — no fetchDemandes call, no error banner risk
+      setDemandes(prev => prev.map(d =>
+        d.id === demandeToAct.id
+          ? { ...d, statut: 'approuve', approuve_responsable1: true }
+          : d
+      ));
+
+      // Also keep selectedDemande in sync so modal reflects new status if still open
+      setSelectedDemande(prev =>
+        prev?.id === demandeToAct.id
+          ? { ...prev, statut: 'approuve', approuve_responsable1: true }
+          : prev
+      );
+
       handleCloseModal();
     } catch (e) {
       alert(t('connectionError') || 'Erreur');
@@ -239,7 +477,6 @@ const DemandesRH = () => {
     }
   };
 
-  // [CHANGE 3] Accept optional demande param so card buttons can call directly without modal
   const rejectSelected = async (demandeToAct = selectedDemande) => {
     if (!demandeToAct) return;
     if (!rejectComment.trim()) {
@@ -258,7 +495,20 @@ const DemandesRH = () => {
         }
       );
       if (!response.ok) throw new Error('reject failed');
-      await fetchDemandes(true);
+
+      // ✅ Update local state directly — includes commentaire_refus so it shows immediately on card
+      setDemandes(prev => prev.map(d =>
+        d.id === demandeToAct.id
+          ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: rejectComment }
+          : d
+      ));
+
+      setSelectedDemande(prev =>
+        prev?.id === demandeToAct.id
+          ? { ...prev, statut: 'refuse', approuve_responsable1: false, commentaire_refus: rejectComment }
+          : prev
+      );
+
       handleCloseModal();
     } catch (e) {
       alert(t('connectionError') || 'Erreur');
@@ -385,215 +635,6 @@ const DemandesRH = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-  };
-
-  // ─── Modal ───────────────────────────────────────────────────────────────────
-
-  const Modal = ({ demande, onClose }) => {
-    if (!demande) return null;
-    const canAct = demande.statut === 'en_attente';
-
-    return (
-      <div className="modal-overlay" onClick={onClose}>
-        <div className="modal-content" onClick={e => e.stopPropagation()}>
-          <div className="modal-header">
-            <h2>📑 {t('requestDetails')}</h2>
-            <button className="modal-close" onClick={onClose}>×</button>
-          </div>
-
-          <div className="modal-body">
-            <div className="modal-section">
-              <h3>{t('generalInfo')}</h3>
-              <div className="info-grid">
-                <div className="info-item">
-                  <strong>{t('title')}:</strong> {demande.titre}
-                </div>
-                <div className="info-item">
-                  <strong>{t('type')}:</strong> {getTypeDemandeLabel(demande.type_demande)}
-                </div>
-                {demande.type_conge && (
-                  <div className="info-item">
-                    <strong>{t('leaveType')}:</strong>{' '}
-                    {demande.type_conge === 'autre'
-                      ? demande.type_conge_autre || t('other')
-                      : demande.type_conge}
-                  </div>
-                )}
-                <div className="info-item">
-                  <strong>{t('status')}:</strong> {getStatutBadge(demande.statut)}
-                </div>
-                <div className="info-item">
-                  <strong>{t('createdOn')}:</strong> {formatDateTime(demande.created_at)}
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-section">
-              <h3>{t('employeeInfo')}</h3>
-              <div className="employee-details">
-                <div className="employee-avatar-large">
-                  {demande.employe_photo ? (
-                    <img src={demande.employe_photo} alt={`${demande.employe_prenom} ${demande.employe_nom}`} />
-                  ) : (
-                    <div className="avatar-default-large">
-                      {demande.employe_prenom?.[0] || ''}{demande.employe_nom?.[0] || ''}
-                    </div>
-                  )}
-                </div>
-                <div className="employee-info">
-                  <h4>{demande.employe_prenom} {demande.employe_nom}</h4>
-                  <p><strong>{t('position')}:</strong> {demande.employe_poste || t('na')}</p>
-                  <p><strong>{t('employeeID')}:</strong> {demande.employe_matricule || t('na')}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-section">
-              <h3>{t('approvalProcess')}</h3>
-              <div className="approval-process">
-                <div className="approval-step">
-                  <div className="step-header">
-                    <span className="step-title">{t('supervisor1')}</span>
-                    <span className={`step-status ${getResponsableStatusClass(getResponsableStatus(demande, 1))}`}>
-                      {getResponsableStatusLabel(getResponsableStatus(demande, 1))}
-                    </span>
-                  </div>
-                  <div className="step-details">
-                    <p><strong>{t('email')}:</strong> {demande.mail_responsable1 || t('na')}</p>
-                  </div>
-                </div>
-                <div className="approval-step">
-                  <div className="step-header">
-                    <span className="step-title">{t('supervisor2')}</span>
-                    {demande.mail_responsable2 && (
-                      <span className={`step-status ${getResponsableStatusClass(getResponsableStatus(demande, 2))}`}>
-                        {getResponsableStatusLabel(getResponsableStatus(demande, 2))}
-                      </span>
-                    )}
-                  </div>
-                  <div className="step-details">
-                    <p><strong>{t('email')}:</strong> {demande.mail_responsable2 || t('notRequired')}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-section">
-              <h3>{t('requestDetails')}</h3>
-              <div className="details-grid">
-                {demande.date_depart && (
-                  <div className="detail-row">
-                    <span className="detail-label">📅 {t('startDateReq')}:</span>
-                    <span className="detail-value">{formatDate(demande.date_depart)}</span>
-                  </div>
-                )}
-                {demande.date_retour && (
-                  <div className="detail-row">
-                    <span className="detail-label">📅 {t('returnDate')}:</span>
-                    <span className="detail-value">{formatDate(demande.date_retour)}</span>
-                  </div>
-                )}
-                {demande.heure_depart && (
-                  <div className="detail-row">
-                    <span className="detail-label">⏰ {t('departureTime')}:</span>
-                    <span className="detail-value">{demande.heure_depart}</span>
-                  </div>
-                )}
-                {demande.heure_retour && (
-                  <div className="detail-row">
-                    <span className="detail-label">⏰ {t('returnTime')}:</span>
-                    <span className="detail-value">{demande.heure_retour}</span>
-                  </div>
-                )}
-                {demande.demi_journee && (
-                  <div className="detail-row">
-                    <span className="detail-label">🕐 {t('halfDay')}:</span>
-                    <span className="detail-value">{t('yes')}</span>
-                  </div>
-                )}
-                {demande.frais_deplacement && (
-                  <div className="detail-row">
-                    <span className="detail-label">💰 {t('travelExpenses')}:</span>
-                    <span className="detail-value">{demande.frais_deplacement} DT</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {demande.commentaire_refus && (
-              <div className="modal-section">
-                <h3>💬 {t('refusalComment')}</h3>
-                <div className="commentaire-box">
-                  <p>{demande.commentaire_refus}</p>
-                </div>
-              </div>
-            )}
-
-            {canAct && rejectMode && (
-              <div className="modal-section">
-                <h3>❌ {t('refusalComment')}</h3>
-                <textarea
-                  value={rejectComment}
-                  onChange={(e) => setRejectComment(e.target.value)}
-                  placeholder={t('refusalComment') || 'Motif du refus'}
-                  rows={3}
-                  style={{ width: '100%' }}
-                  disabled={actionLoading}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* ── Modal footer ──
-              [CHANGE 1] "Fermer" button REMOVED
-              [CHANGE 2] Labels hardcoded in French: "Approuver" / "Refuser"
-              [CHANGE 4] Green (#16a34a) and red (#dc2626) inline styles          */}
-          <div className="modal-footer" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-            {canAct && !rejectMode && (
-              <>
-                <button
-                  className="btn-action btn-approve"
-                  onClick={approveSelected}
-                  disabled={actionLoading}
-                  style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
-                >
-                  ✅ {actionLoading ? (t('processing') || 'Traitement...') : 'Approuver'}
-                </button>
-                <button
-                  className="btn-action btn-reject"
-                  onClick={() => setRejectMode(true)}
-                  disabled={actionLoading}
-                  style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
-                >
-                  ❌ Refuser
-                </button>
-              </>
-            )}
-
-            {canAct && rejectMode && (
-              <>
-                <button
-                  className="btn-action btn-reject"
-                  onClick={rejectSelected}
-                  disabled={actionLoading}
-                  style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
-                >
-                  ❌ {actionLoading ? (t('processing') || 'Traitement...') : 'Confirmer le refus'}
-                </button>
-                <button
-                  className="btn-close-modal"
-                  onClick={() => { setRejectMode(false); setRejectComment(''); }}
-                  disabled={actionLoading}
-                >
-                  {t('cancel') || 'Annuler'}
-                </button>
-              </>
-            )}
-            {/* "Fermer" button intentionally removed per requirements */}
-          </div>
-        </div>
-      </div>
-    );
   };
 
   // ─── Render ──────────────────────────────────────────────────────────────────
@@ -921,9 +962,6 @@ const DemandesRH = () => {
                       </div>
                     )}
 
-                    {/* [CHANGE 3] Approve/Reject buttons always visible on each card
-                        [CHANGE 4] Green and red colors
-                        Only shown for "en_attente" requests                         */}
                     <div className="card-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
                       <button className="btn-action btn-view" onClick={() => handleViewDetails(demande)}>
                         👁️ {t('viewDetails')}
@@ -962,7 +1000,28 @@ const DemandesRH = () => {
         )}
       </div>
 
-      {showModal && <Modal demande={selectedDemande} onClose={handleCloseModal} />}
+      {/* ── FIX 1: Modal is now an external component, all needed state passed as props ── */}
+      {showModal && (
+        <Modal
+          demande={selectedDemande}
+          onClose={handleCloseModal}
+          rejectMode={rejectMode}
+          setRejectMode={setRejectMode}
+          rejectComment={rejectComment}
+          setRejectComment={setRejectComment}
+          actionLoading={actionLoading}
+          onApprove={approveSelected}
+          onReject={rejectSelected}
+          t={t}
+          getTypeDemandeLabel={getTypeDemandeLabel}
+          getStatutBadge={getStatutBadge}
+          getResponsableStatus={getResponsableStatus}
+          getResponsableStatusLabel={getResponsableStatusLabel}
+          getResponsableStatusClass={getResponsableStatusClass}
+          formatDate={formatDate}
+          formatDateTime={formatDateTime}
+        />
+      )}
     </div>
   );
 };
