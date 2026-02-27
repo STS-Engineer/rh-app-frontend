@@ -439,6 +439,10 @@ const DemandesRH = () => {
   // ─── Approve / Reject ────────────────────────────────────────────────────────
 
   const approveSelected = async (demandeToAct = selectedDemande) => {
+    console.log("ACTION demandeToAct =", demandeToAct);
+    console.log("ACTION id =", demandeToAct?.id);
+    console.log("selectedDemande =", selectedDemande);
+    console.log("selectedDemande.id =", selectedDemande?.id);
     if (!demandeToAct) return;
     setActionLoading(true);
     try {
@@ -479,6 +483,10 @@ const DemandesRH = () => {
   };
 
   const rejectSelected = async (demandeToAct = selectedDemande) => {
+    console.log("ACTION demandeToAct =", demandeToAct);
+    console.log("ACTION id =", demandeToAct?.id);
+    console.log("selectedDemande =", selectedDemande);
+    console.log("selectedDemande.id =", selectedDemande?.id);
     if (!demandeToAct) return;
     if (!rejectComment.trim()) {
       alert(t('refusalComment') || 'Motif du refus requis');
