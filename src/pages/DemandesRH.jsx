@@ -4,8 +4,7 @@ import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 
-// ─── FIX 1: Modal moved OUTSIDE DemandesRH so it never gets redefined on re-render
-// This fixes the keystroke / button press causing modal to reset
+// ─── Modal moved OUTSIDE DemandesRH so it never gets redefined on re-render
 const Modal = ({
   demande,
   onClose,
@@ -259,8 +258,8 @@ const DemandesRH = () => {
   const pendingOpenIdRef = useRef(null);
   const isFirstMount = useRef(true);
 
+  // ✅ Single backend URL — DEMANDE_API_BASE_URL removed, everything uses API_BASE_URL
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
-  const DEMANDE_API_BASE_URL = 'https://hr-back.azurewebsites.net';
 
   const statuts = ['en_attente', 'approuve', 'refuse'];
 
@@ -437,32 +436,34 @@ const DemandesRH = () => {
     }
   }, [filters, API_BASE_URL, t]);
 
-  // ─── FIX 2: Approve / Reject — update local state instead of calling fetchDemandes
-  // This fixes the connection error banner appearing after a successful action
+  // ─── Approve / Reject ────────────────────────────────────────────────────────
 
   const approveSelected = async (demandeToAct = selectedDemande) => {
     if (!demandeToAct) return;
     setActionLoading(true);
     try {
-      const niveau = 1;
+      const token = localStorage.getItem('token'); // ✅ JWT token
       const response = await fetch(
-        `${DEMANDE_API_BASE_URL}/api/demandes/${demandeToAct.id}/approuver`,
+        `${API_BASE_URL}/api/demandes/${demandeToAct.id}/approuver-app`, // ✅ new endpoint on main backend
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ niveau })
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}` // ✅ auth header
+          }
         }
       );
-      if (!response.ok) throw new Error('approve failed');
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erreur lors de l\'approbation');
+      }
 
-      // ✅ Update local state directly — no fetchDemandes call, no error banner risk
+      // ✅ Update local state — no full reload, no error banner risk
       setDemandes(prev => prev.map(d =>
         d.id === demandeToAct.id
           ? { ...d, statut: 'approuve', approuve_responsable1: true }
           : d
       ));
-
-      // Also keep selectedDemande in sync so modal reflects new status if still open
       setSelectedDemande(prev =>
         prev?.id === demandeToAct.id
           ? { ...prev, statut: 'approuve', approuve_responsable1: true }
@@ -471,7 +472,7 @@ const DemandesRH = () => {
 
       handleCloseModal();
     } catch (e) {
-      alert(t('connectionError') || 'Erreur');
+      alert(e.message || t('connectionError') || 'Erreur');
     } finally {
       setActionLoading(false);
     }
@@ -485,24 +486,29 @@ const DemandesRH = () => {
     }
     setActionLoading(true);
     try {
-      const niveau = 1;
+      const token = localStorage.getItem('token'); // ✅ JWT token
       const response = await fetch(
-        `${DEMANDE_API_BASE_URL}/api/demandes/${demandeToAct.id}/refuser`,
+        `${API_BASE_URL}/api/demandes/${demandeToAct.id}/refuser-app`, // ✅ new endpoint on main backend
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ niveau, commentaire: rejectComment })
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}` // ✅ auth header
+          },
+          body: JSON.stringify({ commentaire: rejectComment })
         }
       );
-      if (!response.ok) throw new Error('reject failed');
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erreur lors du refus');
+      }
 
-      // ✅ Update local state directly — includes commentaire_refus so it shows immediately on card
+      // ✅ Update local state — includes commentaire so it shows immediately on card
       setDemandes(prev => prev.map(d =>
         d.id === demandeToAct.id
           ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: rejectComment }
           : d
       ));
-
       setSelectedDemande(prev =>
         prev?.id === demandeToAct.id
           ? { ...prev, statut: 'refuse', approuve_responsable1: false, commentaire_refus: rejectComment }
@@ -511,7 +517,7 @@ const DemandesRH = () => {
 
       handleCloseModal();
     } catch (e) {
-      alert(t('connectionError') || 'Erreur');
+      alert(e.message || t('connectionError') || 'Erreur');
     } finally {
       setActionLoading(false);
       setRejectMode(false);
@@ -1000,7 +1006,6 @@ const DemandesRH = () => {
         )}
       </div>
 
-      {/* ── FIX 1: Modal is now an external component, all needed state passed as props ── */}
       {showModal && (
         <Modal
           demande={selectedDemande}
