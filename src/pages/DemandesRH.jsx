@@ -183,7 +183,8 @@ const Modal = ({
             <>
               <button
                 className="btn-action btn-approve"
-                onClick={onApprove}
+                // ✅ FIX: pass demande (the prop) explicitly so we never rely on a stale closure
+                onClick={() => onApprove(demande)}
                 disabled={actionLoading}
                 style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
               >
@@ -204,7 +205,8 @@ const Modal = ({
             <>
               <button
                 className="btn-action btn-reject"
-                onClick={onReject}
+                // ✅ FIX: pass demande (the prop) explicitly so we never rely on a stale closure
+                onClick={() => onReject(demande)}
                 disabled={actionLoading}
                 style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
               >
@@ -258,7 +260,6 @@ const DemandesRH = () => {
   const pendingOpenIdRef = useRef(null);
   const isFirstMount = useRef(true);
 
-  // ✅ Single backend URL — DEMANDE_API_BASE_URL removed, everything uses API_BASE_URL
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
 
   const statuts = ['en_attente', 'approuve', 'refuse'];
@@ -439,21 +440,17 @@ const DemandesRH = () => {
   // ─── Approve / Reject ────────────────────────────────────────────────────────
 
   const approveSelected = async (demandeToAct = selectedDemande) => {
-    console.log("ACTION demandeToAct =", demandeToAct);
-    console.log("ACTION id =", demandeToAct?.id);
-    console.log("selectedDemande =", selectedDemande);
-    console.log("selectedDemande.id =", selectedDemande?.id);
     if (!demandeToAct) return;
     setActionLoading(true);
     try {
-      const token = localStorage.getItem('token'); // ✅ JWT token
+      const token = localStorage.getItem('token');
       const response = await fetch(
-        `${API_BASE_URL}/api/demandes/${demandeToAct.id}/approuver-app`, // ✅ new endpoint on main backend
+        `${API_BASE_URL}/api/demandes/${demandeToAct.id}/approuver-app`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}` // ✅ auth header
+            Authorization: `Bearer ${token}`
           }
         }
       );
@@ -462,7 +459,6 @@ const DemandesRH = () => {
         throw new Error(errData.error || 'Erreur lors de l\'approbation');
       }
 
-      // ✅ Update local state — no full reload, no error banner risk
       setDemandes(prev => prev.map(d =>
         d.id === demandeToAct.id
           ? { ...d, statut: 'approuve', approuve_responsable1: true }
@@ -483,10 +479,6 @@ const DemandesRH = () => {
   };
 
   const rejectSelected = async (demandeToAct = selectedDemande) => {
-    console.log("ACTION demandeToAct =", demandeToAct);
-    console.log("ACTION id =", demandeToAct?.id);
-    console.log("selectedDemande =", selectedDemande);
-    console.log("selectedDemande.id =", selectedDemande?.id);
     if (!demandeToAct) return;
     if (!rejectComment.trim()) {
       alert(t('refusalComment') || 'Motif du refus requis');
@@ -494,14 +486,14 @@ const DemandesRH = () => {
     }
     setActionLoading(true);
     try {
-      const token = localStorage.getItem('token'); // ✅ JWT token
+      const token = localStorage.getItem('token');
       const response = await fetch(
-        `${API_BASE_URL}/api/demandes/${demandeToAct.id}/refuser-app`, // ✅ new endpoint on main backend
+        `${API_BASE_URL}/api/demandes/${demandeToAct.id}/refuser-app`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}` // ✅ auth header
+            Authorization: `Bearer ${token}`
           },
           body: JSON.stringify({ commentaire: rejectComment })
         }
@@ -511,7 +503,6 @@ const DemandesRH = () => {
         throw new Error(errData.error || 'Erreur lors du refus');
       }
 
-      // ✅ Update local state — includes commentaire so it shows immediately on card
       setDemandes(prev => prev.map(d =>
         d.id === demandeToAct.id
           ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: rejectComment }
