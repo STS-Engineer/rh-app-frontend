@@ -188,7 +188,7 @@ const Statistics = () => {
       }));
 
       const salaryDistributionData = salaryDistribution.map((count, index) => ({
-        range: `${Math.round(index * salaryRange)}-${Math.round((index + 1) * salaryRange)} DT`,
+        range: `${Math.round(index * salaryRange)}-${Math.round((index + 1) * salaryRange)} ${t('currency')}`,
         count
       }));
 
@@ -229,7 +229,7 @@ const Statistics = () => {
   const handleExportPDF = async () => {
     setExporting(true);
     try {
-      await exportToPDF('statistics-content', `statistiques-rh-professionnelles-${new Date().toISOString().split('T')[0]}.pdf`);
+      await exportToPDF('statistics-content', `${t('statsExportPDF')}-${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error(t('exportError'), error);
     } finally {
@@ -240,7 +240,7 @@ const Statistics = () => {
   const handleExportExcel = () => {
     setExporting(true);
     try {
-      exportToExcel(stats, `statistiques-rh-professionnelles-${new Date().toISOString().split('T')[0]}.xlsx`);
+      exportToExcel(stats, `${t('statsExportExcelStats')}-${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch (error) {
       console.error(t('exportError'), error);
     } finally {
@@ -251,7 +251,7 @@ const Statistics = () => {
   const handleExportEmployeesExcel = () => {
     setExporting(true);
     try {
-      exportEmployeesToExcel(employees, `liste-employes-complete-${new Date().toISOString().split('T')[0]}.xlsx`);
+      exportEmployeesToExcel(employees, `${t('statsExportExcelFull')}-${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch (error) {
       console.error(t('exportError'), error);
     } finally {
@@ -301,19 +301,19 @@ const Statistics = () => {
                 className={timeRange === 'monthly' ? 'active' : ''}
                 onClick={() => setTimeRange('monthly')}
               >
-                Mensuel
+                {t('statsTimeRangeMonthly')}
               </button>
               <button 
                 className={timeRange === 'quarterly' ? 'active' : ''}
                 onClick={() => setTimeRange('quarterly')}
               >
-                Trimestriel
+                {t('statsTimeRangeQuarterly')}
               </button>
               <button 
                 className={timeRange === 'yearly' ? 'active' : ''}
                 onClick={() => setTimeRange('yearly')}
               >
-                Annuel
+                {t('statsTimeRangeYearly')}
               </button>
             </div>
           </div>
@@ -328,25 +328,25 @@ const Statistics = () => {
               className={selectedChart === 'department' ? 'active' : ''}
               onClick={() => setSelectedChart('department')}
             >
-              Départements
+              {t('statsChartDepartment')}
             </button>
             <button 
               className={selectedChart === 'contract' ? 'active' : ''}
               onClick={() => setSelectedChart('contract')}
             >
-              Contrats
+              {t('statsChartContract')}
             </button>
             <button 
               className={selectedChart === 'experience' ? 'active' : ''}
               onClick={() => setSelectedChart('experience')}
             >
-              Expérience
+              {t('statsChartExperience')}
             </button>
             <button 
               className={selectedChart === 'age' ? 'active' : ''}
               onClick={() => setSelectedChart('age')}
             >
-              Tranches d'âge
+              {t('statsChartAge')}
             </button>
           </div>
         </header>
@@ -359,7 +359,7 @@ const Statistics = () => {
               <p className="stat-number">{stats.totalEmployees}</p>
               <p className="stat-detail">{stats.recentHires} {t('newThisMonth')}</p>
               <div className="stat-trend">
-                <span className="trend-up">↑ 12%</span> vs mois dernier
+                <span className="trend-up">↑ 12%</span> {t('statsVsLastMonth')}
               </div>
             </div>
           </div>
@@ -371,7 +371,7 @@ const Statistics = () => {
               <p className="stat-number">{stats.totalSalary.toLocaleString('fr-FR')} DT</p>
               <p className="stat-detail">{t('monthlyGross')}</p>
               <div className="stat-trend">
-                <span className="trend-up">↑ 8%</span> vs mois dernier
+                <span className="trend-up">↑ 8%</span> {t('statsVsLastMonth')}
               </div>
             </div>
           </div>
@@ -383,7 +383,7 @@ const Statistics = () => {
               <p className="stat-number">{stats.averageSalary.toFixed(0)} DT</p>
               <p className="stat-detail">{t('perEmployee')}</p>
               <div className="stat-trend">
-                <span className="trend-up">↑ 5%</span> vs trimestre dernier
+                <span className="trend-up">↑ 5%</span> {t('statsVsLastQuarter')}
               </div>
             </div>
           </div>
@@ -395,7 +395,7 @@ const Statistics = () => {
               <p className="stat-number">{Object.keys(stats.byDepartment).length}</p>
               <p className="stat-detail">{t('activeSites')}</p>
               <div className="stat-trend">
-                <span className="trend-neutral">→</span> stable
+                <span className="trend-neutral">→</span> {t('statsStable')}
               </div>
             </div>
           </div>
@@ -421,7 +421,7 @@ const Statistics = () => {
                     />
                     <YAxis 
                       label={{ 
-                        value: 'Nombre d\'employés', 
+                        value: t('statsYAxisLabel'), 
                         angle: -90, 
                         position: 'insideLeft',
                         offset: -10
@@ -431,7 +431,7 @@ const Statistics = () => {
                     <Legend />
                     <Bar 
                       dataKey="value" 
-                      name="Employés" 
+                      name={t('statsTooltipEmployees')} 
                       fill="var(--primary-blue)"
                       radius={[4, 4, 0, 0]}
                     >
@@ -467,7 +467,7 @@ const Statistics = () => {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => [`${value} employés`, 'Nombre']} />
+                    <Tooltip formatter={(value) => [`${value} ${t('statsTooltipEmployees')}`, t('count')]} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
@@ -477,7 +477,7 @@ const Statistics = () => {
 
           <div className="charts-row">
             <div className="chart-container medium">
-              <h3>📅 Embauches sur 12 mois</h3>
+              <h3>📅 {t('statsHires12Months')}</h3>
               <div className="chart-wrapper">
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart
@@ -491,7 +491,7 @@ const Statistics = () => {
                     <Area 
                       type="monotone" 
                       dataKey="hires" 
-                      name="Embauches"
+                      name={t('statsTooltipEmployees')}
                       stroke="var(--primary-orange)" 
                       fill="var(--primary-orange)" 
                       fillOpacity={0.3}
@@ -502,7 +502,7 @@ const Statistics = () => {
             </div>
 
             <div className="chart-container medium">
-              <h3>🎯 Distribution des salaires</h3>
+              <h3>🎯 {t('statsSalaryDistribution')}</h3>
               <div className="chart-wrapper">
                 <ResponsiveContainer width="100%" height={300}>
                   <BarChart
@@ -515,7 +515,7 @@ const Statistics = () => {
                     <Tooltip />
                     <Bar 
                       dataKey="count" 
-                      name="Nombre d'employés"
+                      name={t('statsTooltipEmployees')}
                       fill="var(--success-color)"
                       radius={[4, 4, 0, 0]}
                     />
@@ -527,7 +527,7 @@ const Statistics = () => {
 
           <div className="charts-row">
             <div className="chart-container medium">
-              <h3>⏳ Niveaux d'expérience</h3>
+              <h3>⏳ {t('statsExperienceLevels')}</h3>
               <div className="chart-wrapper">
                 <ResponsiveContainer width="100%" height={300}>
                   <RadarChart outerRadius={90} data={stats.chartData?.experienceData || []}>
@@ -535,7 +535,7 @@ const Statistics = () => {
                     <PolarAngleAxis dataKey="name" />
                     <PolarRadiusAxis angle={30} domain={[0, 'auto']} />
                     <Radar
-                      name="Expérience"
+                      name={t('statsRadarExperience')}
                       dataKey="value"
                       stroke="var(--primary-blue)"
                       fill="var(--primary-blue)"
@@ -549,7 +549,7 @@ const Statistics = () => {
             </div>
 
             <div className="chart-container medium">
-              <h3>👥 Tranches d'âge</h3>
+              <h3>👥 {t('statsAgeGroups')}</h3>
               <div className="chart-wrapper">
                 <ResponsiveContainer width="100%" height={300}>
                   <LineChart
@@ -563,7 +563,7 @@ const Statistics = () => {
                     <Line
                       type="monotone"
                       dataKey="value"
-                      name="Effectif"
+                      name={t('statsLineChartValue')}
                       stroke="var(--warning-color)"
                       strokeWidth={3}
                       dot={{ r: 4 }}
@@ -578,35 +578,35 @@ const Statistics = () => {
 
         <div className="detailed-stats">
           <div className="stats-card">
-            <h3>📊 Statistiques salariales détaillées</h3>
+            <h3>📊 {t('statsDetailedSalary')}</h3>
             <div className="salary-grid">
               <div className="salary-stat">
-                <span className="salary-label">Minimum</span>
+                <span className="salary-label">{t('statsSalaryMin')}</span>
                 <span className="salary-value">{stats.salaryStats.min.toLocaleString('fr-FR')} DT</span>
                 <div className="salary-bar" style={{ width: '25%' }}></div>
               </div>
               <div className="salary-stat">
-                <span className="salary-label">1er Quartile</span>
+                <span className="salary-label">{t('statsSalaryQ1')}</span>
                 <span className="salary-value">{stats.salaryStats.q1?.toLocaleString('fr-FR') || '0'} DT</span>
                 <div className="salary-bar" style={{ width: '50%' }}></div>
               </div>
               <div className="salary-stat">
-                <span className="salary-label">Médiane</span>
+                <span className="salary-label">{t('statsSalaryMedian')}</span>
                 <span className="salary-value">{stats.salaryStats.median.toLocaleString('fr-FR')} DT</span>
                 <div className="salary-bar" style={{ width: '75%' }}></div>
               </div>
               <div className="salary-stat">
-                <span className="salary-label">Moyenne</span>
+                <span className="salary-label">{t('statsSalaryAverage')}</span>
                 <span className="salary-value">{stats.averageSalary.toFixed(0)} DT</span>
                 <div className="salary-bar" style={{ width: '80%' }}></div>
               </div>
               <div className="salary-stat">
-                <span className="salary-label">3ème Quartile</span>
+                <span className="salary-label">{t('statsSalaryQ3')}</span>
                 <span className="salary-value">{stats.salaryStats.q3?.toLocaleString('fr-FR') || '0'} DT</span>
                 <div className="salary-bar" style={{ width: '90%' }}></div>
               </div>
               <div className="salary-stat">
-                <span className="salary-label">Maximum</span>
+                <span className="salary-label">{t('statsSalaryMax')}</span>
                 <span className="salary-value">{stats.salaryStats.max.toLocaleString('fr-FR')} DT</span>
                 <div className="salary-bar" style={{ width: '100%' }}></div>
               </div>
@@ -614,17 +614,17 @@ const Statistics = () => {
           </div>
 
           <div className="stats-card">
-            <h3>🆕 Dernières embauches</h3>
+            <h3>🆕 {t('statsRecentHires')}</h3>
             <div className="recent-hires-table">
               <table>
                 <thead>
                   <tr>
-                    <th>Nom</th>
-                    <th>Poste</th>
-                    <th>Département</th>
-                    <th>Contrat</th>
-                    <th>Salaire</th>
-                    <th>Date d'embauche</th>
+                    <th>{t('statsTableName')}</th>
+                    <th>{t('statsTablePosition')}</th>
+                    <th>{t('statsTableDepartment')}</th>
+                    <th>{t('statsTableContract')}</th>
+                    <th>{t('statsTableSalary')}</th>
+                    <th>{t('statsTableHireDate')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -670,35 +670,35 @@ const Statistics = () => {
         </div>
 
         <div className="export-section">
-          <h3>📤 Export des données professionnelles</h3>
+          <h3>📤 {t('statsExportData')}</h3>
           <div className="export-buttons">
             <button 
               className="export-btn pdf"
               onClick={handleExportPDF}
               disabled={exporting}
             >
-              {exporting ? '⏳' : '📄'} Exporter en PDF complet
+              {exporting ? '⏳' : '📄'} {t('statsExportPDF')}
             </button>
             <button 
               className="export-btn excel"
               onClick={handleExportExcel}
               disabled={exporting}
             >
-              {exporting ? '⏳' : '📊'} Statistiques Excel
+              {exporting ? '⏳' : '📊'} {t('statsExportExcelStats')}
             </button>
             <button 
               className="export-btn excel"
               onClick={handleExportEmployeesExcel}
               disabled={exporting}
             >
-              {exporting ? '⏳' : '👥'} Liste complète Excel
+              {exporting ? '⏳' : '👥'} {t('statsExportExcelFull')}
             </button>
             <button 
               className="export-btn charts"
               onClick={() => window.print()}
               disabled={exporting}
             >
-              {exporting ? '⏳' : '🖨️'} Imprimer les graphiques
+              {exporting ? '⏳' : '🖨️'} {t('statsExportPrint')}
             </button>
           </div>
         </div>
@@ -708,3 +708,4 @@ const Statistics = () => {
 };
 
 export default Statistics;
+
