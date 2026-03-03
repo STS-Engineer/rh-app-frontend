@@ -20,6 +20,7 @@ const Settings = () => {
     const labels = {
       fr: 'Français',
       en: 'English',
+      de: 'Deutsch',
       zh: '中文 (Chinese)',
       ko: '한국어 (Korean)',
       hi: 'हिन्दी (Hindi)'
@@ -31,6 +32,7 @@ const Settings = () => {
     const flags = {
       fr: '🇫🇷',
       en: '🇬🇧',
+      de: '🇩🇪',
       zh: '🇨🇳',
       ko: '🇰🇷',
       hi: '🇮🇳'
@@ -89,6 +91,19 @@ const Settings = () => {
                     <small>{t('englishLanguage')}</small>
                   </div>
                   {language === 'en' && <span className="checkmark">✓</span>}
+                </button>
+
+                {/* ✅ ADDED GERMAN LANGUAGE OPTION */}
+                <button 
+                  className={`language-option ${language === 'de' ? 'active' : ''}`}
+                  onClick={() => handleLanguageChange('de')}
+                >
+                  <span className="flag">🇩🇪</span>
+                  <div className="language-info">
+                    <strong>Deutsch</strong>
+                    <small>German language</small>
+                  </div>
+                  {language === 'de' && <span className="checkmark">✓</span>}
                 </button>
                 
                 <button 
