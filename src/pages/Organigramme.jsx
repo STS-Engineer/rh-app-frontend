@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
 import { employeesAPI } from '../services/api';
 import * as d3 from 'd3';
 import {
@@ -16,6 +17,8 @@ import {
 import './Organigramme.css';
 
 const Organigramme = () => {
+  const { t } = useLanguage();
+
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,7 +48,7 @@ const Organigramme = () => {
   };
 
   const cleanName = (prenom, nom) => {
-    if (!prenom && !nom) return 'Sans nom';
+    if (!prenom && !nom) return t('orgNoName');
     const removeAbbreviations = (str) => {
       if (!str) return '';
       let cleaned = str;
@@ -60,14 +63,14 @@ const Organigramme = () => {
     };
     const cleanPrenom = removeAbbreviations(prenom || '');
     const cleanNom = removeAbbreviations(nom || '');
-    if (!cleanPrenom && !cleanNom) return 'Sans nom';
+    if (!cleanPrenom && !cleanNom) return t('orgNoName');
     if (!cleanPrenom) return cleanNom;
     if (!cleanNom) return cleanPrenom;
     return `${cleanPrenom} ${cleanNom}`.trim();
   };
 
   const cleanPosition = (poste) => {
-    if (!poste) return 'Non spécifié';
+    if (!poste) return t('orgNotSpecifiedPos');
     return poste.replace(/\s+[A-Z]{2,}$/g, '').replace(/[-–—][A-Z]{2,}$/g, '').trim();
   };
 
@@ -180,7 +183,7 @@ const Organigramme = () => {
       setEmployees(activeEmployees);
       setFilteredEmployees(activeEmployees);
     } catch (error) {
-      console.error('Erreur chargement employés:', error);
+      console.error(t('errorLoadingEmployees'), error);
     } finally {
       setLoading(false);
     }
@@ -349,50 +352,37 @@ const Organigramme = () => {
     }
   }, [filteredEmployees, loading]);
 
-  // ─── Core: build a standalone SVG string with the FULL chart ────────────────
   const buildFullSVGString = () => {
     const svg = svgRef.current;
     if (!svg) return null;
-
     const mainGroup = svg.querySelector('.main-group');
     if (!mainGroup) return null;
-
-    // Get the real bounding box of all content
     const bbox = mainGroup.getBBox();
     const padding = 60;
-    const fullWidth  = Math.ceil(bbox.width  + padding * 2);
+    const fullWidth = Math.ceil(bbox.width + padding * 2);
     const fullHeight = Math.ceil(bbox.height + padding * 2);
-
-    // Clone the SVG so we don't touch the live one
     const cloned = svg.cloneNode(true);
-    cloned.setAttribute('width',  fullWidth);
+    cloned.setAttribute('width', fullWidth);
     cloned.setAttribute('height', fullHeight);
     cloned.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-
-    // Reset the transform on the cloned main-group so everything is visible
     const clonedGroup = cloned.querySelector('.main-group');
     if (clonedGroup) {
       clonedGroup.setAttribute('transform', `translate(${-bbox.x + padding}, ${-bbox.y + padding})`);
     }
-
-    // Inline critical styles so they survive serialization
     cloned.setAttribute('style', 'background:#ffffff; font-family: Arial, sans-serif;');
-
     const serializer = new XMLSerializer();
     return { svgString: serializer.serializeToString(cloned), fullWidth, fullHeight };
   };
 
-  // ─── Convert SVG string → canvas via Image ──────────────────────────────────
   const svgStringToCanvas = ({ svgString, fullWidth, fullHeight }) => {
     return new Promise((resolve, reject) => {
       const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
-      const url  = URL.createObjectURL(blob);
-      const img  = new Image();
-
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const scale  = 2; // retina
-        canvas.width  = fullWidth  * scale;
+        const scale = 2;
+        canvas.width = fullWidth * scale;
         canvas.height = fullHeight * scale;
         const ctx = canvas.getContext('2d');
         ctx.scale(scale, scale);
@@ -402,113 +392,77 @@ const Organigramme = () => {
         URL.revokeObjectURL(url);
         resolve(canvas);
       };
-
-      img.onerror = (e) => {
+      img.onerror = () => {
         URL.revokeObjectURL(url);
-        reject(new Error('Impossible de charger le SVG comme image'));
+        reject(new Error(t('orgSvgLoadError')));
       };
-
       img.src = url;
     });
   };
 
-  // ─── Export PDF ─────────────────────────────────────────────────────────────
   const exportToPDF = async () => {
     if (!svgRef.current || exporting) return;
     setExporting(true);
     try {
       const svgData = buildFullSVGString();
-      if (!svgData) throw new Error('SVG introuvable');
-
-      const canvas  = await svgStringToCanvas(svgData);
+      if (!svgData) throw new Error(t('orgSvgNotFound'));
+      const canvas = await svgStringToCanvas(svgData);
       const imgData = canvas.toDataURL('image/png');
-
-      // Dynamically import jsPDF only when needed
       const { default: jsPDF } = await import('jspdf');
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'px',
-        format: [canvas.width, canvas.height]
-      });
+      const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width, canvas.height] });
       pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-      pdf.save(`Organigramme_${new Date().toISOString().split('T')[0]}.pdf`);
+      pdf.save(`${t('orgTitle')}_${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (err) {
-      console.error('Erreur export PDF:', err);
-      alert('Erreur lors de l\'export PDF : ' + err.message);
+      console.error(t('orgExportError'), err);
+      alert(t('orgExportError') + err.message);
     } finally {
       setExporting(false);
     }
   };
 
-  // ─── Print ──────────────────────────────────────────────────────────────────
   const printOrganigramme = async () => {
     if (!svgRef.current || exporting) return;
     setExporting(true);
     setSelectedNode(null);
-
     try {
       const svgData = buildFullSVGString();
-      if (!svgData) throw new Error('SVG introuvable');
-
-      const canvas      = await svgStringToCanvas(svgData);
-      const imgData     = canvas.toDataURL('image/png');
+      if (!svgData) throw new Error(t('orgSvgNotFound'));
+      const canvas = await svgStringToCanvas(svgData);
+      const imgData = canvas.toDataURL('image/png');
       const aspectRatio = canvas.width / canvas.height;
-
       const printWindow = window.open('', '_blank');
       if (!printWindow) {
-        alert("Impossible d'ouvrir la fenêtre d'impression. Autorisez les popups puis réessayez.");
+        alert(t('orgPopupBlocked'));
         return;
       }
-
       printWindow.document.open();
       printWindow.document.write(`
         <!doctype html>
         <html lang="fr">
           <head>
             <meta charset="utf-8" />
-            <title>Organigramme</title>
+            <title>${t('orgTitle')}</title>
             <style>
               @page { size: landscape; margin: 8mm; }
               html, body { margin: 0; padding: 0; background: #fff; width: 100%; height: 100%; }
-              .page {
-                width: 100%;
-                height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-sizing: border-box;
-              }
-              img {
-                max-width: 100%;
-                max-height: 100%;
-                width: auto;
-                height: auto;
-                aspect-ratio: ${aspectRatio};
-                object-fit: contain;
-                display: block;
-              }
+              .page { width: 100%; height: 100vh; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+              img { max-width: 100%; max-height: 100%; width: auto; height: auto; aspect-ratio: ${aspectRatio}; object-fit: contain; display: block; }
             </style>
           </head>
           <body>
-            <div class="page">
-              <img src="${imgData}" alt="Organigramme" />
-            </div>
+            <div class="page"><img src="${imgData}" alt="${t('orgTitle')}" /></div>
             <script>
               window.onload = function () {
-                setTimeout(function () {
-                  window.focus();
-                  window.print();
-                  window.onafterprint = function () { window.close(); };
-                }, 600);
+                setTimeout(function () { window.focus(); window.print(); window.onafterprint = function () { window.close(); }; }, 600);
               };
-            </script>
+            <\/script>
           </body>
         </html>
       `);
       printWindow.document.close();
     } catch (err) {
-      console.error('Erreur impression:', err);
-      alert('Erreur lors de l\'impression : ' + err.message);
+      console.error(t('orgPrintError'), err);
+      alert(t('orgPrintError') + err.message);
     } finally {
       setExporting(false);
     }
@@ -528,7 +482,7 @@ const Organigramme = () => {
       <div className="organigramme-container">
         <div className="loading">
           <div className="spinner"></div>
-          <p>Chargement de l'organigramme...</p>
+          <p>{t('orgLoading')}</p>
         </div>
       </div>
     );
@@ -537,26 +491,26 @@ const Organigramme = () => {
   return (
     <div className="organigramme-container">
       <div className="organigramme-header">
-        <h1>Organigramme hiérarchique</h1>
+        <h1>{t('orgTitle')}</h1>
         <p className="subtitle">
-          <span className="ceo-badge">Plant Manager : Fethi Chaouachi</span>
-          <span className="disposition-badge-horizontal">Niveau 1 : espacement uniforme</span>
-          <span className="disposition-badge-vertical">Équipes : disposition verticale</span>
+          <span className="ceo-badge">{t('orgPlantManager')}</span>
+          <span className="disposition-badge-horizontal">{t('orgLevel1Badge')}</span>
+          <span className="disposition-badge-vertical">{t('orgTeamsBadge')}</span>
         </p>
       </div>
 
       <div className="organigramme-stats">
         <div className="stat-card">
           <div className="stat-icon"><User size={24} /></div>
-          <div className="stat-info"><h3>{stats.total}</h3><p>Employés actifs</p></div>
+          <div className="stat-info"><h3>{stats.total}</h3><p>{t('orgActiveEmployees')}</p></div>
         </div>
         <div className="stat-card">
           <div className="stat-icon"><Briefcase size={24} /></div>
-          <div className="stat-info"><h3>{stats.departments}</h3><p>Départements</p></div>
+          <div className="stat-info"><h3>{stats.departments}</h3><p>{t('orgDepartments')}</p></div>
         </div>
         <div className="stat-card">
           <div className="stat-icon"><Users size={24} /></div>
-          <div className="stat-info"><h3>{stats.managers}</h3><p>Managers</p></div>
+          <div className="stat-info"><h3>{stats.managers}</h3><p>{t('orgManagers')}</p></div>
         </div>
       </div>
 
@@ -564,7 +518,7 @@ const Organigramme = () => {
         <div className="search-box">
           <input
             type="text"
-            placeholder="Rechercher par nom, matricule, poste ou département..."
+            placeholder={t('orgSearchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
@@ -573,11 +527,19 @@ const Organigramme = () => {
 
         <div className="controls-group">
           <div className="zoom-controls">
-            <button onClick={() => d3.select(svgRef.current).transition().duration(300).call(d3.zoom().scaleBy, 0.8)} className="zoom-btn" title="Zoom -">
+            <button
+              onClick={() => d3.select(svgRef.current).transition().duration(300).call(d3.zoom().scaleBy, 0.8)}
+              className="zoom-btn"
+              title={t('orgZoomMinus')}
+            >
               <ZoomOut size={20} />
             </button>
             <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
-            <button onClick={() => d3.select(svgRef.current).transition().duration(300).call(d3.zoom().scaleBy, 1.2)} className="zoom-btn" title="Zoom +">
+            <button
+              onClick={() => d3.select(svgRef.current).transition().duration(300).call(d3.zoom().scaleBy, 1.2)}
+              className="zoom-btn"
+              title={t('orgZoomPlus')}
+            >
               <ZoomIn size={20} />
             </button>
             <button
@@ -588,7 +550,8 @@ const Organigramme = () => {
                   d3.zoomIdentity.translate(containerWidth / 2, 120).scale(0.22)
                 );
               }}
-              className="zoom-btn reset-btn" title="Réinitialiser la vue"
+              className="zoom-btn reset-btn"
+              title={t('orgResetView')}
             >
               <RotateCcw size={20} />
             </button>
@@ -596,10 +559,10 @@ const Organigramme = () => {
 
           <div className="export-controls">
             <button onClick={printOrganigramme} className="print-btn" disabled={exporting}>
-              <Printer size={18} /> {exporting ? 'En cours...' : 'Imprimer'}
+              <Printer size={18} /> {exporting ? t('orgPrinting') : t('orgPrint')}
             </button>
             <button onClick={exportToPDF} className="export-btn" disabled={exporting}>
-              <Download size={18} /> {exporting ? 'En cours...' : 'Exporter en PDF'}
+              <Download size={18} /> {exporting ? t('orgExporting') : t('orgExportPdf')}
             </button>
           </div>
         </div>
@@ -614,7 +577,7 @@ const Organigramme = () => {
           {selectedNode && (
             <div className="employee-details-panel">
               <div className="panel-header">
-                <h3>Détails employé</h3>
+                <h3>{t('orgEmployeeDetails')}</h3>
                 <button onClick={() => setSelectedNode(null)} className="close-btn">×</button>
               </div>
               <div className="panel-content">
@@ -626,9 +589,9 @@ const Organigramme = () => {
                   </div>
                   <div className="detail-titles">
                     <h4>{cleanName(selectedNode.prenom, selectedNode.nom)}</h4>
-                    <p className="detail-matricule">Matricule : {selectedNode.matricule || 'Non renseigné'}</p>
+                    <p className="detail-matricule">{t('orgMatricule')} : {selectedNode.matricule || t('orgNotProvided')}</p>
                     <p className="detail-position">{cleanPosition(selectedNode.poste)}</p>
-                    <span className="detail-department">{selectedNode.site_dep || 'Non spécifié'}</span>
+                    <span className="detail-department">{selectedNode.site_dep || t('orgNotSpecified')}</span>
                   </div>
                 </div>
                 <div className="detail-info">
@@ -645,7 +608,7 @@ const Organigramme = () => {
                     <div className="detail-row">
                       <Phone size={18} />
                       <div>
-                        <span className="detail-label">Téléphone</span>
+                        <span className="detail-label">{t('orgPhone')}</span>
                         <span className="detail-value">{selectedNode.telephone}</span>
                       </div>
                     </div>
@@ -659,15 +622,21 @@ const Organigramme = () => {
 
       <div className="legend-section">
         <div className="legend-card">
-          <div className="legend-header"><Briefcase size={20} /><h4>Légende</h4></div>
+          <div className="legend-header"><Briefcase size={20} /><h4>{t('orgLegend')}</h4></div>
           <div className="legend-grid">
             <div className="legend-item">
               <div className="legend-color ceo-color"></div>
-              <div className="legend-text"><span className="legend-title">Plant Manager</span><span className="legend-desc">Fethi Chaouachi</span></div>
+              <div className="legend-text">
+                <span className="legend-title">{t('orgLegendPlantManager')}</span>
+                <span className="legend-desc">{t('orgLegendPlantDesc')}</span>
+              </div>
             </div>
             <div className="legend-item">
               <div className="legend-color manager-color"></div>
-              <div className="legend-text"><span className="legend-title">Manager</span><span className="legend-desc">Responsable d'équipe</span></div>
+              <div className="legend-text">
+                <span className="legend-title">{t('orgLegendManager')}</span>
+                <span className="legend-desc">{t('orgLegendManagerDesc')}</span>
+              </div>
             </div>
             <div className="legend-item disposition-horizontal-item">
               <div className="disposition-sample-horizontal">
@@ -680,8 +649,8 @@ const Organigramme = () => {
                 </svg>
               </div>
               <div className="legend-text">
-                <span className="legend-title">Niveau 1 - Espacement uniforme</span>
-                <span className="legend-desc">Tous les rapports directs espacés également</span>
+                <span className="legend-title">{t('orgLegendLevel1')}</span>
+                <span className="legend-desc">{t('orgLegendLevel1Desc')}</span>
               </div>
             </div>
             <div className="legend-item disposition-vertical-item">
@@ -695,8 +664,8 @@ const Organigramme = () => {
                 </svg>
               </div>
               <div className="legend-text">
-                <span className="legend-title">Équipes - Vertical</span>
-                <span className="legend-desc">Collaborateurs sous leur manager</span>
+                <span className="legend-title">{t('orgLegendTeam')}</span>
+                <span className="legend-desc">{t('orgLegendTeamDesc')}</span>
               </div>
             </div>
             {Object.entries(departmentColors)
@@ -708,7 +677,9 @@ const Organigramme = () => {
                     <div className="legend-color" style={{ backgroundColor: color }}></div>
                     <div className="legend-text">
                       <span className="legend-title">{dept}</span>
-                      <span className="legend-count">{count} employé{count > 1 ? 's' : ''}</span>
+                      <span className="legend-count">
+                        {count} {count > 1 ? t('orgEmployees') : t('orgEmployee')}
+                      </span>
                     </div>
                   </div>
                 ) : null;
@@ -720,16 +691,16 @@ const Organigramme = () => {
       <div className="organigramme-footer">
         <div className="footer-content">
           <div className="footer-stats">
-            <span className="stat-item"><User size={14} /> {stats.total} employés</span>
-            <span className="stat-item"><Briefcase size={14} /> {stats.departments} départements</span>
-            <span className="stat-item"><Users size={14} /> {stats.managers} managers</span>
-            <span className="stat-item disposition-horizontal-badge">→ Niveau 1 : espacement uniforme</span>
-            <span className="stat-item disposition-vertical-badge">↓ Équipes : vertical</span>
+            <span className="stat-item"><User size={14} /> {stats.total} {t('orgActiveEmployees')}</span>
+            <span className="stat-item"><Briefcase size={14} /> {stats.departments} {t('orgDepartments')}</span>
+            <span className="stat-item"><Users size={14} /> {stats.managers} {t('orgManagers')}</span>
+            <span className="stat-item disposition-horizontal-badge">{t('orgFooterLevel1')}</span>
+            <span className="stat-item disposition-vertical-badge">{t('orgFooterTeam')}</span>
           </div>
         </div>
         <div className="footer-actions">
           <button onClick={fetchEmployees} className="refresh-btn">
-            <RotateCcw size={16} /> Actualiser
+            <RotateCcw size={16} /> {t('orgRefresh')}
           </button>
         </div>
       </div>
