@@ -92,7 +92,7 @@ const Dashboard = () => {
       const response = await employeesAPI.getAll();
       const success = exportEmployeesToExcel(
         response.data, 
-        `liste-employes-${new Date().toISOString().split('T')[0]}.xlsx`
+        `${t('employeeList')}-${new Date().toISOString().split('T')[0]}.xlsx`
       );
       
       if (success) {
@@ -116,11 +116,11 @@ const Dashboard = () => {
 
   const getContractTypesText = () => {
     const types = [];
-    if (stats.cdiCount > 0) types.push(`${stats.cdiCount} CDI`);
-    if (stats.cddCount > 0) types.push(`${stats.cddCount} CDD`);
-    if (stats.civpCount > 0) types.push(`${stats.civpCount} CIVP`);
-    if (stats.stageCount > 0) types.push(`${stats.stageCount} Stage`);
-    if (stats.freelanceCount > 0) types.push(`${stats.freelanceCount} Freelance`);
+    if (stats.cdiCount > 0) types.push(`${stats.cdiCount} ${t('cdiContracts')}`);
+    if (stats.cddCount > 0) types.push(`${stats.cddCount} ${t('cddContracts')}`);
+    if (stats.civpCount > 0) types.push(`${stats.civpCount} ${t('civpContracts')}`);
+    if (stats.stageCount > 0) types.push(`${stats.stageCount} ${t('internship')}`);
+    if (stats.freelanceCount > 0) types.push(`${stats.freelanceCount} ${t('freelance')}`);
     
     return types.length > 0 ? types.join(' • ') : t('noEmployees');
   };
@@ -189,7 +189,7 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="stat-trend">
-              {stats.contractsToRenew > 0 ? <span className="trend-warning">⚠️</span> : <span className="trend-ok"></span>}
+              {stats.contractsToRenew > 0 ? <span className="trend-warning" title={t('attention')}>⚠️</span> : <span className="trend-ok"></span>}
             </div>
           </div>
 
