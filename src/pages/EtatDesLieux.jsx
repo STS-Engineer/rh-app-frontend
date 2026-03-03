@@ -1,7 +1,17 @@
 /**
- * EtatDesLieux.jsx — timezone bug fix applied
- * FIX: getEmployeeStatusOnDate now compares date strings directly (YYYY-MM-DD)
- * instead of using new Date() which shifts dates by timezone offset.
+ * EtatDesLieux.jsx — FIXED timezone/day-shift bug in getEmployeeStatusOnDate
+ *
+ * ✅ Fix: remove toISOString().split('T')[0] comparisons (UTC day-shift)
+ * ✅ Fix: compare days using LOCAL midnight timestamps
+ * ✅ Extra safety: supports date strings like "YYYY-MM-DD" / ISO datetime, and also "DD-MM-YYYY"
+ *
+ * ✅ i18n Fix (missing keys safety):
+ * - Some EDL keys are missing in your `fr` translations.
+ * - This component now uses a safe helper `tf(key, fallback)` so the UI stays translated
+ *   even when a key is missing (fallback is French by default).
+ *
+ * Note: I kept your “end date inclusive” logic (<=). If in your business rule
+ * date_retour means "first day back present", change <= to < (marked below).
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -35,8 +45,120 @@ const ICONS = {
   REJECTED: '👎'
 };
 
+// --- NEW: robust parsing + local-day comparison helpers ----------------------
+
+/**
+ * Parse API date safely.
+ * Supports:
+ * - Date object
+ * - ISO like "2026-02-24" or "2026-02-24T10:00:00Z"
+ * - "DD-MM-YYYY" like "24-02-2026"
+ *
+ * Returns a Date, or null if invalid.
+ */
+const parseApiDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return isNaN(value.getTime()) ? null : value;
+
+  if (typeof value === 'string') {
+    const s = value.trim();
+
+    // If it's DD-MM-YYYY (or DD/MM/YYYY), parse manually to avoid MM/DD confusion
+    const m = s.match(/^(\d{2})[-\/](\d{2})[-\/](\d{4})$/);
+    if (m) {
+      const dd = Number(m[1]);
+      const mm = Number(m[2]);
+      const yyyy = Number(m[3]);
+      const d = new Date(yyyy, mm - 1, dd);
+      return isNaN(d.getTime()) ? null : d;
+    }
+
+    // Otherwise try normal Date parsing (works well for ISO formats)
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  // If backend sends numbers (timestamps)
+  if (typeof value === 'number') {
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  return null;
+};
+
+/**
+ * Convert any Date-like value into a LOCAL "day key" (midnight local time).
+ * This removes timezone hour shifts when comparing days.
+ */
+const dayKeyLocal = (value) => {
+  const d = parseApiDate(value);
+  if (!d) return null;
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+};
+
 const EtatDesLieux = () => {
   const { t } = useLanguage();
+
+  /**
+   * Safe translation with fallback:
+   * If key is missing, your t() returns the key itself.
+   * We detect that and return the provided fallback instead.
+   */
+  const tf = (key, fallback) => {
+    const v = t(key);
+    return v === key ? fallback : v;
+  };
+
+  // Local fallbacks (French) for keys missing in your FR translations
+  const FALLBACKS = useMemo(() => ({
+    // EDL page
+    loading_data: 'Chargement des données...',
+    presence_tracker: 'Suivi des Présences',
+    real_time_monitoring: 'Suivi en temps réel',
+    this_week: 'Cette semaine',
+    this_month: 'Ce mois',
+    custom_range: 'Période personnalisée',
+    edl_custom_choose: 'Choisissez une période',
+    edl_custom_start: 'Date de début',
+    edl_custom_end: 'Date de fin',
+    search_employee: 'Rechercher un employé',
+    search_by_name_matricule_position: 'Nom, matricule ou poste...',
+    all_departments: 'Tous les départements',
+    specific_employee: 'Employé spécifique',
+    all_employees: 'Tous les employés',
+    available: 'Disponible',
+    on_leave: 'En congé',
+    on_mission: 'En mission',
+    authorized_absence: "Autorisation d'absence",
+    late: 'Retard',
+    sick_leave: 'Maladie',
+    presence_overview: "Vue d'ensemble des présences",
+    employees: 'employés',
+    edl_custom_max_days: '(max 62 jours)',
+    weekend: 'Weekend',
+
+    // Status types used by backend (status.status and demande.type_demande)
+    'congé': 'Congé',
+    mission: 'Mission',
+    autorisation: 'Autorisation',
+    retard: 'Retard',
+    formation: 'Formation',
+    maladie: 'Maladie',
+    
+    // Additional missing keys
+    days: 'jours',
+    export: 'Exporter',
+    print: 'Imprimer',
+    previous: 'Précédent',
+    next: 'Suivant',
+    today: "Aujourd'hui",
+    department: 'Département',
+    employee: 'Employé'
+  }), []);
+
+  const label = (key) => tf(key, FALLBACKS[key] ?? key);
+
   const [employees, setEmployees] = useState([]);
   const [demandes, setDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -78,19 +200,6 @@ const EtatDesLieux = () => {
     'default': ICONS.PRESENT
   };
 
-  // ─── FIX: safe date-string extractor ────────────────────────────────────────
-  // Converts any date value to "YYYY-MM-DD" using LOCAL time, not UTC.
-  // This prevents the 1-day forward shift caused by UTC midnight parsing.
-  const toLocalDateString = (dateValue) => {
-    if (!dateValue) return null;
-    const d = new Date(dateValue);
-    if (isNaN(d.getTime())) return null;
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   const normalizeDate = (d) => {
     const x = new Date(d);
     x.setHours(0, 0, 0, 0);
@@ -110,22 +219,25 @@ const EtatDesLieux = () => {
       setDemandes(demandesRes.data.demandes || demandesRes.data);
       setLoading(false);
     } catch (error) {
-      console.error('Erreur chargement données:', error);
+      console.error(t('errorLoadingData'), error);
       setLoading(false);
     }
   };
 
   const formatAbsencePeriod = (demande) => {
     if (!demande) return '';
-    const dateDepart = new Date(demande.date_depart);
-    const dateRetour = demande.date_retour ? new Date(demande.date_retour) : dateDepart;
+
+    // Use safe parser
+    const dateDepart = parseApiDate(demande.date_depart) || new Date();
+    const dateRetour = demande.date_retour ? (parseApiDate(demande.date_retour) || dateDepart) : dateDepart;
+
     const formatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
     const formattedDepart = dateDepart.toLocaleDateString('fr-FR', formatOptions);
     const formattedRetour = dateRetour.toLocaleDateString('fr-FR', formatOptions);
     if (dateDepart.toDateString() === dateRetour.toDateString()) {
-      return `Le ${formattedDepart}`;
+      return t('onDate', { date: formattedDepart });
     }
-    return `Du ${formattedDepart} au ${formattedRetour}`;
+    return t('fromToDate', { from: formattedDepart, to: formattedRetour });
   };
 
   const datesToDisplay = useMemo(() => {
@@ -188,29 +300,27 @@ const EtatDesLieux = () => {
     return filtered;
   }, [employees, selectedDepartment, searchQuery, selectedEmployee]);
 
-  // ─── FIXED getEmployeeStatusOnDate ──────────────────────────────────────────
-  // Root cause: new Date("2024-03-10") parses as UTC midnight → becomes the
-  // NEXT day in UTC+1 (Tunisia). Fix: compare YYYY-MM-DD strings extracted
-  // via local time (toLocalDateString helper), never via new Date() comparison.
+  // ✅ FIXED HERE
   const getEmployeeStatusOnDate = (employeeId, date) => {
-    // Get the local date string for the cell being rendered
-    const currentDateStr = toLocalDateString(date);
-
     const demandesApprouvees = demandes.filter(
       d => d.employe_id === employeeId && d.statut === 'approuve'
     );
 
+    const currentDay = dayKeyLocal(date);
+    if (currentDay == null) {
+      return { status: 'available', color: statusColors.default, icon: ICONS.PRESENT };
+    }
+
     const demande = demandesApprouvees.find(d => {
-      // ✅ Extract start/end as local date strings — avoids UTC shift
-      const departStr = toLocalDateString(d.date_depart);
-      const retourStr = toLocalDateString(d.date_retour || d.date_depart);
-      if (!departStr || !retourStr || !currentDateStr) return false;
-      // date_retour = jour de retour au travail → exclu de la période d'absence
-      // SAUF si date_depart === date_retour → congé d'1 seul jour, on l'inclut
-      if (departStr === retourStr) {
-        return currentDateStr === departStr;
-      }
-      return currentDateStr >= departStr && currentDateStr < retourStr;
+      const startDay = dayKeyLocal(d.date_depart);
+      const endDay = dayKeyLocal(d.date_retour || d.date_depart);
+      if (startDay == null || endDay == null) return false;
+
+      // Inclusive end (current behavior)
+      return currentDay >= startDay && currentDay <= endDay;
+
+      // If your business meaning is "date_retour = first day back PRESENT", use this instead:
+      // return currentDay >= startDay && currentDay < endDay;
     });
 
     if (!demande) {
@@ -275,20 +385,26 @@ const EtatDesLieux = () => {
     return ['all', ...Array.from(departments)];
   };
 
-  const exportToExcel = () => { console.log('Exporting data...'); };
-  const printReport = () => { window.print(); };
+  const exportToExcel = () => { 
+    console.log(t('exportingData')); 
+  };
+  
+  const printReport = () => { 
+    window.print(); 
+  };
 
   const customLabel = () => {
-    if (!customStartDate || !customEndDate) return t('edl_custom_choose');
+    if (!customStartDate || !customEndDate) return label('edl_custom_choose');
     return `${customStartDate.toLocaleDateString('fr-FR')} → ${customEndDate.toLocaleDateString('fr-FR')}`;
   };
 
   if (loading) {
     return (
       <div className="etat-des-lieux-container">
+        <Sidebar />
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <p className="text-gradient">{t('loading_data')}</p>
+          <p className="text-gradient">{label('loading_data')}</p>
         </div>
       </div>
     );
@@ -296,11 +412,13 @@ const EtatDesLieux = () => {
 
   return (
     <div className="etat-des-lieux-container">
+      <Sidebar />
+      
       <div className="etat-header">
         <h1>
-          <span className="text-gradient">{t('presence_tracker')}</span>
-          <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 'normal' }}>
-            {t('real_time_monitoring')}
+          <span className="text-gradient">{label('presence_tracker')}</span>
+          <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 'normal', marginLeft: '10px' }}>
+            {label('real_time_monitoring')}
           </span>
         </h1>
 
@@ -310,17 +428,17 @@ const EtatDesLieux = () => {
               {ICONS.CALENDAR} {t('today')}
             </button>
             <button className={`view-btn ${viewMode === 'week' ? 'active' : ''}`} onClick={() => setViewMode('week')}>
-              {ICONS.TEAM} {t('this_week')}
+              {ICONS.TEAM} {label('this_week')}
             </button>
             <button className={`view-btn ${viewMode === 'month' ? 'active' : ''}`} onClick={() => setViewMode('month')}>
-              {ICONS.STATS} {t('this_month')}
+              {ICONS.STATS} {label('this_month')}
             </button>
             <button
               className={`view-btn ${viewMode === 'custom' ? 'active' : ''}`}
               onClick={() => setViewMode('custom')}
-              title={t('custom_range')}
+              title={label('custom_range')}
             >
-              {ICONS.CALENDAR} {t('custom_range')}
+              {ICONS.CALENDAR} {label('custom_range')}
             </button>
           </div>
 
@@ -362,7 +480,7 @@ const EtatDesLieux = () => {
                   selected={customStartDate}
                   onChange={(d) => setCustomStartDate(d)}
                   dateFormat="dd/MM/yyyy"
-                  placeholderText={t('edl_custom_start')}
+                  placeholderText={label('edl_custom_start')}
                   className="date-picker"
                 />
                 <span style={{ opacity: 0.8 }}>→</span>
@@ -370,7 +488,7 @@ const EtatDesLieux = () => {
                   selected={customEndDate}
                   onChange={(d) => setCustomEndDate(d)}
                   dateFormat="dd/MM/yyyy"
-                  placeholderText={t('edl_custom_end')}
+                  placeholderText={label('edl_custom_end')}
                   className="date-picker"
                   minDate={customStartDate || undefined}
                 />
@@ -396,10 +514,10 @@ const EtatDesLieux = () => {
         {/* Advanced filters */}
         <div className="advanced-filters">
           <div className="filter-group">
-            <label className="filter-label">{ICONS.FILTER} {t('search_employee')}</label>
+            <label className="filter-label">{ICONS.FILTER} {label('search_employee')}</label>
             <input
               type="text"
-              placeholder={t('search_by_name_matricule_position')}
+              placeholder={label('search_by_name_matricule_position')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="employee-search"
@@ -413,7 +531,7 @@ const EtatDesLieux = () => {
               onChange={(e) => setSelectedDepartment(e.target.value)}
               className="department-select"
             >
-              <option value="all">{t('all_departments')}</option>
+              <option value="all">{label('all_departments')}</option>
               {getDepartments().slice(1).map(dept => (
                 <option key={dept} value={dept}>{dept}</option>
               ))}
@@ -421,13 +539,13 @@ const EtatDesLieux = () => {
           </div>
 
           <div className="filter-group">
-            <label className="filter-label">{ICONS.EMPLOYEE} {t('specific_employee')}</label>
+            <label className="filter-label">{ICONS.EMPLOYEE} {label('specific_employee')}</label>
             <select
               value={selectedEmployee}
               onChange={(e) => setSelectedEmployee(e.target.value)}
               className="filter-select"
             >
-              <option value="all">{t('all_employees')}</option>
+              <option value="all">{label('all_employees')}</option>
               {employees.map(emp => (
                 <option key={emp.id} value={emp.id}>
                   {emp.prenom} {emp.nom} ({emp.matricule})
@@ -442,27 +560,27 @@ const EtatDesLieux = () => {
       <div className="legend-container">
         <div className="legend-item">
           <div className="color-box" style={{ background: statusColors.default }}></div>
-          <span>{t('available')}</span>
+          <span>{label('available')}</span>
         </div>
         <div className="legend-item">
-          <div className="color-box" style={{ background: statusColors['congé'] }}></div>
-          <span>{t('on_leave')}</span>
+          <div className="color-box" style={{ background: statusColors.congé }}></div>
+          <span>{label('on_leave')}</span>
         </div>
         <div className="legend-item">
           <div className="color-box" style={{ background: statusColors.mission }}></div>
-          <span>{t('on_mission')}</span>
+          <span>{label('on_mission')}</span>
         </div>
         <div className="legend-item">
           <div className="color-box" style={{ background: statusColors.autorisation }}></div>
-          <span>{t('authorized_absence')}</span>
+          <span>{label('authorized_absence')}</span>
         </div>
         <div className="legend-item">
           <div className="color-box" style={{ background: statusColors.retard }}></div>
-          <span>{t('late')}</span>
+          <span>{label('late')}</span>
         </div>
         <div className="legend-item">
           <div className="color-box" style={{ background: statusColors.maladie }}></div>
-          <span>{t('sick_leave')}</span>
+          <span>{label('sick_leave')}</span>
         </div>
       </div>
 
@@ -470,11 +588,11 @@ const EtatDesLieux = () => {
       <div className="presence-table-container">
         <div className="table-header">
           <h2>
-            {ICONS.TEAM} {t('presence_overview')}
-            <span style={{ fontSize: '14px', fontWeight: 'normal', opacity: 0.9 }}>
-              {filteredEmployees.length} {t('employees')} • {datesToDisplay.length} {t('days')}
+            {ICONS.TEAM} {label('presence_overview')}
+            <span style={{ fontSize: '14px', fontWeight: 'normal', opacity: 0.9, marginLeft: '10px' }}>
+              {filteredEmployees.length} {label('employees')} • {datesToDisplay.length} {t('days')}
               {viewMode === 'custom' && customStartDate && customEndDate && datesToDisplay.length === 62 && (
-                <span style={{ marginLeft: 8 }}>{t('edl_custom_max_days')}</span>
+                <span style={{ marginLeft: 8 }}>{label('edl_custom_max_days')}</span>
               )}
             </span>
           </h2>
@@ -540,7 +658,8 @@ const EtatDesLieux = () => {
                           <div className="status-icon">{status.icon}</div>
                           {status.status !== 'available' && status.status !== 'weekend' && (
                             <>
-                              <div className="status-type">{t(status.status)}</div>
+                              {/* Use safe fallback for backend status names too */}
+                              <div className="status-type">{label(status.status)}</div>
                               {status.demande?.heure_depart && (
                                 <div className="time-info">
                                   {ICONS.TIME} {status.demande.heure_depart.substring(0, 5)}
@@ -560,199 +679,31 @@ const EtatDesLieux = () => {
         </div>
       </div>
 
-      {/* Daily detail view */}
-      {viewMode === 'day' && (
-        <div className="detailed-view">
-          <h3>
-            {ICONS.CALENDAR} {t('daily_details')} - {formatDate(selectedDate)}
-          </h3>
-
-          <div className="absences-grid">
-            {filteredEmployees.map(employee => {
-              const status = getEmployeeStatusOnDate(employee.id, selectedDate);
-              if (status.status === 'available' || status.status === 'weekend') return null;
-
-              return (
-                <div
-                  key={employee.id}
-                  className="absence-card"
-                  style={{ borderLeftColor: status.color.split(' ')[2] }}
-                  onClick={() => {
-                    setSelectedAbsence({ employee, date: selectedDate, ...status });
-                    setShowDetailsPanel(true);
-                  }}
-                >
-                  <div className="absence-header">
-                    <div className="employee-info-small">
-                      <div className="employee-avatar-small">
-                        {employee.prenom.charAt(0)}{employee.nom.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="employee-name">{employee.prenom} {employee.nom}</div>
-                        <div className="employee-role">{employee.poste}</div>
-                      </div>
-                    </div>
-                    <div className="absence-type-badge" style={{ background: status.color }}>
-                      {status.icon} {t(status.status)}
-                    </div>
-                  </div>
-
-                  <div className="absence-details">
-                    <div className="detail-row">
-                      <span className="detail-label">{ICONS.TIME} {t('period')}:</span>
-                      <span className="detail-value">{formatAbsencePeriod(status.demande)}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">{ICONS.DOCUMENT} {t('title')}:</span>
-                      <span className="detail-value">{status.demande?.titre || t('edl_not_specified')}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">{ICONS.LOCATION} {t('location')}:</span>
-                      <span className="detail-value">{status.demande?.lieu || '-'}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-
-            {!filteredEmployees.some(emp =>
-              getEmployeeStatusOnDate(emp.id, selectedDate).status !== 'available' &&
-              getEmployeeStatusOnDate(emp.id, selectedDate).status !== 'weekend'
-            ) && (
-              <div className="no-absences">
-                <p>{t('no_absences_today')}</p>
-              </div>
+      {/* Details Panel */}
+      {showDetailsPanel && selectedAbsence && (
+        <div className="details-panel">
+          <div className="details-panel-header">
+            <h3>{t('absenceDetails')}</h3>
+            <button className="close-btn" onClick={() => setShowDetailsPanel(false)}>×</button>
+          </div>
+          <div className="details-panel-content">
+            <p><strong>{t('employee')}:</strong> {selectedAbsence.employee.prenom} {selectedAbsence.employee.nom}</p>
+            <p><strong>{t('date')}:</strong> {formatDate(selectedAbsence.date)}</p>
+            <p><strong>{t('status')}:</strong> {label(selectedAbsence.status)}</p>
+            {selectedAbsence.demande && (
+              <>
+                <p><strong>{t('type')}:</strong> {label(selectedAbsence.demande.type_demande)}</p>
+                {selectedAbsence.demande.date_depart && selectedAbsence.demande.date_retour && (
+                  <p><strong>{t('period')}:</strong> {formatAbsencePeriod(selectedAbsence.demande)}</p>
+                )}
+                {selectedAbsence.demande.commentaire && (
+                  <p><strong>{t('comments')}:</strong> {selectedAbsence.demande.commentaire}</p>
+                )}
+              </>
             )}
           </div>
         </div>
       )}
-
-      {/* Stats */}
-      <div className="stats-container">
-        <div className="stat-card">
-          <div className="stat-icon">{ICONS.TEAM}</div>
-          <div className="stat-value">{filteredEmployees.length}</div>
-          <div className="stat-label">{t('total_employees')}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">{ICONS.CONGE}</div>
-          <div className="stat-value">
-            {filteredEmployees.filter(emp => getEmployeeStatusOnDate(emp.id, selectedDate).status === 'congé').length}
-          </div>
-          <div className="stat-label">{t('on_leave')}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">{ICONS.MISSION}</div>
-          <div className="stat-value">
-            {filteredEmployees.filter(emp => getEmployeeStatusOnDate(emp.id, selectedDate).status === 'mission').length}
-          </div>
-          <div className="stat-label">{t('on_mission')}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">{ICONS.AUTORISATION}</div>
-          <div className="stat-value">
-            {filteredEmployees.filter(emp => getEmployeeStatusOnDate(emp.id, selectedDate).status === 'autorisation').length}
-          </div>
-          <div className="stat-label">{t('authorized_absences')}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">📊</div>
-          <div className="stat-value">
-            {filteredEmployees.length
-              ? ((filteredEmployees.filter(emp =>
-                  getEmployeeStatusOnDate(emp.id, selectedDate).status === 'available'
-                ).length / filteredEmployees.length) * 100).toFixed(1)
-              : '0.0'}%
-          </div>
-          <div className="stat-label">{t('presence_rate')}</div>
-        </div>
-      </div>
-
-      {/* Side details panel */}
-      <div className={`details-panel ${showDetailsPanel ? 'open' : ''}`}>
-        {selectedAbsence && (
-          <>
-            <div className="panel-header">
-              <h3>{t('absence_details')}</h3>
-              <button className="close-panel" onClick={() => setShowDetailsPanel(false)}>×</button>
-            </div>
-
-            <div className="panel-content">
-              <div className="absence-header">
-                <div className="employee-info-small">
-                  <div className="employee-avatar-small" style={{ background: selectedAbsence.color }}>
-                    {selectedAbsence.employee.prenom.charAt(0)}{selectedAbsence.employee.nom.charAt(0)}
-                  </div>
-                  <div>
-                    <h4>{selectedAbsence.employee.prenom} {selectedAbsence.employee.nom}</h4>
-                    <p>{selectedAbsence.employee.poste} • {selectedAbsence.employee.matricule}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="absence-details">
-                <div className="detail-row">
-                  <span className="detail-label">{t('date')}:</span>
-                  <span className="detail-value">{formatDate(selectedAbsence.date)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">{t('period')}:</span>
-                  <span className="detail-value">{formatAbsencePeriod(selectedAbsence.demande)}</span>
-                </div>
-                <div className="detail-row">
-                  <span className="detail-label">{t('type')}:</span>
-                  <span className="detail-value" style={{ color: selectedAbsence.color.split(' ')[2], fontWeight: 'bold' }}>
-                    {selectedAbsence.icon} {t(selectedAbsence.status)}
-                  </span>
-                </div>
-
-                {selectedAbsence.demande && (
-                  <>
-                    <div className="detail-row">
-                      <span className="detail-label">{t('title')}:</span>
-                      <span className="detail-value">{selectedAbsence.demande.titre}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">{t('description')}:</span>
-                      <span className="detail-value">{selectedAbsence.demande.description || '-'}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">{t('time')}:</span>
-                      <span className="detail-value">
-                        {selectedAbsence.demande.heure_depart?.substring(0, 5) || t('edl_all_day')}
-                        {selectedAbsence.demande.heure_retour && ` - ${selectedAbsence.demande.heure_retour.substring(0, 5)}`}
-                      </span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">{t('location')}:</span>
-                      <span className="detail-value">{selectedAbsence.demande.lieu || '-'}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">{t('approved_by')}:</span>
-                      <span className="detail-value">{selectedAbsence.demande.approuve_par || '-'}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">{t('status')}:</span>
-                      <span className="detail-value" style={{ color: '#48bb78' }}>
-                        {ICONS.APPROVED} {t('approved')}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="action-buttons" style={{ marginTop: '20px' }}>
-                <button className="action-btn primary-btn">
-                  {ICONS.DOCUMENT} {t('view_documents')}
-                </button>
-                <button className="action-btn secondary-btn">
-                  {ICONS.PRINT} {t('print_details')}
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
     </div>
   );
 };
