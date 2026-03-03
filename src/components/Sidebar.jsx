@@ -13,12 +13,12 @@ const Sidebar = () => {
   const menuItems = [
     { path: '/dashboard', label: t('dashboard'), icon: '📊' },
     { path: '/team', label: t('team'), icon: '👥' },
-    { path: '/organigramme', label: t('organigram'), icon: '🏢' },
+    { path: '/organigramme', label: t('orgTitle'), icon: '🏢' }, // Changed from 'organigram' to 'orgTitle'
     { path: '/demandes-rh', label: t('demands'), icon: '📋' }, 
     { path: '/fiche-de-paie', label: t('payslip'), icon: '💰' },
     { path: '/archives', label: t('archives'), icon: '📁' },
     { path: '/statistics', label: t('statistics'), icon: '📈' }, 
-    { path: '/etat-des-lieux', label: t('presence'), icon: '📅' },
+    { path: '/etat-des-lieux', label: t('edlPresenceTracker'), icon: '📅' }, // Changed from 'presence' to 'presence_tracker'
     { path: '/visa', label: t('visa'), icon: '✈️' },
     { path: '/settings', label: t('settings'), icon: '⚙️' },
   ];
