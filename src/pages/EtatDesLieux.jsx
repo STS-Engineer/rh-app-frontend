@@ -544,6 +544,7 @@ const EtatDesLieux = () => {
               value={selectedEmployee}
               onChange={(e) => setSelectedEmployee(e.target.value)}
               className="filter-select"
+              size="10"
             >
               <option value="all">{label('all_employees')}</option>
               {employees.map(emp => (
