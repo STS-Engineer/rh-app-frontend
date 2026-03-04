@@ -776,7 +776,7 @@ export const LanguageProvider = ({ children }) => {
 
       // ===== NEW KEYS FOR ETAT DES LIEUX =====
       edlLoadingData: "Chargement des données...",
-      edlPresenceTracker: "Suivi des Présences",
+      edlPresenceTracker: "Présence",
       edlRealTimeMonitoring: "Suivi en temps réel",
       edlThisWeek: "Cette semaine",
       edlThisMonth: "Ce mois",
