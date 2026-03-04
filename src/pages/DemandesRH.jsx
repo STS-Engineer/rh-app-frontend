@@ -336,19 +336,36 @@ const DemandesRH = () => {
     return icons[type] || '📄';
   };
 
-  const calculateWorkingDays = (dateDepart, dateRetour, demiJournee) => {
+  // ✅ FIXED: exclude date_retour from calculation (return-to-work day),
+  // and handle edge-case: congé + date_retour === date_depart => count 1 working day
+  const calculateWorkingDays = (dateDepart, dateRetour, demiJournee, typeDemande) => {
     if (!dateDepart || !dateRetour) return '';
     try {
-      const start = new Date(dateDepart);
-      const end = new Date(dateRetour);
+      // normalize to midnight to avoid timezone/time issues
+      const start = new Date(`${dateDepart}T00:00:00`);
+      const end = new Date(`${dateRetour}T00:00:00`);
       if (isNaN(start.getTime()) || isNaN(end.getTime())) return '';
+
+      // Edge-case: congé and same day selected for return => count as 1 working day (Mon–Fri)
+      if (typeDemande === 'congé' && end.getTime() === start.getTime()) {
+        const day = start.getDay();
+        const base = (day !== 0 && day !== 6) ? 1 : 0; // weekend => 0
+        if (demiJournee && base > 0) return `${base - 0.5} ${t('workingDays')}`;
+        return `${base} ${base > 1 ? t('workingDays') : t('workingDay')}`;
+      }
+
+      // If return is before start => 0 (invalid but safe)
+      if (end < start) return `0 ${t('workingDay')}`;
+
+      // Normal: count days from start (inclusive) to end (exclusive)
       let count = 0;
       const current = new Date(start);
-      while (current <= end) {
+      while (current < end) {
         const day = current.getDay();
         if (day !== 0 && day !== 6) count++;
         current.setDate(current.getDate() + 1);
       }
+
       if (demiJournee && count > 0) return `${count - 0.5} ${t('workingDays')}`;
       return `${count} ${count > 1 ? t('workingDays') : t('workingDay')}`;
     } catch (e) {
@@ -618,7 +635,8 @@ const DemandesRH = () => {
       d.employe_matricule || '', d.employe_poste || '',
       formatDate(d.date_depart), formatDate(d.date_retour),
       d.heure_depart || '', d.heure_retour || '',
-      calculateWorkingDays(d.date_depart, d.date_retour, d.demi_journee),
+      // ✅ FIX: pass type_demande so edge-case "congé same-day return" can be handled
+      calculateWorkingDays(d.date_depart, d.date_retour, d.demi_journee, d.type_demande),
       d.demi_journee ? t('yes') : t('no'),
       d.frais_deplacement ? `${d.frais_deplacement} DT` : '',
       d.mail_responsable1 || t('notAssigned'),
