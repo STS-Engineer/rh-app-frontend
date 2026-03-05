@@ -535,3 +535,44 @@
     justify-content: center;
   }
 }
+/* Hamburger/X toggle button */
+.sidebar-hamburger-toggle {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 1100;
+  width: 45px;
+  height: 45px;
+  background: #3b82f6;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+}
+
+.sidebar-hamburger-toggle:hover {
+  background: #2563eb;
+  transform: scale(1.05);
+}
+
+/* Sidebar open state - visible */
+.sidebar.open {
+  transform: translateX(0);
+}
+
+/* Sidebar closed state - hidden */
+.sidebar.closed {
+  transform: translateX(-100%);
+}
+
+/* Adjust main content when sidebar is hidden */
+.sidebar.closed + * {
+  margin-left: 0;
+}
