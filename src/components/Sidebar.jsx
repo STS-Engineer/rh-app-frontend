@@ -10,22 +10,22 @@ const Sidebar = () => {
   const location = useLocation();
   const { t, language, getAvailableLanguages } = useLanguage();
   
-  // State to manage sidebar collapsed/expanded
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // Simple state for sidebar visibility
+  const [isOpen, setIsOpen] = useState(true);
   
-  // Load saved state from localStorage on component mount
+  // Load saved state from localStorage
   useEffect(() => {
-    const savedState = localStorage.getItem('sidebarCollapsed');
+    const savedState = localStorage.getItem('sidebarOpen');
     if (savedState !== null) {
-      setIsCollapsed(JSON.parse(savedState));
+      setIsOpen(JSON.parse(savedState));
     }
   }, []);
 
-  // Toggle sidebar and save state
+  // Simple toggle function
   const toggleSidebar = () => {
-    const newState = !isCollapsed;
-    setIsCollapsed(newState);
-    localStorage.setItem('sidebarCollapsed', JSON.stringify(newState));
+    const newState = !isOpen;
+    setIsOpen(newState);
+    localStorage.setItem('sidebarOpen', JSON.stringify(newState));
   };
 
   const menuItems = [
@@ -46,35 +46,19 @@ const Sidebar = () => {
     navigate('/');
   };
 
-  const getCurrentLanguageFlag = () => {
-    const languages = getAvailableLanguages();
-    const currentLang = languages.find(l => l.code === language);
-    return currentLang ? currentLang.flag : '🌐';
-  };
-
   return (
     <>
-      {/* Toggle button that appears outside the sidebar when collapsed */}
-      {isCollapsed && (
-        <button 
-          className="sidebar-toggle-btn collapsed-mode"
-          onClick={toggleSidebar}
-          title={t('expandSidebar') || 'Expand sidebar'}
-        >
-          <span className="toggle-icon">→</span>
-        </button>
-      )}
+      {/* Hamburger/X toggle button */}
+      <button 
+        className="sidebar-hamburger-toggle"
+        onClick={toggleSidebar}
+        title={isOpen ? 'Close menu' : 'Open menu'}
+      >
+        {isOpen ? '✕' : '☰'}
+      </button>
 
-      <div className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
-        {/* Toggle button inside sidebar when expanded */}
-        <button 
-          className="sidebar-toggle-btn"
-          onClick={toggleSidebar}
-          title={isCollapsed ? t('expandSidebar') : t('collapseSidebar')}
-        >
-          <span className="toggle-icon">{isCollapsed ? '→' : '←'}</span>
-        </button>
-
+      {/* Sidebar with simple show/hide */}
+      <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
           <img src={logo} alt="Logo" className="header-logo" />
         </div>
@@ -85,24 +69,21 @@ const Sidebar = () => {
               key={item.path}
               className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
               onClick={() => navigate(item.path)}
-              title={isCollapsed ? item.label : ''}
             >
               <span className="nav-icon">{item.icon}</span>
-              {!isCollapsed && <span className="nav-label">{item.label}</span>}
+              <span className="nav-label">{item.label}</span>
             </button>
           ))}
         </nav>
 
         <div className="sidebar-footer">
-          {!isCollapsed && (
-            <div className="language-indicator">
-              <span className="language-text">
-                {t('language')}: {language.toUpperCase()}
-              </span>
-            </div>
-          )}
-          <button className="logout-btn" onClick={handleLogout} title={isCollapsed ? t('logout') : ''}>
-            🚪 {!isCollapsed && t('logout')}
+          <div className="language-indicator">
+            <span className="language-text">
+              {t('language')}: {language.toUpperCase()}
+            </span>
+          </div>
+          <button className="logout-btn" onClick={handleLogout}>
+            🚪 {t('logout')}
           </button>
         </div>
       </div>
