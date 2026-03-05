@@ -14,6 +14,136 @@
   border-right: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   overflow-y: auto;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Collapsed state */
+.sidebar.collapsed {
+  width: 80px;
+}
+
+.sidebar.collapsed .sidebar-header {
+  padding: 20px 10px;
+}
+
+.sidebar.collapsed .header-logo {
+  width: 50px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.sidebar.collapsed .nav-label,
+.sidebar.collapsed .language-text {
+  display: none;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 16px 0;
+  margin: 0 8px;
+  width: calc(100% - 16px);
+}
+
+.sidebar.collapsed .nav-icon {
+  margin-right: 0;
+  font-size: 1.5rem;
+}
+
+.sidebar.collapsed .nav-item.active::after {
+  right: 10px;
+  width: 6px;
+  height: 6px;
+}
+
+.sidebar.collapsed .logout-btn {
+  justify-content: center;
+  padding: 14px 0;
+}
+
+.sidebar.collapsed .logout-btn span:not(.nav-icon) {
+  display: none;
+}
+
+.sidebar.collapsed .language-indicator {
+  justify-content: center;
+  padding: 0.75rem 0;
+}
+
+.sidebar.collapsed .language-text::before {
+  margin-right: 0;
+}
+
+.sidebar.collapsed .language-text::after {
+  display: none;
+}
+
+/* Toggle Button */
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 20px;
+  right: -12px;
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 1001;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+  padding: 0;
+  line-height: 1;
+}
+
+.sidebar-toggle-btn:hover {
+  transform: scale(1.15) rotate(180deg);
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.5);
+}
+
+.sidebar.collapsed .sidebar-toggle-btn {
+  transform: rotate(180deg);
+}
+
+.sidebar.collapsed .sidebar-toggle-btn:hover {
+  transform: scale(1.15) rotate(180deg);
+}
+
+/* Toggle button when sidebar is collapsed (floating version) */
+.sidebar-toggle-btn.collapsed-mode {
+  position: fixed;
+  left: 20px;
+  top: 20px;
+  right: auto;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  z-index: 1002;
+  width: 45px;
+  height: 45px;
+  font-size: 20px;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  border: 3px solid rgba(255, 255, 255, 0.95);
+  animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.sidebar-toggle-btn.collapsed-mode:hover {
+  transform: scale(1.2);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6);
+}
+
+/* Adjust main content margin when sidebar is collapsed */
+.main-content {
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-left: 280px;
+}
+
+.sidebar.collapsed + .main-content {
+  margin-left: 80px;
 }
 
 /* 🔔 SECTION HEADER AVEC NOTIFICATION */
@@ -27,12 +157,14 @@
   flex-direction: column;
   align-items: center;
   gap: 20px;
+  transition: padding 0.3s ease;
 }
 
 .header-logo {
   width: 240px;
   max-width: 46vw;
   height: auto;
+  transition: width 0.3s ease;
 }
 
 /* 🔔 CONTENEUR NOTIFICATION */
@@ -156,6 +288,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(15, 23, 42, 0.8);
   flex-shrink: 0;
+  transition: padding 0.3s ease;
 }
 
 .logout-btn {
@@ -257,6 +390,26 @@
   }
 }
 
+/* New animation for toggle button */
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(0.9);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 /* Animation pour le sidebar */
 @keyframes slideIn {
   from {
@@ -299,12 +452,29 @@
   .sidebar.open {
     transform: translateX(0);
   }
+  
+  .sidebar.collapsed {
+    width: 80px;
+    transform: translateX(-100%);
+  }
+  
+  .sidebar.collapsed.open {
+    transform: translateX(0);
+  }
+  
+  .sidebar-toggle-btn {
+    display: flex;
+  }
 }
 
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
     z-index: 1001;
+  }
+  
+  .sidebar.collapsed {
+    width: 80px;
   }
   
   .sidebar-header {
@@ -326,6 +496,14 @@
   
   .sidebar-notification-container {
     padding: 5px 0;
+  }
+  
+  .sidebar-toggle-btn.collapsed-mode {
+    left: 15px;
+    top: 15px;
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
   }
 }
 
