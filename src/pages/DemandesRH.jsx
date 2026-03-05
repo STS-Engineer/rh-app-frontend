@@ -145,12 +145,7 @@ const Modal = ({
                   <span className="detail-value">{t('yes')}</span>
                 </div>
               )}
-              {demande.frais_deplacement && (
-                <div className="detail-row">
-                  <span className="detail-label">💰 {t('travelExpenses')}:</span>
-                  <span className="detail-value">{demande.frais_deplacement} DT</span>
-                </div>
-              )}
+              {/* Frais de déplacement - COMPLETELY REMOVED from modal as requested */}
             </div>
           </div>
 
@@ -962,12 +957,7 @@ const DemandesRH = () => {
                           <span className="value">{t('yes')}</span>
                         </div>
                       )}
-                      {demande.frais_deplacement && (
-                        <div className="detail">
-                          <span className="label">💰 {t('travelExpenses')}:</span>
-                          <span className="value">{demande.frais_deplacement} DT</span>
-                        </div>
-                      )}
+                      {/* Frais de déplacement - COMPLETELY REMOVED from card view as requested */}
                       <div className="detail">
                         <span className="label">📝 {t('createdOn')}:</span>
                         <span className="value">{formatDate(demande.created_at)}</span>
