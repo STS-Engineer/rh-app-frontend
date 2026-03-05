@@ -178,7 +178,6 @@ const Modal = ({
             <>
               <button
                 className="btn-action btn-approve"
-                // ✅ FIX: pass demande (the prop) explicitly so we never rely on a stale closure
                 onClick={() => onApprove(demande)}
                 disabled={actionLoading}
                 style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
@@ -200,7 +199,6 @@ const Modal = ({
             <>
               <button
                 className="btn-action btn-reject"
-                // ✅ FIX: pass demande (the prop) explicitly so we never rely on a stale closure
                 onClick={() => onReject(demande)}
                 disabled={actionLoading}
                 style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
@@ -331,28 +329,22 @@ const DemandesRH = () => {
     return icons[type] || '📄';
   };
 
-  // ✅ FIXED: exclude date_retour from calculation (return-to-work day),
-  // and handle edge-case: congé + date_retour === date_depart => count 1 working day
   const calculateWorkingDays = (dateDepart, dateRetour, demiJournee, typeDemande) => {
     if (!dateDepart || !dateRetour) return '';
     try {
-      // normalize to midnight to avoid timezone/time issues
       const start = new Date(`${dateDepart}T00:00:00`);
       const end = new Date(`${dateRetour}T00:00:00`);
       if (isNaN(start.getTime()) || isNaN(end.getTime())) return '';
 
-      // Edge-case: congé and same day selected for return => count as 1 working day (Mon–Fri)
       if (typeDemande === 'congé' && end.getTime() === start.getTime()) {
         const day = start.getDay();
-        const base = (day !== 0 && day !== 6) ? 1 : 0; // weekend => 0
+        const base = (day !== 0 && day !== 6) ? 1 : 0;
         if (demiJournee && base > 0) return `${base - 0.5} ${t('workingDays')}`;
         return `${base} ${base > 1 ? t('workingDays') : t('workingDay')}`;
       }
 
-      // If return is before start => 0 (invalid but safe)
       if (end < start) return `0 ${t('workingDay')}`;
 
-      // Normal: count days from start (inclusive) to end (exclusive)
       let count = 0;
       const current = new Date(start);
       while (current < end) {
@@ -616,7 +608,8 @@ const DemandesRH = () => {
       'ID', t('title'), t('type'), t('leaveType'), t('status'),
       t('employee'), t('employeeID'), t('position'),
       t('startDateReq'), t('returnDate'), t('departureTime'), t('returnTime'),
-      t('numberOfWorkingDays'), t('halfDay'), t('travelExpenses'),
+      t('numberOfWorkingDays'), t('halfDay'),
+      // ✅ travelExpenses column removed as requested
       t('supervisor1'), t('supervisor1Status'),
       t('supervisor2'), t('supervisor2Status'),
       t('refusalComment'), t('creationDate'), t('lastUpdated')
@@ -630,10 +623,9 @@ const DemandesRH = () => {
       d.employe_matricule || '', d.employe_poste || '',
       formatDate(d.date_depart), formatDate(d.date_retour),
       d.heure_depart || '', d.heure_retour || '',
-      // ✅ FIX: pass type_demande so edge-case "congé same-day return" can be handled
       calculateWorkingDays(d.date_depart, d.date_retour, d.demi_journee, d.type_demande),
       d.demi_journee ? t('yes') : t('no'),
-      d.frais_deplacement ? `${d.frais_deplacement} DT` : '',
+      // ✅ travelExpenses value removed as requested
       d.mail_responsable1 || t('notAssigned'),
       getResponsableStatusLabel(getResponsableStatus(d, 1)),
       d.mail_responsable2 || t('notRequired'),
