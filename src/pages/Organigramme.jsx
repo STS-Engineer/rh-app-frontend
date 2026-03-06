@@ -14,6 +14,7 @@ import {
   Download,
   Printer
 } from 'lucide-react';
+import Sidebar from '../components/Sidebar';
 import './Organigramme.css';
 
 const Organigramme = () => {
@@ -479,230 +480,238 @@ const Organigramme = () => {
 
   if (loading) {
     return (
-      <div className="organigramme-container">
-        <div className="loading">
-          <div className="spinner"></div>
-          <p>{t('orgLoading')}</p>
+      <div className="organigramme-page-container">
+        <Sidebar />
+        <div className="organigramme-container">
+          <div className="loading">
+            <div className="spinner"></div>
+            <p>{t('orgLoading')}</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="organigramme-container">
-      <div className="organigramme-header">
-        <h1>{t('orgTitle')}</h1>
-        <p className="subtitle">
-          <span className="ceo-badge">{t('orgPlantManager')}</span>
-          <span className="disposition-badge-horizontal">{t('orgLevel1Badge')}</span>
-          <span className="disposition-badge-vertical">{t('orgTeamsBadge')}</span>
-        </p>
-      </div>
+    <div className="organigramme-page-container">
+      <Sidebar />
+      <div className="organigramme-container">
 
-      <div className="organigramme-stats">
-        <div className="stat-card">
-          <div className="stat-icon"><User size={24} /></div>
-          <div className="stat-info"><h3>{stats.total}</h3><p>{t('orgActiveEmployees')}</p></div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon"><Briefcase size={24} /></div>
-          <div className="stat-info"><h3>{stats.departments}</h3><p>{t('orgDepartments')}</p></div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon"><Users size={24} /></div>
-          <div className="stat-info"><h3>{stats.managers}</h3><p>{t('orgManagers')}</p></div>
-        </div>
-      </div>
-
-      <div className="organigramme-controls">
-        <div className="search-box">
-          <input
-            type="text"
-            placeholder={t('orgSearchPlaceholder')}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
+        <div className="organigramme-header">
+          <h1>{t('orgTitle')}</h1>
+          <p className="subtitle">
+            <span className="ceo-badge">{t('orgPlantManager')}</span>
+            <span className="disposition-badge-horizontal">{t('orgLevel1Badge')}</span>
+            <span className="disposition-badge-vertical">{t('orgTeamsBadge')}</span>
+          </p>
         </div>
 
-        <div className="controls-group">
-          <div className="zoom-controls">
-            <button
-              onClick={() => d3.select(svgRef.current).transition().duration(300).call(d3.zoom().scaleBy, 0.8)}
-              className="zoom-btn"
-              title={t('orgZoomMinus')}
-            >
-              <ZoomOut size={20} />
-            </button>
-            <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
-            <button
-              onClick={() => d3.select(svgRef.current).transition().duration(300).call(d3.zoom().scaleBy, 1.2)}
-              className="zoom-btn"
-              title={t('orgZoomPlus')}
-            >
-              <ZoomIn size={20} />
-            </button>
-            <button
-              onClick={() => {
-                const containerWidth = containerRef.current.clientWidth;
-                d3.select(svgRef.current).transition().duration(500).call(
-                  d3.zoom().transform,
-                  d3.zoomIdentity.translate(containerWidth / 2, 120).scale(0.22)
-                );
-              }}
-              className="zoom-btn reset-btn"
-              title={t('orgResetView')}
-            >
-              <RotateCcw size={20} />
-            </button>
+        <div className="organigramme-stats">
+          <div className="stat-card">
+            <div className="stat-icon"><User size={24} /></div>
+            <div className="stat-info"><h3>{stats.total}</h3><p>{t('orgActiveEmployees')}</p></div>
           </div>
-
-          <div className="export-controls">
-            <button onClick={printOrganigramme} className="print-btn" disabled={exporting}>
-              <Printer size={18} /> {exporting ? t('orgPrinting') : t('orgPrint')}
-            </button>
-            <button onClick={exportToPDF} className="export-btn" disabled={exporting}>
-              <Download size={18} /> {exporting ? t('orgExporting') : t('orgExportPdf')}
-            </button>
+          <div className="stat-card">
+            <div className="stat-icon"><Briefcase size={24} /></div>
+            <div className="stat-info"><h3>{stats.departments}</h3><p>{t('orgDepartments')}</p></div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon"><Users size={24} /></div>
+            <div className="stat-info"><h3>{stats.managers}</h3><p>{t('orgManagers')}</p></div>
           </div>
         </div>
-      </div>
 
-      <div className="organigramme-main">
-        <div className="chart-container-wrapper" ref={chartWrapperRef}>
-          <div className="chart-container" ref={containerRef}>
-            <svg ref={svgRef} className="organigramme-svg"></svg>
+        <div className="organigramme-controls">
+          <div className="search-box">
+            <input
+              type="text"
+              placeholder={t('orgSearchPlaceholder')}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="search-input"
+            />
           </div>
 
-          {selectedNode && (
-            <div className="employee-details-panel">
-              <div className="panel-header">
-                <h3>{t('orgEmployeeDetails')}</h3>
-                <button onClick={() => setSelectedNode(null)} className="close-btn">×</button>
-              </div>
-              <div className="panel-content">
-                <div className="detail-header">
-                  <div className="detail-avatar">
-                    <div className="avatar-placeholder">
-                      {selectedNode.prenom?.charAt(0)}{selectedNode.nom?.charAt(0)}
-                    </div>
-                  </div>
-                  <div className="detail-titles">
-                    <h4>{cleanName(selectedNode.prenom, selectedNode.nom)}</h4>
-                    <p className="detail-matricule">{t('orgMatricule')} : {selectedNode.matricule || t('orgNotProvided')}</p>
-                    <p className="detail-position">{cleanPosition(selectedNode.poste)}</p>
-                    <span className="detail-department">{selectedNode.site_dep || t('orgNotSpecified')}</span>
-                  </div>
+          <div className="controls-group">
+            <div className="zoom-controls">
+              <button
+                onClick={() => d3.select(svgRef.current).transition().duration(300).call(d3.zoom().scaleBy, 0.8)}
+                className="zoom-btn"
+                title={t('orgZoomMinus')}
+              >
+                <ZoomOut size={20} />
+              </button>
+              <span className="zoom-level">{Math.round(zoomLevel * 100)}%</span>
+              <button
+                onClick={() => d3.select(svgRef.current).transition().duration(300).call(d3.zoom().scaleBy, 1.2)}
+                className="zoom-btn"
+                title={t('orgZoomPlus')}
+              >
+                <ZoomIn size={20} />
+              </button>
+              <button
+                onClick={() => {
+                  const containerWidth = containerRef.current.clientWidth;
+                  d3.select(svgRef.current).transition().duration(500).call(
+                    d3.zoom().transform,
+                    d3.zoomIdentity.translate(containerWidth / 2, 120).scale(0.22)
+                  );
+                }}
+                className="zoom-btn reset-btn"
+                title={t('orgResetView')}
+              >
+                <RotateCcw size={20} />
+              </button>
+            </div>
+
+            <div className="export-controls">
+              <button onClick={printOrganigramme} className="print-btn" disabled={exporting}>
+                <Printer size={18} /> {exporting ? t('orgPrinting') : t('orgPrint')}
+              </button>
+              <button onClick={exportToPDF} className="export-btn" disabled={exporting}>
+                <Download size={18} /> {exporting ? t('orgExporting') : t('orgExportPdf')}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="organigramme-main">
+          <div className="chart-container-wrapper" ref={chartWrapperRef}>
+            <div className="chart-container" ref={containerRef}>
+              <svg ref={svgRef} className="organigramme-svg"></svg>
+            </div>
+
+            {selectedNode && (
+              <div className="employee-details-panel">
+                <div className="panel-header">
+                  <h3>{t('orgEmployeeDetails')}</h3>
+                  <button onClick={() => setSelectedNode(null)} className="close-btn">×</button>
                 </div>
-                <div className="detail-info">
-                  {selectedNode.adresse_mail && (
-                    <div className="detail-row">
-                      <Mail size={18} />
-                      <div>
-                        <span className="detail-label">Email</span>
-                        <span className="detail-value">{selectedNode.adresse_mail}</span>
+                <div className="panel-content">
+                  <div className="detail-header">
+                    <div className="detail-avatar">
+                      <div className="avatar-placeholder">
+                        {selectedNode.prenom?.charAt(0)}{selectedNode.nom?.charAt(0)}
                       </div>
                     </div>
-                  )}
-                  {selectedNode.telephone && (
-                    <div className="detail-row">
-                      <Phone size={18} />
-                      <div>
-                        <span className="detail-label">{t('orgPhone')}</span>
-                        <span className="detail-value">{selectedNode.telephone}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="legend-section">
-        <div className="legend-card">
-          <div className="legend-header"><Briefcase size={20} /><h4>{t('orgLegend')}</h4></div>
-          <div className="legend-grid">
-            <div className="legend-item">
-              <div className="legend-color ceo-color"></div>
-              <div className="legend-text">
-                <span className="legend-title">{t('orgLegendPlantManager')}</span>
-                <span className="legend-desc">{t('orgLegendPlantDesc')}</span>
-              </div>
-            </div>
-            <div className="legend-item">
-              <div className="legend-color manager-color"></div>
-              <div className="legend-text">
-                <span className="legend-title">{t('orgLegendManager')}</span>
-                <span className="legend-desc">{t('orgLegendManagerDesc')}</span>
-              </div>
-            </div>
-            <div className="legend-item disposition-horizontal-item">
-              <div className="disposition-sample-horizontal">
-                <svg width="100" height="30">
-                  <rect x="0" y="5" width="25" height="20" rx="4" fill="#3b82f6" opacity="0.7" />
-                  <rect x="35" y="5" width="25" height="20" rx="4" fill="#64748b" opacity="0.7" />
-                  <rect x="70" y="5" width="25" height="20" rx="4" fill="#64748b" opacity="0.7" />
-                  <path d="M 12.5,15 L 35,15" stroke="#94a3b8" strokeWidth="1.5" />
-                  <path d="M 47.5,15 L 70,15" stroke="#94a3b8" strokeWidth="1.5" />
-                </svg>
-              </div>
-              <div className="legend-text">
-                <span className="legend-title">{t('orgLegendLevel1')}</span>
-                <span className="legend-desc">{t('orgLegendLevel1Desc')}</span>
-              </div>
-            </div>
-            <div className="legend-item disposition-vertical-item">
-              <div className="disposition-sample-vertical">
-                <svg width="40" height="70">
-                  <rect x="10" y="0" width="20" height="20" rx="4" fill="#3b82f6" opacity="0.7" />
-                  <rect x="10" y="30" width="20" height="20" rx="4" fill="#64748b" opacity="0.7" />
-                  <rect x="10" y="60" width="20" height="20" rx="4" fill="#64748b" opacity="0.7" />
-                  <path d="M 20,20 L 20,30" stroke="#94a3b8" strokeWidth="1.5" />
-                  <path d="M 20,50 L 20,60" stroke="#94a3b8" strokeWidth="1.5" />
-                </svg>
-              </div>
-              <div className="legend-text">
-                <span className="legend-title">{t('orgLegendTeam')}</span>
-                <span className="legend-desc">{t('orgLegendTeamDesc')}</span>
-              </div>
-            </div>
-            {Object.entries(departmentColors)
-              .filter(([dept]) => dept !== 'CEO' && dept !== 'Default')
-              .map(([dept, color]) => {
-                const count = filteredEmployees.filter((e) => e.site_dep === dept).length;
-                return count > 0 ? (
-                  <div key={dept} className="legend-item">
-                    <div className="legend-color" style={{ backgroundColor: color }}></div>
-                    <div className="legend-text">
-                      <span className="legend-title">{dept}</span>
-                      <span className="legend-count">
-                        {count} {count > 1 ? t('orgEmployees') : t('orgEmployee')}
-                      </span>
+                    <div className="detail-titles">
+                      <h4>{cleanName(selectedNode.prenom, selectedNode.nom)}</h4>
+                      <p className="detail-matricule">{t('orgMatricule')} : {selectedNode.matricule || t('orgNotProvided')}</p>
+                      <p className="detail-position">{cleanPosition(selectedNode.poste)}</p>
+                      <span className="detail-department">{selectedNode.site_dep || t('orgNotSpecified')}</span>
                     </div>
                   </div>
-                ) : null;
-              })}
+                  <div className="detail-info">
+                    {selectedNode.adresse_mail && (
+                      <div className="detail-row">
+                        <Mail size={18} />
+                        <div>
+                          <span className="detail-label">Email</span>
+                          <span className="detail-value">{selectedNode.adresse_mail}</span>
+                        </div>
+                      </div>
+                    )}
+                    {selectedNode.telephone && (
+                      <div className="detail-row">
+                        <Phone size={18} />
+                        <div>
+                          <span className="detail-label">{t('orgPhone')}</span>
+                          <span className="detail-value">{selectedNode.telephone}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
 
-      <div className="organigramme-footer">
-        <div className="footer-content">
-          <div className="footer-stats">
-            <span className="stat-item"><User size={14} /> {stats.total} {t('orgActiveEmployees')}</span>
-            <span className="stat-item"><Briefcase size={14} /> {stats.departments} {t('orgDepartments')}</span>
-            <span className="stat-item"><Users size={14} /> {stats.managers} {t('orgManagers')}</span>
-            <span className="stat-item disposition-horizontal-badge">{t('orgFooterLevel1')}</span>
-            <span className="stat-item disposition-vertical-badge">{t('orgFooterTeam')}</span>
+        <div className="legend-section">
+          <div className="legend-card">
+            <div className="legend-header"><Briefcase size={20} /><h4>{t('orgLegend')}</h4></div>
+            <div className="legend-grid">
+              <div className="legend-item">
+                <div className="legend-color ceo-color"></div>
+                <div className="legend-text">
+                  <span className="legend-title">{t('orgLegendPlantManager')}</span>
+                  <span className="legend-desc">{t('orgLegendPlantDesc')}</span>
+                </div>
+              </div>
+              <div className="legend-item">
+                <div className="legend-color manager-color"></div>
+                <div className="legend-text">
+                  <span className="legend-title">{t('orgLegendManager')}</span>
+                  <span className="legend-desc">{t('orgLegendManagerDesc')}</span>
+                </div>
+              </div>
+              <div className="legend-item disposition-horizontal-item">
+                <div className="disposition-sample-horizontal">
+                  <svg width="100" height="30">
+                    <rect x="0" y="5" width="25" height="20" rx="4" fill="#3b82f6" opacity="0.7" />
+                    <rect x="35" y="5" width="25" height="20" rx="4" fill="#64748b" opacity="0.7" />
+                    <rect x="70" y="5" width="25" height="20" rx="4" fill="#64748b" opacity="0.7" />
+                    <path d="M 12.5,15 L 35,15" stroke="#94a3b8" strokeWidth="1.5" />
+                    <path d="M 47.5,15 L 70,15" stroke="#94a3b8" strokeWidth="1.5" />
+                  </svg>
+                </div>
+                <div className="legend-text">
+                  <span className="legend-title">{t('orgLegendLevel1')}</span>
+                  <span className="legend-desc">{t('orgLegendLevel1Desc')}</span>
+                </div>
+              </div>
+              <div className="legend-item disposition-vertical-item">
+                <div className="disposition-sample-vertical">
+                  <svg width="40" height="70">
+                    <rect x="10" y="0" width="20" height="20" rx="4" fill="#3b82f6" opacity="0.7" />
+                    <rect x="10" y="30" width="20" height="20" rx="4" fill="#64748b" opacity="0.7" />
+                    <rect x="10" y="60" width="20" height="20" rx="4" fill="#64748b" opacity="0.7" />
+                    <path d="M 20,20 L 20,30" stroke="#94a3b8" strokeWidth="1.5" />
+                    <path d="M 20,50 L 20,60" stroke="#94a3b8" strokeWidth="1.5" />
+                  </svg>
+                </div>
+                <div className="legend-text">
+                  <span className="legend-title">{t('orgLegendTeam')}</span>
+                  <span className="legend-desc">{t('orgLegendTeamDesc')}</span>
+                </div>
+              </div>
+              {Object.entries(departmentColors)
+                .filter(([dept]) => dept !== 'CEO' && dept !== 'Default')
+                .map(([dept, color]) => {
+                  const count = filteredEmployees.filter((e) => e.site_dep === dept).length;
+                  return count > 0 ? (
+                    <div key={dept} className="legend-item">
+                      <div className="legend-color" style={{ backgroundColor: color }}></div>
+                      <div className="legend-text">
+                        <span className="legend-title">{dept}</span>
+                        <span className="legend-count">
+                          {count} {count > 1 ? t('orgEmployees') : t('orgEmployee')}
+                        </span>
+                      </div>
+                    </div>
+                  ) : null;
+                })}
+            </div>
           </div>
         </div>
-        <div className="footer-actions">
-          <button onClick={fetchEmployees} className="refresh-btn">
-            <RotateCcw size={16} /> {t('orgRefresh')}
-          </button>
+
+        <div className="organigramme-footer">
+          <div className="footer-content">
+            <div className="footer-stats">
+              <span className="stat-item"><User size={14} /> {stats.total} {t('orgActiveEmployees')}</span>
+              <span className="stat-item"><Briefcase size={14} /> {stats.departments} {t('orgDepartments')}</span>
+              <span className="stat-item"><Users size={14} /> {stats.managers} {t('orgManagers')}</span>
+              <span className="stat-item disposition-horizontal-badge">{t('orgFooterLevel1')}</span>
+              <span className="stat-item disposition-vertical-badge">{t('orgFooterTeam')}</span>
+            </div>
+          </div>
+          <div className="footer-actions">
+            <button onClick={fetchEmployees} className="refresh-btn">
+              <RotateCcw size={16} /> {t('orgRefresh')}
+            </button>
+          </div>
         </div>
+
       </div>
     </div>
   );
