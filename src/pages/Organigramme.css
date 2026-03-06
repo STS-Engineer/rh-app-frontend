@@ -1,7 +1,17 @@
 /* Organigramme.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+/* =============================================
+   FIX: Outer wrapper — Sidebar + content side by side
+   ============================================= */
+.organigramme-page-container {
+  display: flex;
+  min-height: 100vh;
+}
+
 .organigramme-container {
+  flex: 1;
+  overflow-y: auto;
   padding: 30px;
   background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
   min-height: 100vh;
@@ -731,81 +741,37 @@
 
 /* Animations */
 @keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
 /* Responsive */
 @media (max-width: 1200px) {
-  .chart-container {
-    height: 1000px;
-  }
+  .chart-container { height: 1000px; }
 }
 
 @media (max-width: 992px) {
-  .organigramme-container {
-    padding: 20px;
-  }
-  
-  .organigramme-header h1 {
-    font-size: 2rem;
-  }
-  
-  .chart-container {
-    height: 900px;
-  }
+  .organigramme-container { padding: 20px; }
+  .organigramme-header h1 { font-size: 2rem; }
+  .chart-container { height: 900px; }
 }
 
 @media (max-width: 768px) {
-  .organigramme-controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .search-box {
-    min-width: 100%;
-  }
-  
-  .controls-group {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .zoom-controls {
-    justify-content: center;
-  }
-  
-  .export-btn {
-    justify-content: center;
-  }
-  
-  .chart-container {
-    height: 800px;
-  }
-  
+  .organigramme-controls { flex-direction: column; align-items: stretch; }
+  .search-box { min-width: 100%; }
+  .controls-group { flex-direction: column; align-items: stretch; }
+  .zoom-controls { justify-content: center; }
+  .export-btn { justify-content: center; }
+  .chart-container { height: 800px; }
   .employee-details-panel {
     position: fixed;
     top: 50%;
@@ -817,126 +783,44 @@
 }
 
 @media (max-width: 576px) {
-  .organigramme-stats {
-    grid-template-columns: 1fr;
-  }
-  
-  .organigramme-header h1 {
-    font-size: 1.6rem;
-  }
-  
-  .subtitle {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .ceo-badge,
-  .disposition-badge-horizontal,
-  .disposition-badge-vertical {
-    text-align: center;
-  }
-  
-  .chart-container {
-    height: 700px;
-  }
-  
-  .legend-grid {
-    grid-template-columns: 1fr;
-    max-height: 250px;
-  }
-  
-  .organigramme-footer {
-    flex-direction: column;
-    gap: 16px;
-    text-align: center;
-  }
-  
-  .footer-stats {
-    justify-content: center;
-  }
-  
-  .footer-actions {
-    width: 100%;
-  }
-  
-  .refresh-btn {
-    width: 100%;
-    justify-content: center;
-  }
+  .organigramme-stats { grid-template-columns: 1fr; }
+  .organigramme-header h1 { font-size: 1.6rem; }
+  .subtitle { flex-direction: column; align-items: stretch; }
+  .ceo-badge, .disposition-badge-horizontal, .disposition-badge-vertical { text-align: center; }
+  .chart-container { height: 700px; }
+  .legend-grid { grid-template-columns: 1fr; max-height: 250px; }
+  .organigramme-footer { flex-direction: column; gap: 16px; text-align: center; }
+  .footer-stats { justify-content: center; }
+  .footer-actions { width: 100%; }
+  .refresh-btn { width: 100%; justify-content: center; }
 }
 
 /* Print */
 @media print {
+  @page { size: landscape; margin: 10mm; }
+
+  body, .organigramme-container { background: #ffffff !important; }
+
   .organigramme-controls,
   .organigramme-footer,
   .legend-section,
-  .employee-details-panel {
-    display: none !important;
-  }
-  
-  .chart-container {
-    height: auto;
-    box-shadow: none;
-    border: 1px solid #ccc;
-  }
-}
-/* =========================
-   Impression
-   ========================= */
+  .employee-details-panel { display: none !important; }
 
-@media print {
-  /* Page setup */
-  @page {
-    size: landscape;
-    margin: 10mm;
-  }
+  .organigramme-header { box-shadow: none !important; border: none !important; margin-bottom: 10px !important; }
 
-  /* Background white + remove shadows */
-  body,
-  .organigramme-container {
-    background: #ffffff !important;
-  }
-
-  /* Hide non-essential UI */
-  .organigramme-controls,
-  .organigramme-footer,
-  .legend-section,
-  .employee-details-panel {
-    display: none !important;
-  }
-
-  /* Keep header small (optional) */
-  .organigramme-header {
-    box-shadow: none !important;
-    border: none !important;
-    margin-bottom: 10px !important;
-  }
-
-  /* Make chart printable */
   .organigramme-main,
   .chart-container-wrapper,
-  .chart-container {
-    overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
-  }
+  .chart-container { overflow: visible !important; height: auto !important; max-height: none !important; }
 
-  /* SVG should not be clipped */
-  .organigramme-svg {
-    width: 100% !important;
-    height: auto !important;
-  }
+  .organigramme-svg { width: 100% !important; height: auto !important; }
 }
 
-/* Optional: styles when printing is triggered */
 body.print-mode .organigramme-controls,
 body.print-mode .organigramme-footer,
 body.print-mode .legend-section,
-body.print-mode .employee-details-panel {
-  display: none;
-}
+body.print-mode .employee-details-panel { display: none; }
 
-/* Button style (match your UI) */
+/* Button styles */
 .print-btn {
   background: linear-gradient(135deg, #334155 0%, #475569 100%);
   color: white;
@@ -951,10 +835,9 @@ body.print-mode .employee-details-panel {
   box-shadow: 0 6px 18px rgba(0,0,0,0.18);
 }
 
-.print-btn:hover {
-  transform: translateY(-2px);
-}
-.export-controls{
+.print-btn:hover { transform: translateY(-2px); }
+
+.export-controls {
   display: flex;
   align-items: center;
   gap: 12px;
