@@ -10,7 +10,10 @@
  * - This component now uses a safe helper `tf(key, fallback)` so the UI stays translated
  *   even when a key is missing (fallback is French by default).
  *
- * Note: I kept your “end date inclusive” logic (<=). If in your business rule
+ * ✅ Layout Fix: wrapped all content in .etat-des-lieux-content so sidebar
+ *   no longer overlaps page content.
+ *
+ * Note: I kept your "end date inclusive" logic (<=). If in your business rule
  * date_retour means "first day back present", change <= to < (marked below).
  */
 
@@ -112,7 +115,6 @@ const EtatDesLieux = () => {
 
   // Local fallbacks (French) for keys missing in your FR translations
   const FALLBACKS = useMemo(() => ({
-    // EDL page
     loading_data: 'Chargement des données...',
     presence_tracker: 'Suivi des Présences',
     real_time_monitoring: 'Suivi en temps réel',
@@ -137,16 +139,12 @@ const EtatDesLieux = () => {
     employees: 'employés',
     edl_custom_max_days: '(max 62 jours)',
     weekend: 'Weekend',
-
-    // Status types used by backend (status.status and demande.type_demande)
     'congé': 'Congé',
     mission: 'Mission',
     autorisation: 'Autorisation',
     retard: 'Retard',
     formation: 'Formation',
     maladie: 'Maladie',
-    
-    // Additional missing keys
     days: 'jours',
     export: 'Exporter',
     print: 'Imprimer',
@@ -227,7 +225,6 @@ const EtatDesLieux = () => {
   const formatAbsencePeriod = (demande) => {
     if (!demande) return '';
 
-    // Use safe parser
     const dateDepart = parseApiDate(demande.date_depart) || new Date();
     const dateRetour = demande.date_retour ? (parseApiDate(demande.date_retour) || dateDepart) : dateDepart;
 
@@ -300,7 +297,7 @@ const EtatDesLieux = () => {
     return filtered;
   }, [employees, selectedDepartment, searchQuery, selectedEmployee]);
 
-  // ✅ FIXED HERE
+  // ✅ FIXED: timezone-safe day comparison
   const getEmployeeStatusOnDate = (employeeId, date) => {
     const demandesApprouvees = demandes.filter(
       d => d.employe_id === employeeId && d.statut === 'approuve'
@@ -385,13 +382,8 @@ const EtatDesLieux = () => {
     return ['all', ...Array.from(departments)];
   };
 
-  const exportToExcel = () => { 
-    console.log(t('exportingData')); 
-  };
-  
-  const printReport = () => { 
-    window.print(); 
-  };
+  const exportToExcel = () => { console.log(t('exportingData')); };
+  const printReport = () => { window.print(); };
 
   const customLabel = () => {
     if (!customStartDate || !customEndDate) return label('edl_custom_choose');
@@ -402,9 +394,11 @@ const EtatDesLieux = () => {
     return (
       <div className="etat-des-lieux-container">
         <Sidebar />
-        <div className="loading-container">
-          <div className="loading-spinner"></div>
-          <p className="text-gradient">{label('loading_data')}</p>
+        <div className="etat-des-lieux-content">
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p className="text-gradient">{label('loading_data')}</p>
+          </div>
         </div>
       </div>
     );
@@ -413,298 +407,302 @@ const EtatDesLieux = () => {
   return (
     <div className="etat-des-lieux-container">
       <Sidebar />
-      
-      <div className="etat-header">
-        <h1>
-          <span className="text-gradient">{label('presence_tracker')}</span>
-          <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 'normal', marginLeft: '10px' }}>
-            {label('real_time_monitoring')}
-          </span>
-        </h1>
 
-        <div className="main-navigation">
-          <div className="view-controls">
-            <button className={`view-btn ${viewMode === 'day' ? 'active' : ''}`} onClick={() => setViewMode('day')}>
-              {ICONS.CALENDAR} {t('today')}
-            </button>
-            <button className={`view-btn ${viewMode === 'week' ? 'active' : ''}`} onClick={() => setViewMode('week')}>
-              {ICONS.TEAM} {label('this_week')}
-            </button>
-            <button className={`view-btn ${viewMode === 'month' ? 'active' : ''}`} onClick={() => setViewMode('month')}>
-              {ICONS.STATS} {label('this_month')}
-            </button>
-            <button
-              className={`view-btn ${viewMode === 'custom' ? 'active' : ''}`}
-              onClick={() => setViewMode('custom')}
-              title={label('custom_range')}
-            >
-              {ICONS.CALENDAR} {label('custom_range')}
-            </button>
-          </div>
+      {/* ✅ FIX: all page content wrapped in this div so sidebar doesn't overlap */}
+      <div className="etat-des-lieux-content">
 
-          <div className="date-navigation">
-            <button className="nav-btn" onClick={() => navigateDate(-1)}>
-              ← {t('previous')}
-            </button>
-
-            {viewMode === 'day' && (
-              <DatePicker
-                selected={selectedDate}
-                onChange={date => setSelectedDate(date)}
-                dateFormat="EEEE dd MMMM yyyy"
-                className="date-picker"
-                customInput={
-                  <button className="date-picker custom">
-                    {ICONS.CALENDAR} {formatDate(selectedDate)}
-                  </button>
-                }
-              />
-            )}
-
-            {viewMode === 'week' && (
-              <div className="week-display">
-                {formatDate(dateRange.start).split(' ')[0]} {dateRange.start.getDate()} -
-                {formatDate(dateRange.end).split(' ')[0]} {dateRange.end.getDate()} {dateRange.end.getFullYear()}
-              </div>
-            )}
-
-            {viewMode === 'month' && (
-              <div className="month-display">
-                {selectedDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-              </div>
-            )}
-
-            {viewMode === 'custom' && (
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                <DatePicker
-                  selected={customStartDate}
-                  onChange={(d) => setCustomStartDate(d)}
-                  dateFormat="dd/MM/yyyy"
-                  placeholderText={label('edl_custom_start')}
-                  className="date-picker"
-                />
-                <span style={{ opacity: 0.8 }}>→</span>
-                <DatePicker
-                  selected={customEndDate}
-                  onChange={(d) => setCustomEndDate(d)}
-                  dateFormat="dd/MM/yyyy"
-                  placeholderText={label('edl_custom_end')}
-                  className="date-picker"
-                  minDate={customStartDate || undefined}
-                />
-                <span style={{ fontSize: 12, color: '#64748b' }}>{customLabel()}</span>
-              </div>
-            )}
-
-            <button className="nav-btn" onClick={() => navigateDate(1)}>
-              {t('next')} →
-            </button>
-          </div>
-
-          <div className="action-buttons">
-            <button className="action-btn secondary-btn" onClick={exportToExcel}>
-              {ICONS.DOWNLOAD} {t('export')}
-            </button>
-            <button className="action-btn secondary-btn" onClick={printReport}>
-              {ICONS.PRINT} {t('print')}
-            </button>
-          </div>
-        </div>
-
-        {/* Advanced filters */}
-        <div className="advanced-filters">
-          <div className="filter-group">
-            <label className="filter-label">{ICONS.FILTER} {label('search_employee')}</label>
-            <input
-              type="text"
-              placeholder={label('search_by_name_matricule_position')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="employee-search"
-            />
-          </div>
-
-          <div className="filter-group">
-            <label className="filter-label">{ICONS.DEPARTMENT} {t('department')}</label>
-            <select
-              value={selectedDepartment}
-              onChange={(e) => setSelectedDepartment(e.target.value)}
-              className="department-select"
-            >
-              <option value="all">{label('all_departments')}</option>
-              {getDepartments().slice(1).map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="filter-group">
-            <label className="filter-label">{ICONS.EMPLOYEE} {label('specific_employee')}</label>
-            <select
-              value={selectedEmployee}
-              onChange={(e) => setSelectedEmployee(e.target.value)}
-              className="filter-select"
-              size="10"
-            >
-              <option value="all">{label('all_employees')}</option>
-              {employees.map(emp => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.prenom} {emp.nom} ({emp.matricule})
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="legend-container">
-        <div className="legend-item">
-          <div className="color-box" style={{ background: statusColors.default }}></div>
-          <span>{label('available')}</span>
-        </div>
-        <div className="legend-item">
-          <div className="color-box" style={{ background: statusColors.congé }}></div>
-          <span>{label('on_leave')}</span>
-        </div>
-        <div className="legend-item">
-          <div className="color-box" style={{ background: statusColors.mission }}></div>
-          <span>{label('on_mission')}</span>
-        </div>
-        <div className="legend-item">
-          <div className="color-box" style={{ background: statusColors.autorisation }}></div>
-          <span>{label('authorized_absence')}</span>
-        </div>
-        <div className="legend-item">
-          <div className="color-box" style={{ background: statusColors.retard }}></div>
-          <span>{label('late')}</span>
-        </div>
-        <div className="legend-item">
-          <div className="color-box" style={{ background: statusColors.maladie }}></div>
-          <span>{label('sick_leave')}</span>
-        </div>
-      </div>
-
-      {/* Main table */}
-      <div className="presence-table-container">
-        <div className="table-header">
-          <h2>
-            {ICONS.TEAM} {label('presence_overview')}
-            <span style={{ fontSize: '14px', fontWeight: 'normal', opacity: 0.9, marginLeft: '10px' }}>
-              {filteredEmployees.length} {label('employees')} • {datesToDisplay.length} {t('days')}
-              {viewMode === 'custom' && customStartDate && customEndDate && datesToDisplay.length === 62 && (
-                <span style={{ marginLeft: 8 }}>{label('edl_custom_max_days')}</span>
-              )}
+        <div className="etat-header">
+          <h1>
+            <span className="text-gradient">{label('presence_tracker')}</span>
+            <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 'normal', marginLeft: '10px' }}>
+              {label('real_time_monitoring')}
             </span>
-          </h2>
+          </h1>
+
+          <div className="main-navigation">
+            <div className="view-controls">
+              <button className={`view-btn ${viewMode === 'day' ? 'active' : ''}`} onClick={() => setViewMode('day')}>
+                {ICONS.CALENDAR} {t('today')}
+              </button>
+              <button className={`view-btn ${viewMode === 'week' ? 'active' : ''}`} onClick={() => setViewMode('week')}>
+                {ICONS.TEAM} {label('this_week')}
+              </button>
+              <button className={`view-btn ${viewMode === 'month' ? 'active' : ''}`} onClick={() => setViewMode('month')}>
+                {ICONS.STATS} {label('this_month')}
+              </button>
+              <button
+                className={`view-btn ${viewMode === 'custom' ? 'active' : ''}`}
+                onClick={() => setViewMode('custom')}
+                title={label('custom_range')}
+              >
+                {ICONS.CALENDAR} {label('custom_range')}
+              </button>
+            </div>
+
+            <div className="date-navigation">
+              <button className="nav-btn" onClick={() => navigateDate(-1)}>
+                ← {t('previous')}
+              </button>
+
+              {viewMode === 'day' && (
+                <DatePicker
+                  selected={selectedDate}
+                  onChange={date => setSelectedDate(date)}
+                  dateFormat="EEEE dd MMMM yyyy"
+                  className="date-picker"
+                  customInput={
+                    <button className="date-picker custom">
+                      {ICONS.CALENDAR} {formatDate(selectedDate)}
+                    </button>
+                  }
+                />
+              )}
+
+              {viewMode === 'week' && (
+                <div className="week-display">
+                  {formatDate(dateRange.start).split(' ')[0]} {dateRange.start.getDate()} -
+                  {formatDate(dateRange.end).split(' ')[0]} {dateRange.end.getDate()} {dateRange.end.getFullYear()}
+                </div>
+              )}
+
+              {viewMode === 'month' && (
+                <div className="month-display">
+                  {selectedDate.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                </div>
+              )}
+
+              {viewMode === 'custom' && (
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <DatePicker
+                    selected={customStartDate}
+                    onChange={(d) => setCustomStartDate(d)}
+                    dateFormat="dd/MM/yyyy"
+                    placeholderText={label('edl_custom_start')}
+                    className="date-picker"
+                  />
+                  <span style={{ opacity: 0.8 }}>→</span>
+                  <DatePicker
+                    selected={customEndDate}
+                    onChange={(d) => setCustomEndDate(d)}
+                    dateFormat="dd/MM/yyyy"
+                    placeholderText={label('edl_custom_end')}
+                    className="date-picker"
+                    minDate={customStartDate || undefined}
+                  />
+                  <span style={{ fontSize: 12, color: '#64748b' }}>{customLabel()}</span>
+                </div>
+              )}
+
+              <button className="nav-btn" onClick={() => navigateDate(1)}>
+                {t('next')} →
+              </button>
+            </div>
+
+            <div className="action-buttons">
+              <button className="action-btn secondary-btn" onClick={exportToExcel}>
+                {ICONS.DOWNLOAD} {t('export')}
+              </button>
+              <button className="action-btn secondary-btn" onClick={printReport}>
+                {ICONS.PRINT} {t('print')}
+              </button>
+            </div>
+          </div>
+
+          {/* Advanced filters */}
+          <div className="advanced-filters">
+            <div className="filter-group">
+              <label className="filter-label">{ICONS.FILTER} {label('search_employee')}</label>
+              <input
+                type="text"
+                placeholder={label('search_by_name_matricule_position')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="employee-search"
+              />
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label">{ICONS.DEPARTMENT} {t('department')}</label>
+              <select
+                value={selectedDepartment}
+                onChange={(e) => setSelectedDepartment(e.target.value)}
+                className="department-select"
+              >
+                <option value="all">{label('all_departments')}</option>
+                {getDepartments().slice(1).map(dept => (
+                  <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label">{ICONS.EMPLOYEE} {label('specific_employee')}</label>
+              <select
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+                className="filter-select"
+                size="10"
+              >
+                <option value="all">{label('all_employees')}</option>
+                {employees.map(emp => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.prenom} {emp.nom} ({emp.matricule})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
-        <div className="table-scroll-container">
-          <table className="presence-table">
-            <thead>
-              <tr>
-                <th className="employee-column">{t('employee')}</th>
-                {datesToDisplay.map((date, index) => {
-                  const isToday = new Date().toDateString() === date.toDateString();
-                  return (
-                    <th key={index} className="date-column">
-                      <div className="date-header">
-                        <div className="weekday">
-                          {date.toLocaleDateString('fr-FR', { weekday: 'short' })}
-                        </div>
-                        <div className={`day ${isToday ? 'today' : ''}`}>
-                          {date.getDate()}
-                        </div>
-                      </div>
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEmployees.map((employee) => (
-                <tr key={employee.id} className="employee-row">
-                  <td className="employee-cell">
-                    <div className="employee-info">
-                      <div className="employee-name">
-                        <div className="employee-avatar">
-                          {employee.prenom.charAt(0)}{employee.nom.charAt(0)}
-                        </div>
-                        {employee.prenom} {employee.nom}
-                      </div>
-                      <div className="employee-details">
-                        <span className="employee-role">{employee.poste}</span>
-                        <span className="employee-id">
-                          {ICONS.DOCUMENT} {employee.matricule}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
+        {/* Legend */}
+        <div className="legend-container">
+          <div className="legend-item">
+            <div className="color-box" style={{ background: statusColors.default }}></div>
+            <span>{label('available')}</span>
+          </div>
+          <div className="legend-item">
+            <div className="color-box" style={{ background: statusColors.congé }}></div>
+            <span>{label('on_leave')}</span>
+          </div>
+          <div className="legend-item">
+            <div className="color-box" style={{ background: statusColors.mission }}></div>
+            <span>{label('on_mission')}</span>
+          </div>
+          <div className="legend-item">
+            <div className="color-box" style={{ background: statusColors.autorisation }}></div>
+            <span>{label('authorized_absence')}</span>
+          </div>
+          <div className="legend-item">
+            <div className="color-box" style={{ background: statusColors.retard }}></div>
+            <span>{label('late')}</span>
+          </div>
+          <div className="legend-item">
+            <div className="color-box" style={{ background: statusColors.maladie }}></div>
+            <span>{label('sick_leave')}</span>
+          </div>
+        </div>
 
-                  {datesToDisplay.map((date, dateIndex) => {
-                    const status = getEmployeeStatusOnDate(employee.id, date);
+        {/* Main table */}
+        <div className="presence-table-container">
+          <div className="table-header">
+            <h2>
+              {ICONS.TEAM} {label('presence_overview')}
+              <span style={{ fontSize: '14px', fontWeight: 'normal', opacity: 0.9, marginLeft: '10px' }}>
+                {filteredEmployees.length} {label('employees')} • {datesToDisplay.length} {t('days')}
+                {viewMode === 'custom' && customStartDate && customEndDate && datesToDisplay.length === 62 && (
+                  <span style={{ marginLeft: 8 }}>{label('edl_custom_max_days')}</span>
+                )}
+              </span>
+            </h2>
+          </div>
+
+          <div className="table-scroll-container">
+            <table className="presence-table">
+              <thead>
+                <tr>
+                  <th className="employee-column">{t('employee')}</th>
+                  {datesToDisplay.map((date, index) => {
                     const isToday = new Date().toDateString() === date.toDateString();
                     return (
-                      <td
-                        key={dateIndex}
-                        className="status-cell"
-                        style={{
-                          background: status.color,
-                          border: isToday ? '3px solid #667eea' : '1px solid #e5e7eb'
-                        }}
-                        onClick={() => handleCellClick(employee, date, status)}
-                        title={`${employee.prenom} ${employee.nom} - ${formatDate(date)}`}
-                      >
-                        <div className="status-content">
-                          <div className="status-icon">{status.icon}</div>
-                          {status.status !== 'available' && status.status !== 'weekend' && (
-                            <>
-                              {/* Use safe fallback for backend status names too */}
-                              <div className="status-type">{label(status.status)}</div>
-                              {status.demande?.heure_depart && (
-                                <div className="time-info">
-                                  {ICONS.TIME} {status.demande.heure_depart.substring(0, 5)}
-                                </div>
-                              )}
-                              <div className="status-badge"></div>
-                            </>
-                          )}
+                      <th key={index} className="date-column">
+                        <div className="date-header">
+                          <div className="weekday">
+                            {date.toLocaleDateString('fr-FR', { weekday: 'short' })}
+                          </div>
+                          <div className={`day ${isToday ? 'today' : ''}`}>
+                            {date.getDate()}
+                          </div>
                         </div>
-                      </td>
+                      </th>
                     );
                   })}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              </thead>
+              <tbody>
+                {filteredEmployees.map((employee) => (
+                  <tr key={employee.id} className="employee-row">
+                    <td className="employee-cell">
+                      <div className="employee-info">
+                        <div className="employee-name">
+                          <div className="employee-avatar">
+                            {employee.prenom.charAt(0)}{employee.nom.charAt(0)}
+                          </div>
+                          {employee.prenom} {employee.nom}
+                        </div>
+                        <div className="employee-details">
+                          <span className="employee-role">{employee.poste}</span>
+                          <span className="employee-id">
+                            {ICONS.DOCUMENT} {employee.matricule}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
 
-      {/* Details Panel */}
-      {showDetailsPanel && selectedAbsence && (
-        <div className="details-panel">
-          <div className="details-panel-header">
-            <h3>{t('absenceDetails')}</h3>
-            <button className="close-btn" onClick={() => setShowDetailsPanel(false)}>×</button>
-          </div>
-          <div className="details-panel-content">
-            <p><strong>{t('employee')}:</strong> {selectedAbsence.employee.prenom} {selectedAbsence.employee.nom}</p>
-            <p><strong>{t('date')}:</strong> {formatDate(selectedAbsence.date)}</p>
-            <p><strong>{t('status')}:</strong> {label(selectedAbsence.status)}</p>
-            {selectedAbsence.demande && (
-              <>
-                <p><strong>{t('type')}:</strong> {label(selectedAbsence.demande.type_demande)}</p>
-                {selectedAbsence.demande.date_depart && selectedAbsence.demande.date_retour && (
-                  <p><strong>{t('period')}:</strong> {formatAbsencePeriod(selectedAbsence.demande)}</p>
-                )}
-                {selectedAbsence.demande.commentaire && (
-                  <p><strong>{t('comments')}:</strong> {selectedAbsence.demande.commentaire}</p>
-                )}
-              </>
-            )}
+                    {datesToDisplay.map((date, dateIndex) => {
+                      const status = getEmployeeStatusOnDate(employee.id, date);
+                      const isToday = new Date().toDateString() === date.toDateString();
+                      return (
+                        <td
+                          key={dateIndex}
+                          className="status-cell"
+                          style={{
+                            background: status.color,
+                            border: isToday ? '3px solid #667eea' : '1px solid #e5e7eb'
+                          }}
+                          onClick={() => handleCellClick(employee, date, status)}
+                          title={`${employee.prenom} ${employee.nom} - ${formatDate(date)}`}
+                        >
+                          <div className="status-content">
+                            <div className="status-icon">{status.icon}</div>
+                            {status.status !== 'available' && status.status !== 'weekend' && (
+                              <>
+                                <div className="status-type">{label(status.status)}</div>
+                                {status.demande?.heure_depart && (
+                                  <div className="time-info">
+                                    {ICONS.TIME} {status.demande.heure_depart.substring(0, 5)}
+                                  </div>
+                                )}
+                                <div className="status-badge"></div>
+                              </>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      )}
+
+        {/* Details Panel */}
+        {showDetailsPanel && selectedAbsence && (
+          <div className="details-panel">
+            <div className="details-panel-header">
+              <h3>{t('absenceDetails')}</h3>
+              <button className="close-btn" onClick={() => setShowDetailsPanel(false)}>×</button>
+            </div>
+            <div className="details-panel-content">
+              <p><strong>{t('employee')}:</strong> {selectedAbsence.employee.prenom} {selectedAbsence.employee.nom}</p>
+              <p><strong>{t('date')}:</strong> {formatDate(selectedAbsence.date)}</p>
+              <p><strong>{t('status')}:</strong> {label(selectedAbsence.status)}</p>
+              {selectedAbsence.demande && (
+                <>
+                  <p><strong>{t('type')}:</strong> {label(selectedAbsence.demande.type_demande)}</p>
+                  {selectedAbsence.demande.date_depart && selectedAbsence.demande.date_retour && (
+                    <p><strong>{t('period')}:</strong> {formatAbsencePeriod(selectedAbsence.demande)}</p>
+                  )}
+                  {selectedAbsence.demande.commentaire && (
+                    <p><strong>{t('comments')}:</strong> {selectedAbsence.demande.commentaire}</p>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+      </div>{/* end etat-des-lieux-content */}
     </div>
   );
 };
