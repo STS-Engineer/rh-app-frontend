@@ -998,6 +998,7 @@
 
 .etat-des-lieux-content {
   flex: 1;
+  margin-left: 280px; 
   overflow-y: auto;
   padding: 30px;
   /* Add any background/font you already have on .etat-des-lieux-container here */
