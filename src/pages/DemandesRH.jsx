@@ -228,6 +228,7 @@ const DemandesRH = () => {
   const navigate = useNavigate();
 
   const [demandes, setDemandes] = useState([]);
+  const [allDemandes, setAllDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -432,7 +433,20 @@ const DemandesRH = () => {
       if (!response.ok) throw new Error('Erreur serveur');
       const data = await response.json();
       setLastResponse(data);
-      setDemandes(data.success && Array.isArray(data.demandes) ? data.demandes : []);
+      const fetched = data.success && Array.isArray(data.demandes) ? data.demandes : [];
+      setDemandes(fetched);
+
+      // Always fetch unfiltered counts for stat cards
+      const countParams = new URLSearchParams();
+      if (force) countParams.append('_t', Date.now() + 1);
+      const countResponse = await fetch(`${API_BASE_URL}/api/demandes?${countParams}`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        cache: 'no-cache'
+      });
+      if (countResponse.ok) {
+        const countData = await countResponse.json();
+        setAllDemandes(countData.success && Array.isArray(countData.demandes) ? countData.demandes : []);
+      }
     } catch (err) {
       setError(`${t('connectionError')}: ${err.message}`);
       setDemandes([]);
@@ -786,28 +800,28 @@ const DemandesRH = () => {
         <div className="stat-card total" style={{ cursor: 'pointer' }} onClick={() => { handleFilterChange('statut', ''); setFiltersApplied(false); }}>
           <div className="stat-icon"><i className="fi fi-rr-rectangle-list"></i></div>
           <div className="stat-content">
-            <div className="stat-number">{demandes.length}</div>
+            <div className="stat-number">{allDemandes.length}</div>
             <div className="stat-label">{t('totalRequests')}</div>
           </div>
         </div>
         <div className="stat-card pending" style={{ cursor: 'pointer' }} onClick={() => handleFilterChange('statut', 'en_attente')}>
           <div className="stat-icon"><span className="fi fi-rr-hourglass-end"></span></div>
           <div className="stat-content">
-            <div className="stat-number">{demandes.filter(d => d.statut === 'en_attente').length}</div>
+            <div className="stat-number">{allDemandes.filter(d => d.statut === 'en_attente').length}</div>
             <div className="stat-label">{t('pending')}</div>
           </div>
         </div>
         <div className="stat-card approved" style={{ cursor: 'pointer' }} onClick={() => handleFilterChange('statut', 'approuve')}>
           <div className="stat-icon"><span className="fi fi-rs-badge-check"></span></div>
           <div className="stat-content">
-            <div className="stat-number">{demandes.filter(d => d.statut === 'approuve').length}</div>
+            <div className="stat-number">{allDemandes.filter(d => d.statut === 'approuve').length}</div>
             <div className="stat-label">{t('approved')}</div>
           </div>
         </div>
         <div className="stat-card refused" style={{ cursor: 'pointer' }} onClick={() => handleFilterChange('statut', 'refuse')}>
           <div className="stat-icon">📛</div>
           <div className="stat-content">
-            <div className="stat-number">{demandes.filter(d => d.statut === 'refuse').length}</div>
+            <div className="stat-number">{allDemandes.filter(d => d.statut === 'refuse').length}</div>
             <div className="stat-label">{t('refused')}</div>
           </div>
         </div>
