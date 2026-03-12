@@ -35,17 +35,17 @@ const Organigramme = () => {
   // ✅ CHANGED: Colors updated to match the blue/grey chart palette
   const departmentColors = {
     CEO: '#f97316',
-    Général: '#2563eb',
-    Digitale: '#2563eb',
-    Commerce: '#2563eb',
-    Chiffrage: '#2563eb',
-    Achat: '#2563eb',
-    Qualité: '#2563eb',
-    'Logistique Germany': '#2563eb',
-    'Logistique Groupe': '#2563eb',
-    Finance: '#2563eb',
-    Siège: '#2563eb',
-    Management: '#2563eb',
+    Général: '#64748b',
+    Digitale: '#64748b',
+    Commerce: '#64748b',
+    Chiffrage: '#64748b',
+    Achat: '#64748b',
+    Qualité: '#64748b',
+    'Logistique Germany': '#64748b',
+    'Logistique Groupe': '#64748b',
+    Finance: '#64748b',
+    Siège: '#64748b',
+    Management: '#64748b',
     Default: '#64748b'
   };
 
@@ -300,9 +300,9 @@ const Organigramme = () => {
       .attr('x', -nodeWidth / 2).attr('y', -nodeHeight / 2)
       .attr('width', nodeWidth).attr('height', nodeHeight)
       .attr('rx', 12).attr('ry', 12)
-      .attr('fill', (d) => d.data.isCEO ? 'url(#ceo-gradient)' : d.data.isManager ? 'url(#manager-gradient)' : departmentColors[d.data.site_dep] || departmentColors.Default)
-      .attr('stroke', (d) => d.data.isCEO ? '#fbbf24' : d.data.isManager ? '#93c5fd' : '#e2e8f0')
-      .attr('stroke-width', (d) => d.data.isCEO ? 3 : d.data.isManager ? 2 : 1)
+      .attr('fill', (d) => d.data.isCEO ? 'url(#ceo-gradient)' : d.depth === 1 ? 'url(#manager-gradient)' : departmentColors[d.data.site_dep] || departmentColors.Default)
+      .attr('stroke', (d) => d.data.isCEO ? '#fbbf24' : d.depth === 1 ? '#93c5fd' : '#e2e8f0')
+      .attr('stroke-width', (d) => d.data.isCEO ? 3 : d.depth === 1 ? 2 : 1)
       .style('filter', 'drop-shadow(0 8px 12px rgba(0,0,0,0.15))');
 
     node.append('text').attr('x', -nodeWidth / 2 + 12).attr('y', -nodeHeight / 2 + 18)
