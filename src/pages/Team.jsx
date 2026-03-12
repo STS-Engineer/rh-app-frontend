@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom"; // ✅ ADDED
 import Sidebar from "../components/Sidebar";
 import EmployeeCard from "../components/EmployeeCard";
 import EmployeeModal from "../components/EmployeeModal";
@@ -9,6 +10,8 @@ import "./Team.css";
 
 const Team = () => {
   const { t } = useLanguage();
+  const location = useLocation(); // ✅ ADDED
+  const navigate = useNavigate(); // ✅ ADDED
 
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
@@ -19,6 +22,9 @@ const Team = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // ✅ ADDED: tracks which dashboard filter is active (for the banner)
+  const [dashboardFilter, setDashboardFilter] = useState(null);
 
   // ✅ Filtres
   const [filters, setFilters] = useState({
@@ -37,6 +43,43 @@ const Team = () => {
     loadEmployees();
     // ⚠️ pas de eslint-disable ici (ça causait ton erreur)
   }, []);
+
+  // ✅ ADDED: Apply dashboard filter once employees are loaded
+  useEffect(() => {
+    if (loading || employees.length === 0) return;
+    const filter = location.state?.filter;
+    if (!filter) return;
+
+    // Clear navigation state so refresh doesn't re-apply
+    navigate(location.pathname, { replace: true, state: {} });
+
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+
+    if (filter === 'newThisMonth') {
+      const firstDay = new Date(currentYear, currentMonth, 1);
+      const lastDay = new Date(currentYear, currentMonth + 1, 0);
+      const fmt = (d) => d.toISOString().split('T')[0];
+      setFilters(prev => ({
+        ...prev,
+        date_debut_from: fmt(firstDay),
+        date_debut_to: fmt(lastDay),
+      }));
+      setDashboardFilter('newThisMonth');
+    }
+
+    if (filter === 'contractsToRenew') {
+      const in30 = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+      setFilters(prev => ({
+        ...prev,
+        type_contrat: 'CDD',
+        date_fin_contrat_from: today.toISOString().split('T')[0],
+        date_fin_contrat_to: in30.toISOString().split('T')[0],
+      }));
+      setDashboardFilter('contractsToRenew');
+    }
+  }, [loading, employees]); // eslint-disable-line
 
   const loadEmployees = async () => {
     try {
@@ -182,6 +225,7 @@ const Team = () => {
   };
 
   const clearFilters = () => {
+    setDashboardFilter(null); // ✅ ADDED: also clear the banner
     setFilters({
       site_dep: "",
       poste: "",
@@ -219,6 +263,34 @@ const Team = () => {
           <h1>👥 Équipe</h1>
           <p>Consultez et gérez la liste des employés.</p>
         </header>
+
+        {/* ✅ ADDED: Banner shown when redirected from dashboard */}
+        {dashboardFilter && (
+          <div style={{
+            background: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            borderRadius: 10,
+            padding: '10px 16px',
+            marginBottom: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '0.9rem',
+            color: '#1d4ed8',
+            fontWeight: 600
+          }}>
+            <span>
+              {dashboardFilter === 'newThisMonth' && '📊 Filtre actif : Employés embauchés ce mois-ci'}
+              {dashboardFilter === 'contractsToRenew' && '📅 Filtre actif : Contrats CDD à renouveler dans 30 jours'}
+            </span>
+            <button
+              onClick={clearFilters}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1d4ed8', fontWeight: 700, fontSize: '1rem' }}
+            >
+              ✕ Effacer
+            </button>
+          </div>
+        )}
 
         {/* ✅ BARRE UNIQUE: Recherche + filtres + actions */}
         <div className="toolbar">
@@ -290,7 +362,7 @@ const Team = () => {
 
           {/* Date début (du / au) */}
           <div className="toolbar-field">
-            <label className="toolbar-label">Date d’embauche (Du)</label>
+            <label className="toolbar-label">Date d'embauche (Du)</label>
             <input
               type="date"
               value={filters.date_debut_from}
@@ -300,7 +372,7 @@ const Team = () => {
           </div>
 
           <div className="toolbar-field">
-            <label className="toolbar-label">Date d’embauche (Au)</label>
+            <label className="toolbar-label">Date d'embauche (Au)</label>
             <input
               type="date"
               value={filters.date_debut_to}
