@@ -536,6 +536,11 @@ const DemandesRH = () => {
       pendingOpenIdRef.current = String(openId);
       navigate(location.pathname, { replace: true, state: {} });
     }
+    const filterStatut = location.state?.filterStatut;
+    if (filterStatut) {
+      setFilters(prev => ({ ...prev, statut: filterStatut }));
+      setFiltersApplied(true);
+    }
     fetchDemandes(true);
     fetchEmployes();
   }, []); // eslint-disable-line
@@ -778,28 +783,28 @@ const DemandesRH = () => {
       </div>
 
       <div className="stats-section">
-        <div className="stat-card total">
+        <div className="stat-card total" style={{ cursor: 'pointer' }} onClick={() => { handleFilterChange('statut', ''); setFiltersApplied(false); }}>
           <div className="stat-icon"><i className="fi fi-rr-rectangle-list"></i></div>
           <div className="stat-content">
             <div className="stat-number">{demandes.length}</div>
             <div className="stat-label">{t('totalRequests')}</div>
           </div>
         </div>
-        <div className="stat-card pending">
+        <div className="stat-card pending" style={{ cursor: 'pointer' }} onClick={() => handleFilterChange('statut', 'en_attente')}>
           <div className="stat-icon"><span className="fi fi-rr-hourglass-end"></span></div>
           <div className="stat-content">
             <div className="stat-number">{demandes.filter(d => d.statut === 'en_attente').length}</div>
             <div className="stat-label">{t('pending')}</div>
           </div>
         </div>
-        <div className="stat-card approved">
+        <div className="stat-card approved" style={{ cursor: 'pointer' }} onClick={() => handleFilterChange('statut', 'approuve')}>
           <div className="stat-icon"><span className="fi fi-rs-badge-check"></span></div>
           <div className="stat-content">
             <div className="stat-number">{demandes.filter(d => d.statut === 'approuve').length}</div>
             <div className="stat-label">{t('approved')}</div>
           </div>
         </div>
-        <div className="stat-card refused">
+        <div className="stat-card refused" style={{ cursor: 'pointer' }} onClick={() => handleFilterChange('statut', 'refuse')}>
           <div className="stat-icon">📛</div>
           <div className="stat-content">
             <div className="stat-number">{demandes.filter(d => d.statut === 'refuse').length}</div>
