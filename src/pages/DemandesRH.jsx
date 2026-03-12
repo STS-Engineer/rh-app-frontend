@@ -437,9 +437,7 @@ const DemandesRH = () => {
       setDemandes(fetched);
 
       // Always fetch unfiltered counts for stat cards
-      const countParams = new URLSearchParams();
-      if (force) countParams.append('_t', Date.now() + 1);
-      const countResponse = await fetch(`${API_BASE_URL}/api/demandes?${countParams}`, {
+      const countResponse = await fetch(`${API_BASE_URL}/api/demandes`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         cache: 'no-cache'
       });
