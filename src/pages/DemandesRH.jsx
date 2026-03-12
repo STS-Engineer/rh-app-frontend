@@ -145,7 +145,6 @@ const Modal = ({
                   <span className="detail-value">{t('yes')}</span>
                 </div>
               )}
-              {/* Frais de déplacement - COMPLETELY REMOVED from modal as requested */}
             </div>
           </div>
 
@@ -214,6 +213,7 @@ const Modal = ({
               </button>
             </>
           )}
+
         </div>
       </div>
     </div>
@@ -585,9 +585,18 @@ const DemandesRH = () => {
 
   const retryFetch = () => fetchDemandes(true);
 
+  // ✅ FIX: Always reset rejectMode and rejectComment before opening modal
   const handleViewDetails = (demande) => {
     setRejectMode(false);
     setRejectComment('');
+    setSelectedDemande(demande);
+    setShowModal(true);
+  };
+
+  // ✅ FIX: Open modal in reject mode cleanly — reset comment first
+  const handleOpenRejectModal = (demande) => {
+    setRejectComment('');       // clear any leftover comment from previous demande
+    setRejectMode(true);        // enter reject mode
     setSelectedDemande(demande);
     setShowModal(true);
   };
@@ -609,7 +618,6 @@ const DemandesRH = () => {
       t('employee'), t('employeeID'), t('position'),
       t('startDateReq'), t('returnDate'), t('departureTime'), t('returnTime'),
       t('numberOfWorkingDays'), t('halfDay'),
-      // ✅ travelExpenses column removed as requested
       t('supervisor1'), t('supervisor1Status'),
       t('supervisor2'), t('supervisor2Status'),
       t('refusalComment'), t('creationDate'), t('lastUpdated')
@@ -625,7 +633,6 @@ const DemandesRH = () => {
       d.heure_depart || '', d.heure_retour || '',
       calculateWorkingDays(d.date_depart, d.date_retour, d.demi_journee, d.type_demande),
       d.demi_journee ? t('yes') : t('no'),
-      // ✅ travelExpenses value removed as requested
       d.mail_responsable1 || t('notAssigned'),
       getResponsableStatusLabel(getResponsableStatus(d, 1)),
       d.mail_responsable2 || t('notRequired'),
@@ -949,7 +956,6 @@ const DemandesRH = () => {
                           <span className="value">{t('yes')}</span>
                         </div>
                       )}
-                      {/* Frais de déplacement - COMPLETELY REMOVED from card view as requested */}
                       <div className="detail">
                         <span className="label">📝 {t('createdOn')}:</span>
                         <span className="value">{formatDate(demande.created_at)}</span>
@@ -967,29 +973,31 @@ const DemandesRH = () => {
                       </div>
                     )}
 
+                    {/* ✅ FIX: Card actions only open the modal — NO direct API calls from cards */}
                     <div className="card-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-                      <button className="btn-action btn-view" onClick={() => handleViewDetails(demande)}>
+                      <button
+                        className="btn-action btn-view"
+                        onClick={() => handleViewDetails(demande)}
+                      >
                         👁️ {t('viewDetails')}
                       </button>
 
                       {demande.statut === 'en_attente' && (
                         <>
+                          {/* ✅ FIX: Opens modal for confirmation — does NOT call API directly */}
                           <button
                             className="btn-action btn-approve"
                             disabled={actionLoading}
-                            onClick={() => approveSelected(demande)}
+                            onClick={() => handleViewDetails(demande)}
                             style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
                           >
                             ✅ Approuver
                           </button>
+                          {/* ✅ FIX: Uses handleOpenRejectModal — resets comment, sets rejectMode cleanly */}
                           <button
                             className="btn-action btn-reject"
                             disabled={actionLoading}
-                            onClick={() => {
-                              setSelectedDemande(demande);
-                              setRejectMode(true);
-                              setShowModal(true);
-                            }}
+                            onClick={() => handleOpenRejectModal(demande)}
                             style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
                           >
                             ❌ Refuser
