@@ -163,8 +163,8 @@ const NotificationIcon = () => {
     }
     setShowDropdown(false);
 
-    // ✅ go to DemandesRH without auto-open
-    navigate('/demandes-rh', { state: {} });
+    // ✅ go to DemandesRH with en_attente filter pre-applied
+    navigate('/demandes-rh', { state: { filterStatut: 'en_attente' } });
   };
 
   // ✅ FIXED: send openDemandeId to DemandesRH
