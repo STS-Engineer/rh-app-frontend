@@ -155,7 +155,12 @@ const Dashboard = () => {
         </header>
 
         <div className="dashboard-stats">
-          <div className="stat-card">
+          {/* ✅ Total Employees → /team (no filter) */}
+          <div
+            className="stat-card"
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/team')}
+          >
             <div className="stat-icon">👥</div>
             <div className="stat-info">
               <h3>{t('totalEmployees')}</h3>
@@ -164,10 +169,14 @@ const Dashboard = () => {
                 {getContractTypesText()}
               </p>
             </div>
-            
           </div>
 
-          <div className="stat-card">
+          {/* ✅ New This Month → /team with newThisMonth filter */}
+          <div
+            className="stat-card"
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/team', { state: { filter: 'newThisMonth' } })}
+          >
             <div className="stat-icon">📊</div>
             <div className="stat-info">
               <h3>{t('newThisMonth')}</h3>
@@ -176,10 +185,14 @@ const Dashboard = () => {
                 {stats.newThisMonth > 0 ? t('activeGrowth') : t('stableThisMonth')}
               </p>
             </div>
-       
           </div>
 
-          <div className="stat-card">
+          {/* ✅ Contracts to Renew → /team with contractsToRenew filter */}
+          <div
+            className="stat-card"
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/team', { state: { filter: 'contractsToRenew' } })}
+          >
             <div className="stat-icon">📅</div>
             <div className="stat-info">
               <h3>{t('contractsToRenew')}</h3>
@@ -193,7 +206,12 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="stat-card">
+          {/* ✅ Total Salary → /statistics */}
+          <div
+            className="stat-card"
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/statistics')}
+          >
             <div className="stat-icon">💰</div>
             <div className="stat-info">
               <h3>{t('totalSalary')}</h3>
@@ -207,7 +225,12 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="stat-card">
+          {/* ✅ Archives → /archives */}
+          <div
+            className="stat-card"
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/archives')}
+          >
             <div className="stat-icon">📁</div>
             <div className="stat-info">
               <h3>{t('archivesCount')}</h3>
