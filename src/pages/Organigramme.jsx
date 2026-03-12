@@ -32,20 +32,21 @@ const Organigramme = () => {
   const containerRef = useRef();
   const chartWrapperRef = useRef();
 
+  // ✅ CHANGED: Colors updated to match the blue/grey chart palette
   const departmentColors = {
-    CEO: '#0a0c10',
-    Général: '#0f766e',
-    Digitale: '#991b1b',
-    Commerce: '#0c4a6e',
-    Chiffrage: '#0b5e42',
-    Achat: '#9a3412',
-    Qualité: '#5b21b6',
-    'Logistique Germany': '#0e7c86',
-    'Logistique Groupe': '#854d0e',
-    Finance: '#581c87',
-    Siège: '#075985',
-    Management: '#1e293b',
-    Default: '#4b5563'
+    CEO: '#f97316',
+    Général: '#2563eb',
+    Digitale: '#2563eb',
+    Commerce: '#2563eb',
+    Chiffrage: '#2563eb',
+    Achat: '#2563eb',
+    Qualité: '#2563eb',
+    'Logistique Germany': '#2563eb',
+    'Logistique Groupe': '#2563eb',
+    Finance: '#2563eb',
+    Siège: '#2563eb',
+    Management: '#2563eb',
+    Default: '#64748b'
   };
 
   const cleanName = (prenom, nom) => {
@@ -53,6 +54,9 @@ const Organigramme = () => {
     const removeAbbreviations = (str) => {
       if (!str) return '';
       let cleaned = str;
+      // ✅ CHANGED: Also strip dotted abbreviations like M.F. M.L.L. M.M. at start or end
+      cleaned = cleaned.replace(/^([A-ZÀ-Ÿ]\.){1,4}\s*/g, '');
+      cleaned = cleaned.replace(/\s+([A-ZÀ-Ÿ]\.){1,4}$/g, '');
       cleaned = cleaned.replace(/\s+[A-ZÀ-Ÿ]{2,}$/g, '');
       cleaned = cleaned.replace(/[-–—]\s*[A-ZÀ-Ÿ]{2,}$/g, '');
       cleaned = cleaned.replace(/\s+[A-ZÀ-Ÿ]{2,}\s+/g, ' ');
@@ -252,13 +256,16 @@ const Organigramme = () => {
     g.attr('transform', `translate(${initialX},${initialY}) scale(${scale})`);
 
     const defs = svg.append('defs');
-    const ceoGradient = defs.append('linearGradient').attr('id', 'ceo-gradient').attr('x1', '0%').attr('y1', '0%').attr('x2', '100%').attr('y2', '100%');
-    ceoGradient.append('stop').attr('offset', '0%').attr('stop-color', '#0a0c10');
-    ceoGradient.append('stop').attr('offset', '100%').attr('stop-color', '#1e293b');
 
+    // ✅ CHANGED: CEO gradient now orange to match the chart
+    const ceoGradient = defs.append('linearGradient').attr('id', 'ceo-gradient').attr('x1', '0%').attr('y1', '0%').attr('x2', '100%').attr('y2', '100%');
+    ceoGradient.append('stop').attr('offset', '0%').attr('stop-color', '#ea580c');
+    ceoGradient.append('stop').attr('offset', '100%').attr('stop-color', '#f97316');
+
+    // ✅ CHANGED: Manager gradient now blue to match the chart
     const managerGradient = defs.append('linearGradient').attr('id', 'manager-gradient').attr('x1', '0%').attr('y1', '0%').attr('x2', '100%').attr('y2', '100%');
-    managerGradient.append('stop').attr('offset', '0%').attr('stop-color', '#1e40af');
-    managerGradient.append('stop').attr('offset', '100%').attr('stop-color', '#3b82f6');
+    managerGradient.append('stop').attr('offset', '0%').attr('stop-color', '#1d4ed8');
+    managerGradient.append('stop').attr('offset', '100%').attr('stop-color', '#2563eb');
 
     g.selectAll('.link').data(root.links()).enter().append('path')
       .attr('class', 'link')
