@@ -46,17 +46,17 @@
 }
 
 .ceo-badge {
-  background: linear-gradient(145deg, #0e4e78, #046eaf);
+  background: linear-gradient(145deg, #ea580c, #f97316);
   color: white;
   padding: 8px 20px;
   border-radius: 40px;
   font-size: 0.95rem;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(4, 110, 175, 0.2);
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
 }
 
 .disposition-badge-horizontal {
-  background: linear-gradient(145deg, #0e4e78, #046eaf);
+  background: linear-gradient(145deg, #1d4ed8, #2563eb);
   color: white;
   padding: 8px 20px;
   border-radius: 40px;
@@ -274,14 +274,16 @@
   filter: drop-shadow(0 12px 20px rgba(4, 110, 175, 0.2));
 }
 
+/* ✅ CHANGED: CEO node border now orange */
 .node-ceo .node-container {
-  border: 3px solid #ef7807 !important;
-  stroke: #ef7807;
+  border: 3px solid #f97316 !important;
+  stroke: #f97316;
 }
 
+/* ✅ CHANGED: Manager node border now blue */
 .node-manager .node-container {
-  border: 2px solid #046eaf !important;
-  stroke: #046eaf;
+  border: 2px solid #2563eb !important;
+  stroke: #2563eb;
 }
 
 .node-horizontal .node-container rect {
@@ -578,13 +580,15 @@
   box-shadow: 0 2px 6px rgba(4, 110, 175, 0.1);
 }
 
+/* ✅ CHANGED: CEO legend color now orange */
 .ceo-color {
-  background: linear-gradient(145deg, #0e4e78, #046eaf);
-  border: 2px solid #ef7807;
+  background: linear-gradient(145deg, #ea580c, #f97316);
+  border: 2px solid #fbbf24;
 }
 
+/* ✅ CHANGED: Manager legend color now blue */
 .manager-color {
-  background: linear-gradient(145deg, #0e4e78, #046eaf);
+  background: linear-gradient(145deg, #1d4ed8, #2563eb);
 }
 
 .disposition-horizontal-item {
@@ -682,7 +686,7 @@
 }
 
 .disposition-horizontal-badge {
-  background: linear-gradient(145deg, #0e4e78, #046eaf);
+  background: linear-gradient(145deg, #1d4ed8, #2563eb);
   color: white;
 }
 
