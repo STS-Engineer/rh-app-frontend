@@ -96,9 +96,14 @@ function StatusPill({ status, t }) {
   return <span className={cls}>{label}</span>;
 }
 
-function KpiCard({ label, value, type }) {
+// ✅ CHANGED: added onClick prop
+function KpiCard({ label, value, type, onClick }) {
   return (
-    <div className={`kpi-card ${type ? `kpi-${type}` : ""}`}>
+    <div
+      className={`kpi-card ${type ? `kpi-${type}` : ""}`}
+      onClick={onClick}
+      style={onClick ? { cursor: "pointer" } : undefined}
+    >
       <div className="kpi-label">{label}</div>
       <div className="kpi-value">{value}</div>
     </div>
@@ -280,10 +285,12 @@ function EmployeeSearchSelect({
 /** -------------------------------------------------------
  * Section Dashboard (liste de dossiers par statut)
  * ------------------------------------------------------ */
-function Section({ t, title, sectionStatus, innerRef, dossiers, onOpen }) {
+// ✅ CHANGED: added onAbandonner prop
+function Section({ t, title, sectionStatus, innerRef, dossiers, onOpen, onAbandonner }) {
   const isAccorde = sectionStatus === "VISA_ACCORDE";
   const showProgress = sectionStatus === "EN_COURS" || sectionStatus === "PRET_POUR_DEPOT";
-  const colCount = 5 + (showProgress ? 1 : 0) + (isAccorde ? 2 : 0) + 1;
+  const showAbandonner = sectionStatus === "EN_COURS"; // ✅ CHANGED
+  const colCount = 5 + (showProgress ? 1 : 0) + (isAccorde ? 2 : 0) + 1 + (showAbandonner ? 1 : 0);
 
   return (
     <div className="dossier-section" ref={innerRef}>
@@ -363,6 +370,16 @@ function Section({ t, title, sectionStatus, innerRef, dossiers, onOpen }) {
                   <button className="btn-link" onClick={() => onOpen(d.id)}>
                     {t("visaConsult")}
                   </button>
+                  {/* ✅ CHANGED: Abandonner button only for EN_COURS */}
+                  {showAbandonner && (
+                    <button
+                      className="btn-danger"
+                      style={{ marginLeft: 8, padding: "4px 10px", fontSize: "0.82rem" }}
+                      onClick={() => onAbandonner(d)}
+                    >
+                      🗑 Abandonner
+                    </button>
+                  )}
                 </td>
               </tr>
             );
@@ -384,7 +401,7 @@ function Section({ t, title, sectionStatus, innerRef, dossiers, onOpen }) {
 }
 
 /** -------------------------------------------------------
- * Détail d’un dossier visa
+ * Détail d'un dossier visa
  * ------------------------------------------------------ */
 function DossierDetail({
   t,
@@ -586,7 +603,7 @@ function DossierDetail({
 
             <tbody>
               {(dossier.documents || []).map((doc) => {
-                const typeLabel = getDocumentType(doc.code, t); // ✅ FIX
+                const typeLabel = getDocumentType(doc.code, t);
                 const badgeClass = `document-type-badge ${typeToCssClass(typeLabel)}`;
                 const isOk = isDocumentSatisfied(doc);
 
@@ -925,6 +942,8 @@ export default function Visa() {
   const [selectedDossier, setSelectedDossier] = useState(null);
 
   const [search, setSearch] = useState("");
+  // ✅ CHANGED: added statusFilter state
+  const [statusFilter, setStatusFilter] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [newDossierForm, setNewDossierForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState("");
@@ -934,23 +953,23 @@ export default function Visa() {
 
   const [pageLoading, setPageLoading] = useState(false);
 
+  // ✅ CHANGED: added confirm delete state
+  const [abandonnerTarget, setAbandonnerTarget] = useState(null);
+
   const enCoursRef = useRef(null);
   const pretDepotRef = useRef(null);
   const visaAccordeRef = useRef(null);
   const visaRefuseRef = useRef(null);
 
-  // ✅ FIX: depend on language (not on t)
   const steps = useMemo(() => getSteps(t), [language, t]);
   const docStatusLabelMap = useMemo(() => getDocumentStatusLabel(t), [language, t]);
 
-  // ✅ token helpers
   const getToken = useCallback(() => localStorage.getItem("token"), []);
   const getAuthHeaders = useCallback(() => {
     const token = getToken();
     return token ? { Authorization: `Bearer ${token}` } : {};
   }, [getToken]);
 
-  /** ✅ fetch JSON avec Authorization */
   const fetchJson = useCallback(
     async (url, options = {}) => {
       const res = await fetch(url, {
@@ -974,7 +993,6 @@ export default function Visa() {
     [getAuthHeaders, t]
   );
 
-  /** ✅ ouvrir fichier */
   const openProtectedFile = useCallback(
     async (fileUrl) => {
       if (!fileUrl) throw new Error(t("visaMissingFileUrl"));
@@ -984,13 +1002,11 @@ export default function Visa() {
     [t]
   );
 
-  /** ✅ ouvrir PDF complet dossier */
   const openDossierPdf = useCallback((dossierId) => {
     const url = `${API}/api/visa-dossiers/${dossierId}/dossier-pdf`;
     window.open(url, "_blank", "noopener,noreferrer");
   }, []);
 
-  /** ✅ Chargement employees */
   useEffect(() => {
     if (!API) {
       toast.error(t("visaMissingApiEnv"));
@@ -1010,7 +1026,6 @@ export default function Visa() {
     })();
   }, [fetchJson, t]);
 
-  /** ✅ Refresh dossiers */
   const refreshDossiers = useCallback(async () => {
     if (!API) return;
     try {
@@ -1028,7 +1043,6 @@ export default function Visa() {
     refreshDossiers();
   }, [refreshDossiers]);
 
-  /** ✅ Ouvrir dossier (détail) */
   const openDossier = useCallback(
     async (dossierId) => {
       try {
@@ -1042,15 +1056,17 @@ export default function Visa() {
     [fetchJson, t]
   );
 
-  /** ✅ Filtre dashboard */
+  // ✅ CHANGED: filteredDossiers now also filters by statusFilter
   const filteredDossiers = useMemo(() => {
     const term = search.toLowerCase().trim();
-    if (!term) return dossiers;
-    return dossiers.filter(
-      (d) =>
-        (d.employee?.name || "").toLowerCase().includes(term) || (d.motif || "").toLowerCase().includes(term)
-    );
-  }, [dossiers, search]);
+    return dossiers.filter((d) => {
+      const matchesSearch = !term
+        ? true
+        : (d.employee?.name || "").toLowerCase().includes(term) || (d.motif || "").toLowerCase().includes(term);
+      const matchesStatus = !statusFilter ? true : d.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [dossiers, search, statusFilter]);
 
   const dossiersEnCours = filteredDossiers.filter((d) => d.status === "EN_COURS");
   const dossiersPretDepot = filteredDossiers.filter((d) => d.status === "PRET_POUR_DEPOT");
@@ -1067,6 +1083,44 @@ export default function Visa() {
     [dossiers]
   );
 
+  // ✅ CHANGED: KPI click handler — sets filter and scrolls to section
+  function handleKpiClick(status, ref) {
+    setStatusFilter((prev) => {
+      const next = prev === status ? "" : status; // toggle off if same
+      return next;
+    });
+    setTimeout(() => {
+      ref?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
+  // ✅ CHANGED: Abandonner — show confirm modal
+  function handleAbandonnerClick(dossier) {
+    setAbandonnerTarget(dossier);
+  }
+
+  // ✅ CHANGED: Confirm delete dossier
+  async function handleAbandonnerConfirm() {
+    if (!abandonnerTarget) return;
+    const loadingId = toast.loading("Suppression en cours...");
+    try {
+      const res = await fetch(`${API}/api/visa-dossiers/${abandonnerTarget.id}`, {
+        method: "DELETE",
+        headers: { ...getAuthHeaders() },
+      });
+      toast.dismiss(loadingId);
+      if (res.status === 401) throw new Error(t("visaUnauthorized401"));
+      if (!res.ok) throw new Error(`Erreur HTTP ${res.status}`);
+      toast.success(`Dossier de ${abandonnerTarget.employee?.name || ""} supprimé.`);
+      setAbandonnerTarget(null);
+      await refreshDossiers();
+    } catch (e) {
+      toast.dismiss(loadingId);
+      toast.error(e.message || "Erreur lors de la suppression.");
+      setAbandonnerTarget(null);
+    }
+  }
+
   function handleOpenCreate() {
     setIsCreating(true);
     setFormError("");
@@ -1079,7 +1133,6 @@ export default function Visa() {
     setNewDossierForm(EMPTY_FORM);
   }
 
-  /** ✅ create dossier */
   async function handleCreateDossier(e) {
     e.preventDefault();
     const { employeeId, departureDate, returnDate, motif } = newDossierForm;
@@ -1134,7 +1187,6 @@ export default function Visa() {
     }
   }
 
-  /** ✅ update doc */
   async function updateDocStatus(docId, status, extra = {}) {
     try {
       await fetchJson(`${API}/api/visa-documents/${docId}`, {
@@ -1150,7 +1202,6 @@ export default function Visa() {
     }
   }
 
-  /** ✅ update dossier status */
   async function updateDossierStatus(dossierId, status, visaData = null) {
     try {
       await fetchJson(`${API}/api/visa-dossiers/${dossierId}/status`, {
@@ -1166,7 +1217,6 @@ export default function Visa() {
     }
   }
 
-  /** ✅ upload PDF (avec Authorization) */
   async function uploadPdf(doc) {
     const input = document.createElement("input");
     input.type = "file";
@@ -1202,7 +1252,6 @@ export default function Visa() {
     input.click();
   }
 
-  /** ✅ generate PDF */
   async function generatePdf(doc) {
     const dossier = selectedDossier;
     if (!dossier) return;
@@ -1263,7 +1312,6 @@ export default function Visa() {
     }
   }
 
-  /** ✅ send specific email */
   async function sendSpecificEmail(doc) {
     if (!selectedDossierId) return;
 
@@ -1294,7 +1342,6 @@ export default function Visa() {
     }
   }
 
-  /** ✅ Jump vers section */
   function handleStatusJump(e) {
     const value = e.target.value;
     if (!value) return;
@@ -1309,7 +1356,6 @@ export default function Visa() {
     map[value]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  /** ✅ Loading page */
   if (pageLoading && !selectedDossier) {
     return (
       <div className="layout">
@@ -1401,6 +1447,25 @@ export default function Visa() {
               <span className="toolbar-count">
                 {filteredDossiers.length} {filteredDossiers.length === 1 ? t("visaOneFileFound") : t("visaFilesFound")}
               </span>
+              {/* ✅ CHANGED: show active filter badge with clear button */}
+              {statusFilter && (
+                <button
+                  onClick={() => setStatusFilter("")}
+                  style={{
+                    marginLeft: 10,
+                    background: "#eff6ff",
+                    border: "1px solid #bfdbfe",
+                    borderRadius: 20,
+                    padding: "2px 10px",
+                    color: "#1d4ed8",
+                    fontWeight: 600,
+                    fontSize: "0.82rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  ✕ Filtre actif
+                </button>
+              )}
             </div>
 
             <div className="toolbar-right">
@@ -1501,11 +1566,32 @@ export default function Visa() {
 
         {!selectedDossier && (
           <>
+            {/* ✅ CHANGED: KPI cards now clickable */}
             <section className="kpi-grid">
-              <KpiCard label={t("visaKpiInProgress")} value={stats.enCours} type="warning" />
-              <KpiCard label={t("visaKpiReadyToSubmit")} value={stats.pretDepot} type="info" />
-              <KpiCard label={t("visaKpiGranted")} value={stats.visaAccorde} type="success" />
-              <KpiCard label={t("visaKpiRefused")} value={stats.visaRefuse} type="danger" />
+              <KpiCard
+                label={t("visaKpiInProgress")}
+                value={stats.enCours}
+                type="warning"
+                onClick={() => handleKpiClick("EN_COURS", enCoursRef)}
+              />
+              <KpiCard
+                label={t("visaKpiReadyToSubmit")}
+                value={stats.pretDepot}
+                type="info"
+                onClick={() => handleKpiClick("PRET_POUR_DEPOT", pretDepotRef)}
+              />
+              <KpiCard
+                label={t("visaKpiGranted")}
+                value={stats.visaAccorde}
+                type="success"
+                onClick={() => handleKpiClick("VISA_ACCORDE", visaAccordeRef)}
+              />
+              <KpiCard
+                label={t("visaKpiRefused")}
+                value={stats.visaRefuse}
+                type="danger"
+                onClick={() => handleKpiClick("VISA_REFUSE", visaRefuseRef)}
+              />
             </section>
 
             <div className="dossiers-container">
@@ -1516,6 +1602,7 @@ export default function Visa() {
                 innerRef={enCoursRef}
                 dossiers={dossiersEnCours}
                 onOpen={openDossier}
+                onAbandonner={handleAbandonnerClick}
               />
               <Section
                 t={t}
@@ -1524,6 +1611,7 @@ export default function Visa() {
                 innerRef={pretDepotRef}
                 dossiers={dossiersPretDepot}
                 onOpen={openDossier}
+                onAbandonner={handleAbandonnerClick}
               />
               <Section
                 t={t}
@@ -1532,6 +1620,7 @@ export default function Visa() {
                 innerRef={visaAccordeRef}
                 dossiers={dossiersVisaAccorde}
                 onOpen={openDossier}
+                onAbandonner={handleAbandonnerClick}
               />
               <Section
                 t={t}
@@ -1540,6 +1629,7 @@ export default function Visa() {
                 innerRef={visaRefuseRef}
                 dossiers={dossiersVisaRefuse}
                 onOpen={openDossier}
+                onAbandonner={handleAbandonnerClick}
               />
             </div>
           </>
@@ -1559,6 +1649,32 @@ export default function Visa() {
             steps={steps}
             docStatusLabelMap={docStatusLabelMap}
           />
+        )}
+
+        {/* ✅ CHANGED: Confirm delete modal */}
+        {abandonnerTarget && (
+          <div className="modal-overlay" onMouseDown={() => setAbandonnerTarget(null)}>
+            <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <h2>🗑 Abandonner le dossier</h2>
+                <button className="modal-close" onClick={() => setAbandonnerTarget(null)}>✕</button>
+              </div>
+              <div className="create-form">
+                <p style={{ marginTop: 0 }}>
+                  Confirmer la suppression du dossier de <strong>{abandonnerTarget.employee?.name}</strong> ?
+                  Cette action est <strong>irréversible</strong>.
+                </p>
+                <div className="form-actions">
+                  <button type="button" className="btn-outline" onClick={() => setAbandonnerTarget(null)}>
+                    Annuler
+                  </button>
+                  <button type="button" className="btn-danger" onClick={handleAbandonnerConfirm}>
+                    🗑 Confirmer la suppression
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
