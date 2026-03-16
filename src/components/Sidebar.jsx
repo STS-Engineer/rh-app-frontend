@@ -24,12 +24,12 @@ const Sidebar = () => {
     localStorage.setItem('sidebarOpen', JSON.stringify(newState));
   };
 
-  // Set access flag in localStorage before opening Pointeuse in new tab.
-  // The Pointeuse app reads this flag to verify the user is coming from the HR app.
+  // Generate a daily token based on today's date and open Pointeuse with it.
+  // The Pointeuse app generates the same token independently to verify access.
   const handlePointeuseClick = () => {
-    localStorage.setItem('pointeuse-hr-access', 'true');
+    const token = btoa('hr-access-' + new Date().toDateString());
     window.open(
-      'https://pointeuse-sts.azurewebsites.net/',
+      `https://pointeuse-sts.azurewebsites.net/?token=${token}`,
       '_blank',
       'noopener,noreferrer'
     );
