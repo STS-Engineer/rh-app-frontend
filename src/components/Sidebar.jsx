@@ -8,11 +8,9 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, language, getAvailableLanguages } = useLanguage();
-  
-  // Simple state for sidebar visibility
+
   const [isOpen, setIsOpen] = useState(true);
-  
-  // Load saved state from localStorage
+
   useEffect(() => {
     const savedState = localStorage.getItem('sidebarOpen');
     if (savedState !== null) {
@@ -20,11 +18,21 @@ const Sidebar = () => {
     }
   }, []);
 
-  // Simple toggle function
   const toggleSidebar = () => {
     const newState = !isOpen;
     setIsOpen(newState);
     localStorage.setItem('sidebarOpen', JSON.stringify(newState));
+  };
+
+  // Set access flag in localStorage before opening Pointeuse in new tab.
+  // The Pointeuse app reads this flag to verify the user is coming from the HR app.
+  const handlePointeuseClick = () => {
+    localStorage.setItem('pointeuse-hr-access', 'true');
+    window.open(
+      'https://pointeuse-sts.azurewebsites.net/',
+      '_blank',
+      'noopener,noreferrer'
+    );
   };
 
   const menuItems = [
@@ -54,7 +62,7 @@ const Sidebar = () => {
   return (
     <>
       {/* Hamburger/X toggle button */}
-      <button 
+      <button
         className="sidebar-hamburger-toggle"
         onClick={toggleSidebar}
         title={isOpen ? 'Close menu' : 'Open menu'}
@@ -67,7 +75,7 @@ const Sidebar = () => {
         <div className="sidebar-header">
           <img src={logo} alt="Logo" className="header-logo" />
         </div>
-        
+
         <nav className="sidebar-nav">
           {menuItems.map((item) => (
             <button
@@ -75,7 +83,7 @@ const Sidebar = () => {
               className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
               onClick={() =>
                 item.external
-                  ? window.open(item.path, '_blank', 'noopener,noreferrer')
+                  ? handlePointeuseClick()
                   : navigate(item.path)
               }
             >
