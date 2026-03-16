@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-
 import './Sidebar.css';
 import logo from './logo_sts.png';
 
@@ -32,13 +31,19 @@ const Sidebar = () => {
     { path: '/dashboard', label: t('dashboard'), icon: '📊' },
     { path: '/team', label: t('team'), icon: '👥' },
     { path: '/organigramme', label: t('orgTitle'), icon: '🏢' },
-    { path: '/demandes-rh', label: t('demands'), icon: '📋' }, 
+    { path: '/demandes-rh', label: t('demands'), icon: '📋' },
     { path: '/fiche-de-paie', label: t('payslip'), icon: '💰' },
     { path: '/archives', label: t('archives'), icon: '📁' },
-    { path: '/statistics', label: t('statistics'), icon: '📈' }, 
+    { path: '/statistics', label: t('statistics'), icon: '📈' },
     { path: '/etat-des-lieux', label: t('edlPresenceTracker'), icon: '📅' },
     { path: '/visa', label: t('visa'), icon: '✈️' },
     { path: '/settings', label: t('settings'), icon: '⚙️' },
+    {
+      path: 'https://pointeuse-sts.azurewebsites.net/',
+      label: 'Pointeuse',
+      icon: '🕐',
+      external: true,
+    },
   ];
 
   const handleLogout = () => {
@@ -68,7 +73,11 @@ const Sidebar = () => {
             <button
               key={item.path}
               className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
-              onClick={() => navigate(item.path)}
+              onClick={() =>
+                item.external
+                  ? window.open(item.path, '_blank', 'noopener,noreferrer')
+                  : navigate(item.path)
+              }
             >
               <span className="nav-icon">{item.icon}</span>
               <span className="nav-label">{item.label}</span>
