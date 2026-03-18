@@ -15,6 +15,12 @@ const Modal = ({
   actionLoading,
   onApprove,
   onReject,
+  onChangeToRefused,
+  onChangeToApproved,
+  changeStatusMode,
+  setChangeStatusMode,
+  changeStatusComment,
+  setChangeStatusComment,
   t,
   getTypeDemandeLabel,
   getStatutBadge,
@@ -26,6 +32,8 @@ const Modal = ({
 }) => {
   if (!demande) return null;
   const canAct = demande.statut === 'en_attente';
+  const canChangeToRefused = demande.statut === 'approuve';
+  const canChangeToApproved = demande.statut === 'refuse';
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -157,6 +165,7 @@ const Modal = ({
             </div>
           )}
 
+          {/* Original reject mode textarea */}
           {canAct && rejectMode && (
             <div className="modal-section">
               <h3>❌ {t('refusalComment')}</h3>
@@ -170,9 +179,26 @@ const Modal = ({
               />
             </div>
           )}
+
+          {/* Change status: approved → refused comment textarea */}
+          {canChangeToRefused && changeStatusMode === 'to_refused' && (
+            <div className="modal-section">
+              <h3>🔄 Motif du changement de statut</h3>
+              <textarea
+                value={changeStatusComment}
+                onChange={(e) => setChangeStatusComment(e.target.value)}
+                placeholder="Indiquez le motif du refus..."
+                rows={3}
+                style={{ width: '100%' }}
+                disabled={actionLoading}
+              />
+            </div>
+          )}
         </div>
 
-        <div className="modal-footer" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+        <div className="modal-footer" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+
+          {/* ── Original pending actions ── */}
           {canAct && !rejectMode && (
             <>
               <button
@@ -214,6 +240,47 @@ const Modal = ({
             </>
           )}
 
+          {/* ── Change status: Approved → Refused ── */}
+          {canChangeToRefused && changeStatusMode !== 'to_refused' && (
+            <button
+              onClick={() => setChangeStatusMode('to_refused')}
+              disabled={actionLoading}
+              style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+            >
+              🔄 Changer en Refusé
+            </button>
+          )}
+
+          {canChangeToRefused && changeStatusMode === 'to_refused' && (
+            <>
+              <button
+                onClick={() => onChangeToRefused(demande)}
+                disabled={actionLoading}
+                style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+              >
+                ❌ {actionLoading ? 'Traitement...' : 'Confirmer le refus'}
+              </button>
+              <button
+                onClick={() => { setChangeStatusMode(null); setChangeStatusComment(''); }}
+                disabled={actionLoading}
+                style={{ backgroundColor: '#6b7280', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+              >
+                {t('cancel') || 'Annuler'}
+              </button>
+            </>
+          )}
+
+          {/* ── Change status: Refused → Approved ── */}
+          {canChangeToApproved && (
+            <button
+              onClick={() => onChangeToApproved(demande)}
+              disabled={actionLoading}
+              style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+            >
+              🔄 {actionLoading ? 'Traitement...' : 'Changer en Approuvé'}
+            </button>
+          )}
+
         </div>
       </div>
     </div>
@@ -250,6 +317,10 @@ const DemandesRH = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectMode, setRejectMode] = useState(false);
   const [rejectComment, setRejectComment] = useState('');
+
+  // ── New states for status change ──
+  const [changeStatusMode, setChangeStatusMode] = useState(null); // 'to_refused' | null
+  const [changeStatusComment, setChangeStatusComment] = useState('');
 
   const pendingOpenIdRef = useRef(null);
   const isFirstMount = useRef(true);
@@ -436,7 +507,6 @@ const DemandesRH = () => {
       const fetched = data.success && Array.isArray(data.demandes) ? data.demandes : [];
       setDemandes(fetched);
 
-      // Always fetch unfiltered counts for stat cards
       const countResponse = await fetch(`${API_BASE_URL}/api/demandes`, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         cache: 'no-cache'
@@ -464,28 +534,19 @@ const DemandesRH = () => {
         `${API_BASE_URL}/api/demandes/${demandeToAct.id}/approuver-app`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          }
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
         }
       );
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.error || 'Erreur lors de l\'approbation');
       }
-
       setDemandes(prev => prev.map(d =>
-        d.id === demandeToAct.id
-          ? { ...d, statut: 'approuve', approuve_responsable1: true }
-          : d
+        d.id === demandeToAct.id ? { ...d, statut: 'approuve', approuve_responsable1: true } : d
       ));
       setSelectedDemande(prev =>
-        prev?.id === demandeToAct.id
-          ? { ...prev, statut: 'approuve', approuve_responsable1: true }
-          : prev
+        prev?.id === demandeToAct.id ? { ...prev, statut: 'approuve', approuve_responsable1: true } : prev
       );
-
       handleCloseModal();
     } catch (e) {
       alert(e.message || t('connectionError') || 'Erreur');
@@ -507,10 +568,7 @@ const DemandesRH = () => {
         `${API_BASE_URL}/api/demandes/${demandeToAct.id}/refuser-app`,
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ commentaire: rejectComment })
         }
       );
@@ -518,7 +576,6 @@ const DemandesRH = () => {
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.error || 'Erreur lors du refus');
       }
-
       setDemandes(prev => prev.map(d =>
         d.id === demandeToAct.id
           ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: rejectComment }
@@ -529,7 +586,6 @@ const DemandesRH = () => {
           ? { ...prev, statut: 'refuse', approuve_responsable1: false, commentaire_refus: rejectComment }
           : prev
       );
-
       handleCloseModal();
     } catch (e) {
       alert(e.message || t('connectionError') || 'Erreur');
@@ -537,6 +593,85 @@ const DemandesRH = () => {
       setActionLoading(false);
       setRejectMode(false);
       setRejectComment('');
+    }
+  };
+
+  // ─── Change status: Approved → Refused ──────────────────────────────────────
+
+  const changeToRefused = async (demandeToAct = selectedDemande) => {
+    if (!demandeToAct) return;
+    if (!changeStatusComment.trim()) {
+      alert('Veuillez indiquer le motif du refus');
+      return;
+    }
+    setActionLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `${API_BASE_URL}/api/demandes/${demandeToAct.id}/changer-statut-refuse`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ commentaire: changeStatusComment })
+        }
+      );
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erreur lors du changement de statut');
+      }
+      setDemandes(prev => prev.map(d =>
+        d.id === demandeToAct.id
+          ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: changeStatusComment }
+          : d
+      ));
+      setAllDemandes(prev => prev.map(d =>
+        d.id === demandeToAct.id
+          ? { ...d, statut: 'refuse' }
+          : d
+      ));
+      handleCloseModal();
+    } catch (e) {
+      alert(e.message || t('connectionError') || 'Erreur');
+    } finally {
+      setActionLoading(false);
+      setChangeStatusMode(null);
+      setChangeStatusComment('');
+    }
+  };
+
+  // ─── Change status: Refused → Approved ──────────────────────────────────────
+
+  const changeToApproved = async (demandeToAct = selectedDemande) => {
+    if (!demandeToAct) return;
+    setActionLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `${API_BASE_URL}/api/demandes/${demandeToAct.id}/changer-statut-approuve`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+        }
+      );
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erreur lors du changement de statut');
+      }
+      setDemandes(prev => prev.map(d =>
+        d.id === demandeToAct.id
+          ? { ...d, statut: 'approuve', approuve_responsable1: true, commentaire_refus: null }
+          : d
+      ));
+      setAllDemandes(prev => prev.map(d =>
+        d.id === demandeToAct.id
+          ? { ...d, statut: 'approuve' }
+          : d
+      ));
+      handleCloseModal();
+    } catch (e) {
+      alert(e.message || t('connectionError') || 'Erreur');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -602,18 +737,30 @@ const DemandesRH = () => {
 
   const retryFetch = () => fetchDemandes(true);
 
-  // ✅ FIX: Always reset rejectMode and rejectComment before opening modal
   const handleViewDetails = (demande) => {
     setRejectMode(false);
     setRejectComment('');
+    setChangeStatusMode(null);
+    setChangeStatusComment('');
     setSelectedDemande(demande);
     setShowModal(true);
   };
 
-  // ✅ FIX: Open modal in reject mode cleanly — reset comment first
   const handleOpenRejectModal = (demande) => {
-    setRejectComment('');       // clear any leftover comment from previous demande
-    setRejectMode(true);        // enter reject mode
+    setRejectComment('');
+    setRejectMode(true);
+    setChangeStatusMode(null);
+    setChangeStatusComment('');
+    setSelectedDemande(demande);
+    setShowModal(true);
+  };
+
+  // New: open modal directly in "change to refused" mode
+  const handleOpenChangeToRefusedModal = (demande) => {
+    setChangeStatusComment('');
+    setChangeStatusMode('to_refused');
+    setRejectMode(false);
+    setRejectComment('');
     setSelectedDemande(demande);
     setShowModal(true);
   };
@@ -623,6 +770,8 @@ const DemandesRH = () => {
     setSelectedDemande(null);
     setRejectMode(false);
     setRejectComment('');
+    setChangeStatusMode(null);
+    setChangeStatusComment('');
   };
 
   const handleExportExcel = () => {
@@ -990,7 +1139,6 @@ const DemandesRH = () => {
                       </div>
                     )}
 
-                    {/* ✅ FIX: Card actions only open the modal — NO direct API calls from cards */}
                     <div className="card-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
                       <button
                         className="btn-action btn-view"
@@ -999,9 +1147,9 @@ const DemandesRH = () => {
                         👁️ {t('viewDetails')}
                       </button>
 
+                      {/* Pending actions */}
                       {demande.statut === 'en_attente' && (
                         <>
-                          {/* ✅ FIX: Opens modal for confirmation — does NOT call API directly */}
                           <button
                             className="btn-action btn-approve"
                             disabled={actionLoading}
@@ -1010,7 +1158,6 @@ const DemandesRH = () => {
                           >
                             ✅ Approuver
                           </button>
-                          {/* ✅ FIX: Uses handleOpenRejectModal — resets comment, sets rejectMode cleanly */}
                           <button
                             className="btn-action btn-reject"
                             disabled={actionLoading}
@@ -1020,6 +1167,28 @@ const DemandesRH = () => {
                             ❌ Refuser
                           </button>
                         </>
+                      )}
+
+                      {/* Change status: Approved → Refused */}
+                      {demande.statut === 'approuve' && (
+                        <button
+                          disabled={actionLoading}
+                          onClick={() => handleOpenChangeToRefusedModal(demande)}
+                          style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                        >
+                          🔄 Changer en Refusé
+                        </button>
+                      )}
+
+                      {/* Change status: Refused → Approved */}
+                      {demande.statut === 'refuse' && (
+                        <button
+                          disabled={actionLoading}
+                          onClick={() => handleViewDetails(demande)}
+                          style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                        >
+                          🔄 Changer en Approuvé
+                        </button>
                       )}
                     </div>
                   </div>
@@ -1041,6 +1210,12 @@ const DemandesRH = () => {
           actionLoading={actionLoading}
           onApprove={approveSelected}
           onReject={rejectSelected}
+          onChangeToRefused={changeToRefused}
+          onChangeToApproved={changeToApproved}
+          changeStatusMode={changeStatusMode}
+          setChangeStatusMode={setChangeStatusMode}
+          changeStatusComment={changeStatusComment}
+          setChangeStatusComment={setChangeStatusComment}
           t={t}
           getTypeDemandeLabel={getTypeDemandeLabel}
           getStatutBadge={getStatutBadge}
