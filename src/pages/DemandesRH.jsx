@@ -36,8 +36,8 @@ const Modal = ({
   const canChangeToApproved = demande.statut === 'refuse';
 
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ overflowY: 'hidden' }}>
-      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ overflowY: 'auto', maxHeight: '90vh' }}>
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h2>📑 {t('requestDetails')}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
