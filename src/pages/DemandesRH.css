@@ -873,7 +873,12 @@
   border: 1px solid rgba(4, 110, 175, 0.1);
 }
 
-/* Modal */
+/* =============================================
+   MODAL — double scrollbar fix
+   The overlay is fixed and overflow:hidden so
+   the page behind cannot scroll while modal is
+   open. Only .modal-content scrolls internally.
+   ============================================= */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -887,6 +892,7 @@
   z-index: 1000;
   padding: 20px;
   backdrop-filter: blur(8px);
+  overflow: hidden; /* ← prevents page scrollbar from showing behind modal */
 }
 
 .modal-content {
@@ -897,7 +903,8 @@
   width: 100%;
   max-width: 900px;
   max-height: 90vh;
-  overflow-y: auto;
+  overflow-y: auto;   /* ← only the modal itself scrolls */
+  overflow-x: hidden; /* ← prevents horizontal scrollbar */
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.2);
   animation: modalSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -925,6 +932,9 @@
     rgba(248, 249, 250, 0.5) 0%,
     rgba(241, 245, 249, 0.5) 100%);
   border-radius: 24px 24px 0 0;
+  position: sticky; /* ← keeps header visible while scrolling modal content */
+  top: 0;
+  z-index: 1;
 }
 
 .modal-header h2 {
@@ -1161,6 +1171,10 @@
   padding: 25px 35px;
   border-top: 2px solid rgba(229, 231, 235, 0.5);
   text-align: center;
+  position: sticky; /* ← keeps footer/buttons visible while scrolling */
+  bottom: 0;
+  background: white;
+  z-index: 1;
 }
 
 .btn-close-modal {
@@ -1379,7 +1393,7 @@
   box-shadow: 0 10px 25px rgba(239, 68, 68, 0.4);
 }
 
-/* Scrollbar */
+/* Scrollbar — page content only, not modal */
 .demandes-content {
   max-height: calc(300vh - 675px);
   overflow-y: auto;
