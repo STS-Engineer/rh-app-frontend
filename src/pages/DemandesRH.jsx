@@ -165,7 +165,6 @@ const Modal = ({
             </div>
           )}
 
-          {/* Original reject mode textarea */}
           {canAct && rejectMode && (
             <div className="modal-section">
               <h3>❌ {t('refusalComment')}</h3>
@@ -180,7 +179,6 @@ const Modal = ({
             </div>
           )}
 
-          {/* Change status: approved → refused comment textarea */}
           {canChangeToRefused && changeStatusMode === 'to_refused' && (
             <div className="modal-section">
               <h3>🔄 Motif du changement de statut</h3>
@@ -196,16 +194,25 @@ const Modal = ({
           )}
         </div>
 
-        <div className="modal-footer" style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
-
-          {/* ── Original pending actions ── */}
+        <div
+          className="modal-footer"
+          style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}
+        >
           {canAct && !rejectMode && (
             <>
               <button
                 className="btn-action btn-approve"
                 onClick={() => onApprove(demande)}
                 disabled={actionLoading}
-                style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                style={{
+                  backgroundColor: '#16a34a',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '8px 18px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
               >
                 ✅ {actionLoading ? (t('processing') || 'Traitement...') : 'Approuver'}
               </button>
@@ -213,7 +220,15 @@ const Modal = ({
                 className="btn-action btn-reject"
                 onClick={() => setRejectMode(true)}
                 disabled={actionLoading}
-                style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                style={{
+                  backgroundColor: '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '8px 18px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
               >
                 ❌ Refuser
               </button>
@@ -226,7 +241,15 @@ const Modal = ({
                 className="btn-action btn-reject"
                 onClick={() => onReject(demande)}
                 disabled={actionLoading}
-                style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                style={{
+                  backgroundColor: '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '8px 18px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
               >
                 ❌ {actionLoading ? (t('processing') || 'Traitement...') : 'Confirmer le refus'}
               </button>
@@ -240,12 +263,19 @@ const Modal = ({
             </>
           )}
 
-          {/* ── Change status: Approved → Refused ── */}
           {canChangeToRefused && changeStatusMode !== 'to_refused' && (
             <button
               onClick={() => setChangeStatusMode('to_refused')}
               disabled={actionLoading}
-              style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+              style={{
+                backgroundColor: '#dc2626',
+                color: '#fff',
+                border: 'none',
+                padding: '8px 18px',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontWeight: 600
+              }}
             >
               🔄 Changer en Refusé
             </button>
@@ -256,31 +286,53 @@ const Modal = ({
               <button
                 onClick={() => onChangeToRefused(demande)}
                 disabled={actionLoading}
-                style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                style={{
+                  backgroundColor: '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '8px 18px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
               >
                 ❌ {actionLoading ? 'Traitement...' : 'Confirmer le refus'}
               </button>
               <button
                 onClick={() => { setChangeStatusMode(null); setChangeStatusComment(''); }}
                 disabled={actionLoading}
-                style={{ backgroundColor: '#6b7280', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                style={{
+                  backgroundColor: '#6b7280',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '8px 18px',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontWeight: 600
+                }}
               >
                 {t('cancel') || 'Annuler'}
               </button>
             </>
           )}
 
-          {/* ── Change status: Refused → Approved ── */}
           {canChangeToApproved && (
             <button
               onClick={() => onChangeToApproved(demande)}
               disabled={actionLoading}
-              style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 18px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+              style={{
+                backgroundColor: '#16a34a',
+                color: '#fff',
+                border: 'none',
+                padding: '8px 18px',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontWeight: 600
+              }}
             >
               🔄 {actionLoading ? 'Traitement...' : 'Changer en Approuvé'}
             </button>
           )}
-
         </div>
       </div>
     </div>
@@ -318,8 +370,7 @@ const DemandesRH = () => {
   const [rejectMode, setRejectMode] = useState(false);
   const [rejectComment, setRejectComment] = useState('');
 
-  // ── New states for status change ──
-  const [changeStatusMode, setChangeStatusMode] = useState(null); // 'to_refused' | null
+  const [changeStatusMode, setChangeStatusMode] = useState(null);
   const [changeStatusComment, setChangeStatusComment] = useState('');
 
   const pendingOpenIdRef = useRef(null);
@@ -328,8 +379,6 @@ const DemandesRH = () => {
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
 
   const statuts = ['en_attente', 'approuve', 'refuse'];
-
-  // ─── helpers ────────────────────────────────────────────────────────────────
 
   const getActiveFiltersCount = () => {
     let count = 0;
@@ -437,8 +486,6 @@ const DemandesRH = () => {
     return emp ? `${emp.prenom} ${emp.nom}` : '';
   };
 
-  // ─── API calls ───────────────────────────────────────────────────────────────
-
   const fetchDemandeById = useCallback(async (id) => {
     try {
       const token = localStorage.getItem('token');
@@ -523,8 +570,6 @@ const DemandesRH = () => {
     }
   }, [filters, API_BASE_URL, t]);
 
-  // ─── Approve / Reject ────────────────────────────────────────────────────────
-
   const approveSelected = async (demandeToAct = selectedDemande) => {
     if (!demandeToAct) return;
     setActionLoading(true);
@@ -596,8 +641,6 @@ const DemandesRH = () => {
     }
   };
 
-  // ─── Change status: Approved → Refused ──────────────────────────────────────
-
   const changeToRefused = async (demandeToAct = selectedDemande) => {
     if (!demandeToAct) return;
     if (!changeStatusComment.trim()) {
@@ -639,8 +682,6 @@ const DemandesRH = () => {
     }
   };
 
-  // ─── Change status: Refused → Approved ──────────────────────────────────────
-
   const changeToApproved = async (demandeToAct = selectedDemande) => {
     if (!demandeToAct) return;
     setActionLoading(true);
@@ -674,8 +715,6 @@ const DemandesRH = () => {
       setActionLoading(false);
     }
   };
-
-  // ─── Effects ─────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     const openId = location.state?.openDemandeId;
@@ -723,7 +762,21 @@ const DemandesRH = () => {
     return () => clearTimeout(timer);
   }, [filters]); // eslint-disable-line
 
-  // ─── Handlers ────────────────────────────────────────────────────────────────
+  // ✅ Scroll lock when modal is open
+  useEffect(() => {
+    if (!showModal) return;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [showModal]);
 
   const handleFilterChange = (key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -755,7 +808,6 @@ const DemandesRH = () => {
     setShowModal(true);
   };
 
-  // New: open modal directly in "change to refused" mode
   const handleOpenChangeToRefusedModal = (demande) => {
     setChangeStatusComment('');
     setChangeStatusMode('to_refused');
@@ -819,8 +871,6 @@ const DemandesRH = () => {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
-
-  // ─── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="demandes-rh">
@@ -1147,14 +1197,21 @@ const DemandesRH = () => {
                         👁️ {t('viewDetails')}
                       </button>
 
-                      {/* Pending actions */}
                       {demande.statut === 'en_attente' && (
                         <>
                           <button
                             className="btn-action btn-approve"
                             disabled={actionLoading}
                             onClick={() => approveSelected(demande)}
-                            style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                            style={{
+                              backgroundColor: '#16a34a',
+                              color: '#fff',
+                              border: 'none',
+                              padding: '8px 14px',
+                              borderRadius: 6,
+                              cursor: 'pointer',
+                              fontWeight: 600
+                            }}
                           >
                             ✅ Approuver
                           </button>
@@ -1162,30 +1219,52 @@ const DemandesRH = () => {
                             className="btn-action btn-reject"
                             disabled={actionLoading}
                             onClick={() => handleOpenRejectModal(demande)}
-                            style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                            style={{
+                              backgroundColor: '#dc2626',
+                              color: '#fff',
+                              border: 'none',
+                              padding: '8px 14px',
+                              borderRadius: 6,
+                              cursor: 'pointer',
+                              fontWeight: 600
+                            }}
                           >
                             ❌ Refuser
                           </button>
                         </>
                       )}
 
-                      {/* Change status: Approved → Refused */}
                       {demande.statut === 'approuve' && (
                         <button
                           disabled={actionLoading}
                           onClick={() => handleOpenChangeToRefusedModal(demande)}
-                          style={{ backgroundColor: '#dc2626', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                          style={{
+                            backgroundColor: '#dc2626',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '8px 14px',
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                            fontWeight: 600
+                          }}
                         >
                           🔄 Changer en Refusé
                         </button>
                       )}
 
-                      {/* Change status: Refused → Approved */}
                       {demande.statut === 'refuse' && (
                         <button
                           disabled={actionLoading}
                           onClick={() => changeToApproved(demande)}
-                          style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
+                          style={{
+                            backgroundColor: '#16a34a',
+                            color: '#fff',
+                            border: 'none',
+                            padding: '8px 14px',
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                            fontWeight: 600
+                          }}
                         >
                           🔄 Changer en Approuvé
                         </button>
