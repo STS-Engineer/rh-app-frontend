@@ -36,8 +36,8 @@ const Modal = ({
   const canChangeToApproved = demande.statut === 'refuse';
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose} style={{ overflowY: 'hidden' }}>
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ overflowY: 'auto', maxHeight: '90vh' }}>
         <div className="modal-header">
           <h2>📑 {t('requestDetails')}</h2>
           <button className="modal-close" onClick={onClose}>×</button>
@@ -1153,7 +1153,7 @@ const DemandesRH = () => {
                           <button
                             className="btn-action btn-approve"
                             disabled={actionLoading}
-                            onClick={() => handleViewDetails(demande)}
+                            onClick={() => approveSelected(demande)}
                             style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
                           >
                             ✅ Approuver
@@ -1184,7 +1184,7 @@ const DemandesRH = () => {
                       {demande.statut === 'refuse' && (
                         <button
                           disabled={actionLoading}
-                          onClick={() => handleViewDetails(demande)}
+                          onClick={() => changeToApproved(demande)}
                           style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600 }}
                         >
                           🔄 Changer en Approuvé
