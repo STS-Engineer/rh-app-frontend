@@ -430,7 +430,7 @@
   gap: 30px;
 }
 
-/* ── THE FIX: overflow changed from hidden to visible ── */
+/* ── FIX: overflow removed so card-actions buttons are visible ── */
 .demande-card {
   background: linear-gradient(135deg, 
     var(--card-background) 0%,
@@ -441,7 +441,6 @@
   border: 1px solid rgba(229, 231, 235, 0.5);
   backdrop-filter: blur(10px);
   position: relative;
-  overflow: visible;
   animation: slideIn 0.3s ease-out forwards;
   opacity: 0;
   transform: translateY(10px);
@@ -471,7 +470,7 @@
   }
 }
 
-/* En-tête de la carte */
+/* ── FIX: card-header gets border-radius + overflow hidden to keep rounded top corners ── */
 .card-header {
   display: flex;
   justify-content: space-between;
@@ -482,6 +481,7 @@
     rgba(248, 249, 250, 0.5) 0%,
     rgba(241, 245, 249, 0.5) 100%);
   border-radius: 24px 24px 0 0;
+  overflow: hidden;
 }
 
 .demande-type {
