@@ -100,6 +100,22 @@ const dayKeyLocal = (value) => {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 };
 
+/**
+ * Resolve department/site field safely from different backend shapes.
+ */
+const getEmployeeDepartment = (emp) => {
+  return (
+    emp?.departement ||
+    emp?.department ||
+    emp?.site ||
+    emp?.service ||
+    emp?.departement_nom ||
+    emp?.nom_departement ||
+    emp?.unite ||
+    ''
+  );
+};
+
 const EtatDesLieux = () => {
   const { t } = useLanguage();
 
@@ -176,7 +192,6 @@ const EtatDesLieux = () => {
   const [viewMode, setViewMode] = useState('week');
   const [showDetailsPanel, setShowDetailsPanel] = useState(false);
   const [selectedAbsence, setSelectedAbsence] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const statusColors = {
     'congé': 'linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%)',
@@ -282,20 +297,13 @@ const EtatDesLieux = () => {
   const filteredEmployees = useMemo(() => {
     let filtered = employees;
     if (selectedDepartment !== 'all') {
-      filtered = filtered.filter(emp => emp.departement === selectedDepartment);
-    }
-    if (searchQuery) {
-      filtered = filtered.filter(emp =>
-        `${emp.prenom} ${emp.nom}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (emp.matricule || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (emp.poste || '').toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      filtered = filtered.filter(emp => getEmployeeDepartment(emp) === selectedDepartment);
     }
     if (selectedEmployee !== 'all') {
       filtered = filtered.filter(emp => emp.id.toString() === selectedEmployee);
     }
     return filtered;
-  }, [employees, selectedDepartment, searchQuery, selectedEmployee]);
+  }, [employees, selectedDepartment, selectedEmployee]);
 
   // ✅ FIXED: timezone-safe day comparison
   const getEmployeeStatusOnDate = (employeeId, date) => {
@@ -378,7 +386,9 @@ const EtatDesLieux = () => {
   };
 
   const getDepartments = () => {
-    const departments = new Set(employees.map(emp => emp.departement).filter(Boolean));
+    const departments = new Set(
+      employees.map(emp => getEmployeeDepartment(emp)).filter(Boolean)
+    );
     return ['all', ...Array.from(departments)];
   };
 
@@ -511,17 +521,6 @@ const EtatDesLieux = () => {
           {/* Advanced filters */}
           <div className="advanced-filters">
             <div className="filter-group">
-              <label className="filter-label">{ICONS.FILTER} {label('search_employee')}</label>
-              <input
-                type="text"
-                placeholder={label('search_by_name_matricule_position')}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="employee-search"
-              />
-            </div>
-
-            <div className="filter-group">
               <label className="filter-label">{ICONS.DEPARTMENT} {t('department')}</label>
               <select
                 value={selectedDepartment}
@@ -541,7 +540,6 @@ const EtatDesLieux = () => {
                 value={selectedEmployee}
                 onChange={(e) => setSelectedEmployee(e.target.value)}
                 className="filter-select"
-                size="10"
               >
                 <option value="all">{label('all_employees')}</option>
                 {employees.map(emp => (
