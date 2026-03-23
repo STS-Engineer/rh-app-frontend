@@ -373,6 +373,11 @@ const DemandesRH = () => {
   const [changeStatusMode, setChangeStatusMode] = useState(null);
   const [changeStatusComment, setChangeStatusComment] = useState('');
 
+  // ── CHANGE 1: 2 new inline states ─────────────────────────────────────────
+  const [inlineReject, setInlineReject] = useState({ id: null, comment: '' });
+  const [inlineChangeRefuse, setInlineChangeRefuse] = useState({ id: null, comment: '' });
+  // ──────────────────────────────────────────────────────────────────────────
+
   const pendingOpenIdRef = useRef(null);
   const isFirstMount = useRef(true);
 
@@ -715,6 +720,70 @@ const DemandesRH = () => {
       setActionLoading(false);
     }
   };
+
+  // ── CHANGE 2: 2 new inline functions ──────────────────────────────────────
+  const rejectInline = async (demande, comment) => {
+    setActionLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `${API_BASE_URL}/api/demandes/${demande.id}/refuser-app`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ commentaire: comment })
+        }
+      );
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erreur lors du refus');
+      }
+      setDemandes(prev => prev.map(d =>
+        d.id === demande.id
+          ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: comment }
+          : d
+      ));
+      setAllDemandes(prev => prev.map(d =>
+        d.id === demande.id ? { ...d, statut: 'refuse' } : d
+      ));
+    } catch (e) {
+      alert(e.message || 'Erreur');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const changeToRefusedInline = async (demande, comment) => {
+    setActionLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `${API_BASE_URL}/api/demandes/${demande.id}/changer-statut-refuse`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ commentaire: comment })
+        }
+      );
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Erreur lors du changement de statut');
+      }
+      setDemandes(prev => prev.map(d =>
+        d.id === demande.id
+          ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: comment }
+          : d
+      ));
+      setAllDemandes(prev => prev.map(d =>
+        d.id === demande.id ? { ...d, statut: 'refuse' } : d
+      ));
+    } catch (e) {
+      alert(e.message || 'Erreur');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+  // ──────────────────────────────────────────────────────────────────────────
 
   useEffect(() => {
     const openId = location.state?.openDemandeId;
@@ -1189,7 +1258,9 @@ const DemandesRH = () => {
                       </div>
                     )}
 
+                    {/* ── CHANGE 3: card-actions with inline behavior ── */}
                     <div className="card-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+
                       <button
                         className="btn-action btn-view"
                         onClick={() => handleViewDetails(demande)}
@@ -1204,52 +1275,136 @@ const DemandesRH = () => {
                             disabled={actionLoading}
                             onClick={() => approveSelected(demande)}
                             style={{
-                              backgroundColor: '#16a34a',
-                              color: '#fff',
-                              border: 'none',
-                              padding: '8px 14px',
-                              borderRadius: 6,
-                              cursor: 'pointer',
-                              fontWeight: 600
+                              backgroundColor: '#16a34a', color: '#fff', border: 'none',
+                              padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600
                             }}
                           >
                             ✅ Approuver
                           </button>
+
                           <button
                             className="btn-action btn-reject"
                             disabled={actionLoading}
-                            onClick={() => handleOpenRejectModal(demande)}
+                            onClick={() =>
+                              setInlineReject(prev =>
+                                prev.id === demande.id
+                                  ? { id: null, comment: '' }
+                                  : { id: demande.id, comment: '' }
+                              )
+                            }
                             style={{
-                              backgroundColor: '#dc2626',
-                              color: '#fff',
-                              border: 'none',
-                              padding: '8px 14px',
-                              borderRadius: 6,
-                              cursor: 'pointer',
-                              fontWeight: 600
+                              backgroundColor: '#dc2626', color: '#fff', border: 'none',
+                              padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600
                             }}
                           >
                             ❌ Refuser
                           </button>
+
+                          {inlineReject.id === demande.id && (
+                            <div style={{ width: '100%', marginTop: 6, background: '#fff3f3', border: '1px solid #fca5a5', borderRadius: 8, padding: 12 }}>
+                              <div style={{ fontSize: 12, color: '#991b1b', marginBottom: 6, fontWeight: 600 }}>
+                                Motif du refus
+                              </div>
+                              <textarea
+                                rows={2}
+                                placeholder="Indiquez le motif du refus..."
+                                value={inlineReject.comment}
+                                onChange={e => setInlineReject(prev => ({ ...prev, comment: e.target.value }))}
+                                style={{ width: '100%', borderRadius: 6, padding: '6px 8px', border: '1px solid #fca5a5', fontSize: 13, resize: 'none' }}
+                                disabled={actionLoading}
+                              />
+                              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                                <button
+                                  disabled={actionLoading}
+                                  onClick={async () => {
+                                    if (!inlineReject.comment.trim()) { alert('Motif du refus requis'); return; }
+                                    await rejectInline(demande, inlineReject.comment);
+                                    setInlineReject({ id: null, comment: '' });
+                                  }}
+                                  style={{
+                                    backgroundColor: '#dc2626', color: '#fff', border: 'none',
+                                    padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 13
+                                  }}
+                                >
+                                  ❌ {actionLoading ? 'Traitement...' : 'Confirmer le refus'}
+                                </button>
+                                <button
+                                  onClick={() => setInlineReject({ id: null, comment: '' })}
+                                  disabled={actionLoading}
+                                  style={{
+                                    backgroundColor: '#6b7280', color: '#fff', border: 'none',
+                                    padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 13
+                                  }}
+                                >
+                                  Annuler
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </>
                       )}
 
                       {demande.statut === 'approuve' && (
-                        <button
-                          disabled={actionLoading}
-                          onClick={() => handleOpenChangeToRefusedModal(demande)}
-                          style={{
-                            backgroundColor: '#dc2626',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '8px 14px',
-                            borderRadius: 6,
-                            cursor: 'pointer',
-                            fontWeight: 600
-                          }}
-                        >
-                          🔄 Changer en Refusé
-                        </button>
+                        <>
+                          <button
+                            disabled={actionLoading}
+                            onClick={() =>
+                              setInlineChangeRefuse(prev =>
+                                prev.id === demande.id
+                                  ? { id: null, comment: '' }
+                                  : { id: demande.id, comment: '' }
+                              )
+                            }
+                            style={{
+                              backgroundColor: '#dc2626', color: '#fff', border: 'none',
+                              padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600
+                            }}
+                          >
+                            🔄 Changer en Refusé
+                          </button>
+
+                          {inlineChangeRefuse.id === demande.id && (
+                            <div style={{ width: '100%', marginTop: 6, background: '#fff3f3', border: '1px solid #fca5a5', borderRadius: 8, padding: 12 }}>
+                              <div style={{ fontSize: 12, color: '#991b1b', marginBottom: 6, fontWeight: 600 }}>
+                                Motif du changement de statut
+                              </div>
+                              <textarea
+                                rows={2}
+                                placeholder="Indiquez le motif du refus..."
+                                value={inlineChangeRefuse.comment}
+                                onChange={e => setInlineChangeRefuse(prev => ({ ...prev, comment: e.target.value }))}
+                                style={{ width: '100%', borderRadius: 6, padding: '6px 8px', border: '1px solid #fca5a5', fontSize: 13, resize: 'none' }}
+                                disabled={actionLoading}
+                              />
+                              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                                <button
+                                  disabled={actionLoading}
+                                  onClick={async () => {
+                                    if (!inlineChangeRefuse.comment.trim()) { alert('Motif du refus requis'); return; }
+                                    await changeToRefusedInline(demande, inlineChangeRefuse.comment);
+                                    setInlineChangeRefuse({ id: null, comment: '' });
+                                  }}
+                                  style={{
+                                    backgroundColor: '#dc2626', color: '#fff', border: 'none',
+                                    padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 13
+                                  }}
+                                >
+                                  ❌ {actionLoading ? 'Traitement...' : 'Confirmer'}
+                                </button>
+                                <button
+                                  onClick={() => setInlineChangeRefuse({ id: null, comment: '' })}
+                                  disabled={actionLoading}
+                                  style={{
+                                    backgroundColor: '#6b7280', color: '#fff', border: 'none',
+                                    padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 13
+                                  }}
+                                >
+                                  Annuler
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
                       )}
 
                       {demande.statut === 'refuse' && (
@@ -1257,19 +1412,17 @@ const DemandesRH = () => {
                           disabled={actionLoading}
                           onClick={() => changeToApproved(demande)}
                           style={{
-                            backgroundColor: '#16a34a',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '8px 14px',
-                            borderRadius: 6,
-                            cursor: 'pointer',
-                            fontWeight: 600
+                            backgroundColor: '#16a34a', color: '#fff', border: 'none',
+                            padding: '8px 14px', borderRadius: 6, cursor: 'pointer', fontWeight: 600
                           }}
                         >
-                          🔄 Changer en Approuvé
+                          🔄 {actionLoading ? 'Traitement...' : 'Changer en Approuvé'}
                         </button>
                       )}
+
                     </div>
+                    {/* ── END CHANGE 3 ── */}
+
                   </div>
                 </div>
               ))}
