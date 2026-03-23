@@ -1,20 +1,15 @@
 /**
- * EtatDesLieux.jsx — FIXED timezone/day-shift bug in getEmployeeStatusOnDate
+ * EtatDesLieux.jsx
  *
- * ✅ Fix: remove toISOString().split('T')[0] comparisons (UTC day-shift)
- * ✅ Fix: compare days using LOCAL midnight timestamps
- * ✅ Extra safety: supports date strings like "YYYY-MM-DD" / ISO datetime, and also "DD-MM-YYYY"
- *
- * ✅ i18n Fix (missing keys safety):
- * - Some EDL keys are missing in your `fr` translations.
- * - This component now uses a safe helper `tf(key, fallback)` so the UI stays translated
- *   even when a key is missing (fallback is French by default).
- *
- * ✅ Layout Fix: wrapped all content in .etat-des-lieux-content so sidebar
- *   no longer overlaps page content.
- *
- * Note: I kept your "end date inclusive" logic (<=). If in your business rule
- * date_retour means "first day back present", change <= to < (marked below).
+ * Fixes included:
+ * - compare days using LOCAL midnight timestamps
+ * - date_retour is treated as FIRST DAY BACK TO WORK (excluded from leave period)
+ * - same-day leave still counts correctly
+ * - safe translations with French fallbacks
+ * - sidebar/content layout preserved
+ * - removed employee text search area
+ * - employee selector changed to normal dropdown
+ * - department/site resolver made more robust for different backend payload shapes
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -48,14 +43,13 @@ const ICONS = {
   REJECTED: '👎'
 };
 
-// --- NEW: robust parsing + local-day comparison helpers ----------------------
-
 /**
  * Parse API date safely.
  * Supports:
  * - Date object
  * - ISO like "2026-02-24" or "2026-02-24T10:00:00Z"
  * - "DD-MM-YYYY" like "24-02-2026"
+ * - "DD/MM/YYYY"
  *
  * Returns a Date, or null if invalid.
  */
@@ -66,7 +60,6 @@ const parseApiDate = (value) => {
   if (typeof value === 'string') {
     const s = value.trim();
 
-    // If it's DD-MM-YYYY (or DD/MM/YYYY), parse manually to avoid MM/DD confusion
     const m = s.match(/^(\d{2})[-\/](\d{2})[-\/](\d{4})$/);
     if (m) {
       const dd = Number(m[1]);
@@ -76,12 +69,10 @@ const parseApiDate = (value) => {
       return isNaN(d.getTime()) ? null : d;
     }
 
-    // Otherwise try normal Date parsing (works well for ISO formats)
     const d = new Date(s);
     return isNaN(d.getTime()) ? null : d;
   }
 
-  // If backend sends numbers (timestamps)
   if (typeof value === 'number') {
     const d = new Date(value);
     return isNaN(d.getTime()) ? null : d;
@@ -92,7 +83,6 @@ const parseApiDate = (value) => {
 
 /**
  * Convert any Date-like value into a LOCAL "day key" (midnight local time).
- * This removes timezone hour shifts when comparing days.
  */
 const dayKeyLocal = (value) => {
   const d = parseApiDate(value);
@@ -101,35 +91,52 @@ const dayKeyLocal = (value) => {
 };
 
 /**
- * Resolve department/site field safely from different backend shapes.
+ * Best-effort resolver for department/site/service across possible backend shapes.
  */
 const getEmployeeDepartment = (emp) => {
-  return (
-    emp?.departement ||
-    emp?.department ||
-    emp?.site ||
-    emp?.service ||
-    emp?.departement_nom ||
-    emp?.nom_departement ||
-    emp?.unite ||
-    ''
-  );
+  if (!emp || typeof emp !== 'object') return '';
+
+  const candidates = [
+    emp.departement,
+    emp.department,
+    emp.site,
+    emp.service,
+    emp.departement_nom,
+    emp.nom_departement,
+    emp.department_name,
+    emp.site_name,
+    emp.unite,
+    emp.team,
+    emp.equipe,
+    emp.direction,
+    emp.division,
+    emp.business_unit,
+    emp.departmentLabel,
+    emp.departementLabel,
+    emp.profile?.departement,
+    emp.profile?.department,
+    emp.profile?.site,
+    emp.profile?.service,
+    emp.departement?.nom,
+    emp.department?.name,
+    emp.site?.nom,
+    emp.site?.name,
+    emp.service?.nom,
+    emp.service?.name
+  ];
+
+  const value = candidates.find(v => typeof v === 'string' && v.trim() !== '');
+  return value ? value.trim() : '';
 };
 
 const EtatDesLieux = () => {
   const { t } = useLanguage();
 
-  /**
-   * Safe translation with fallback:
-   * If key is missing, your t() returns the key itself.
-   * We detect that and return the provided fallback instead.
-   */
   const tf = (key, fallback) => {
     const v = t(key);
     return v === key ? fallback : v;
   };
 
-  // Local fallbacks (French) for keys missing in your FR translations
   const FALLBACKS = useMemo(() => ({
     loading_data: 'Chargement des données...',
     presence_tracker: 'Suivi des Présences',
@@ -140,8 +147,6 @@ const EtatDesLieux = () => {
     edl_custom_choose: 'Choisissez une période',
     edl_custom_start: 'Date de début',
     edl_custom_end: 'Date de fin',
-    search_employee: 'Rechercher un employé',
-    search_by_name_matricule_position: 'Nom, matricule ou poste...',
     all_departments: 'Tous les départements',
     specific_employee: 'Employé spécifique',
     all_employees: 'Tous les employés',
@@ -156,6 +161,7 @@ const EtatDesLieux = () => {
     edl_custom_max_days: '(max 62 jours)',
     weekend: 'Weekend',
     'congé': 'Congé',
+    conges: 'Congé',
     mission: 'Mission',
     autorisation: 'Autorisation',
     retard: 'Retard',
@@ -195,6 +201,7 @@ const EtatDesLieux = () => {
 
   const statusColors = {
     'congé': 'linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%)',
+    'conges': 'linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%)',
     'mission': 'linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%)',
     'autorisation': 'linear-gradient(135deg, #45b7d1 0%, #5e72e4 100%)',
     'retard': 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
@@ -205,6 +212,7 @@ const EtatDesLieux = () => {
 
   const statusIcons = {
     'congé': ICONS.CONGE,
+    'conges': ICONS.CONGE,
     'mission': ICONS.MISSION,
     'autorisation': ICONS.AUTORISATION,
     'retard': ICONS.LATE,
@@ -217,6 +225,17 @@ const EtatDesLieux = () => {
     const x = new Date(d);
     x.setHours(0, 0, 0, 0);
     return x;
+  };
+
+  const normalizeStatusType = (type) => {
+    const v = (type || '').toString().trim().toLowerCase();
+    if (['conges', 'congé', 'conge'].includes(v)) return 'conges';
+    if (['mission', 'missions'].includes(v)) return 'mission';
+    if (['autorisation', 'autorisations'].includes(v)) return 'autorisation';
+    if (['retard', 'retards'].includes(v)) return 'retard';
+    if (['formation', 'formations'].includes(v)) return 'formation';
+    if (['maladie', 'maladies'].includes(v)) return 'maladie';
+    return v || 'autorisation';
   };
 
   useEffect(() => { loadData(); }, []);
@@ -305,7 +324,6 @@ const EtatDesLieux = () => {
     return filtered;
   }, [employees, selectedDepartment, selectedEmployee]);
 
-  // ✅ FIXED: timezone-safe day comparison
   const getEmployeeStatusOnDate = (employeeId, date) => {
     const demandesApprouvees = demandes.filter(
       d => d.employe_id === employeeId && d.statut === 'approuve'
@@ -318,14 +336,17 @@ const EtatDesLieux = () => {
 
     const demande = demandesApprouvees.find(d => {
       const startDay = dayKeyLocal(d.date_depart);
-      const endDay = dayKeyLocal(d.date_retour || d.date_depart);
-      if (startDay == null || endDay == null) return false;
+      const endDayRaw = dayKeyLocal(d.date_retour || d.date_depart);
+      if (startDay == null || endDayRaw == null) return false;
 
-      // Inclusive end (current behavior)
-      return currentDay >= startDay && currentDay <= endDay;
+      // date_retour = first day back at work, so it must be EXCLUDED.
+      // But if start === retour (same-day leave), still count that single day.
+      const exclusiveEndDay =
+        startDay === endDayRaw
+          ? startDay + 24 * 60 * 60 * 1000
+          : endDayRaw;
 
-      // If your business meaning is "date_retour = first day back PRESENT", use this instead:
-      // return currentDay >= startDay && currentDay < endDay;
+      return currentDay >= startDay && currentDay < exclusiveEndDay;
     });
 
     if (!demande) {
@@ -337,7 +358,7 @@ const EtatDesLieux = () => {
       };
     }
 
-    const statusType = demande.type_demande || 'autorisation';
+    const statusType = normalizeStatusType(demande.type_demande);
     return {
       status: statusType,
       color: statusColors[statusType] || statusColors.default,
@@ -387,7 +408,9 @@ const EtatDesLieux = () => {
 
   const getDepartments = () => {
     const departments = new Set(
-      employees.map(emp => getEmployeeDepartment(emp)).filter(Boolean)
+      employees
+        .map(emp => getEmployeeDepartment(emp))
+        .filter(Boolean)
     );
     return ['all', ...Array.from(departments)];
   };
@@ -418,7 +441,6 @@ const EtatDesLieux = () => {
     <div className="etat-des-lieux-container">
       <Sidebar />
 
-      {/* ✅ FIX: all page content wrapped in this div so sidebar doesn't overlap */}
       <div className="etat-des-lieux-content">
 
         <div className="etat-header">
@@ -518,7 +540,6 @@ const EtatDesLieux = () => {
             </div>
           </div>
 
-          {/* Advanced filters */}
           <div className="advanced-filters">
             <div className="filter-group">
               <label className="filter-label">{ICONS.DEPARTMENT} {t('department')}</label>
@@ -552,14 +573,13 @@ const EtatDesLieux = () => {
           </div>
         </div>
 
-        {/* Legend */}
         <div className="legend-container">
           <div className="legend-item">
             <div className="color-box" style={{ background: statusColors.default }}></div>
             <span>{label('available')}</span>
           </div>
           <div className="legend-item">
-            <div className="color-box" style={{ background: statusColors.congé }}></div>
+            <div className="color-box" style={{ background: statusColors.conges }}></div>
             <span>{label('on_leave')}</span>
           </div>
           <div className="legend-item">
@@ -580,7 +600,6 @@ const EtatDesLieux = () => {
           </div>
         </div>
 
-        {/* Main table */}
         <div className="presence-table-container">
           <div className="table-header">
             <h2>
@@ -674,7 +693,6 @@ const EtatDesLieux = () => {
           </div>
         </div>
 
-        {/* Details Panel */}
         {showDetailsPanel && selectedAbsence && (
           <div className="details-panel">
             <div className="details-panel-header">
@@ -700,7 +718,7 @@ const EtatDesLieux = () => {
           </div>
         )}
 
-      </div>{/* end etat-des-lieux-content */}
+      </div>
     </div>
   );
 };
