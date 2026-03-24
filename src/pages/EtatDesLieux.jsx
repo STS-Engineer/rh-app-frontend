@@ -324,48 +324,57 @@ const EtatDesLieux = () => {
     return filtered;
   }, [employees, selectedDepartment, selectedEmployee]);
 
-  const getEmployeeStatusOnDate = (employeeId, date) => {
-    const demandesApprouvees = demandes.filter(
-      d => d.employe_id === employeeId && d.statut === 'approuve'
-    );
+const getEmployeeStatusOnDate = (employeeId, date) => {
+  const currentDay = dayKeyLocal(date);
+  if (currentDay == null) {
+    return { status: 'available', color: statusColors.default, icon: ICONS.PRESENT };
+  }
 
-    const currentDay = dayKeyLocal(date);
-    if (currentDay == null) {
-      return { status: 'available', color: statusColors.default, icon: ICONS.PRESENT };
-    }
-
-    const demande = demandesApprouvees.find(d => {
-      const startDay = dayKeyLocal(d.date_depart);
-      const endDayRaw = dayKeyLocal(d.date_retour || d.date_depart);
-      if (startDay == null || endDayRaw == null) return false;
-
-      // date_retour = first day back at work, so it must be EXCLUDED.
-      // But if start === retour (same-day leave), still count that single day.
-      const exclusiveEndDay =
-        startDay === endDayRaw
-          ? startDay + 24 * 60 * 60 * 1000
-          : endDayRaw;
-
-      return currentDay >= startDay && currentDay < exclusiveEndDay;
-    });
-
-    if (!demande) {
-      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-      return {
-        status: isWeekend ? 'weekend' : 'available',
-        color: isWeekend ? '#f3f4f6' : statusColors.default,
-        icon: isWeekend ? '😴' : ICONS.PRESENT
-      };
-    }
-
-    const statusType = normalizeStatusType(demande.type_demande);
+  // Weekend always overrides any leave/mission/etc.
+  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+  if (isWeekend) {
     return {
-      status: statusType,
-      color: statusColors[statusType] || statusColors.default,
-      icon: statusIcons[statusType] || ICONS.AUTORISATION,
-      demande
+      status: 'weekend',
+      color: '#f3f4f6',
+      icon: '😴'
     };
+  }
+
+  const demandesApprouvees = demandes.filter(
+    d => d.employe_id === employeeId && d.statut === 'approuve'
+  );
+
+  const demande = demandesApprouvees.find(d => {
+    const startDay = dayKeyLocal(d.date_depart);
+    const endDayRaw = dayKeyLocal(d.date_retour || d.date_depart);
+    if (startDay == null || endDayRaw == null) return false;
+
+    // date_retour = first day back at work, so excluded
+    // same-day leave still counts for that one day
+    const exclusiveEndDay =
+      startDay === endDayRaw
+        ? startDay + 24 * 60 * 60 * 1000
+        : endDayRaw;
+
+    return currentDay >= startDay && currentDay < exclusiveEndDay;
+  });
+
+  if (!demande) {
+    return {
+      status: 'available',
+      color: statusColors.default,
+      icon: ICONS.PRESENT
+    };
+  }
+
+  const statusType = normalizeStatusType(demande.type_demande);
+  return {
+    status: statusType,
+    color: statusColors[statusType] || statusColors.default,
+    icon: statusIcons[statusType] || ICONS.AUTORISATION,
+    demande
   };
+};
 
   const formatDate = (date) => {
     return date.toLocaleDateString('fr-FR', {
