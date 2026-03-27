@@ -296,7 +296,8 @@ const DemandesRH = () => {
     statut: '',
     employe_id: '',
     date_debut: '',
-    date_fin: ''
+    date_fin: '',
+    nom_employe: ''
   };
 
   const [filters, setFilters] = useState(defaultFilters);
@@ -330,6 +331,7 @@ const DemandesRH = () => {
     if (filters.employe_id) count++;
     if (filters.date_debut) count++;
     if (filters.date_fin) count++;
+    if (filters.nom_employe) count++; 
     return count;
   };
   const activeFiltersCount = getActiveFiltersCount();
@@ -495,7 +497,13 @@ const DemandesRH = () => {
       if (!response.ok) throw new Error('Erreur serveur');
       const data = await response.json();
       setLastResponse(data);
-      const fetched = data.success && Array.isArray(data.demandes) ? data.demandes : [];
+      let fetched = data.success && Array.isArray(data.demandes) ? data.demandes : [];
+      if (filters.nom_employe.trim()) {
+        const search = filters.nom_employe.toLowerCase().trim();
+        fetched = fetched.filter(d =>
+          `${d.employe_prenom} ${d.employe_nom}`.toLowerCase().includes(search)
+        );
+      }
       setDemandes(fetched);
 
       const countResponse = await fetch(`${API_BASE_URL}/api/demandes`, {
@@ -950,7 +958,16 @@ const DemandesRH = () => {
               </div>
             )}
           </div>
-
+          <div className="filter-group">
+            <label>👤 Nom employé</label>
+            <input
+              type="text"
+              placeholder="Rechercher par nom..."
+              value={filters.nom_employe}
+              onChange={(e) => handleFilterChange('nom_employe', e.target.value)}
+            />
+          </div>
+          
           <div className="filter-group">
             <label>{t('fromDate')}</label>
             <input
@@ -982,6 +999,11 @@ const DemandesRH = () => {
                 )}
                 {filters.employe_id && (
                   <span className="tag">{t('employee')}: {getEmployeNameById(filters.employe_id) || filters.employe_id}</span>
+                )}
+                {filters.nom_employe && (
+                  <span className="tag">
+                    Employé: {filters.nom_employe}
+                  </span>
                 )}
                 {filters.date_debut && (
                   <span className="tag">{t('fromDate')}: {formatDate(filters.date_debut)}</span>
