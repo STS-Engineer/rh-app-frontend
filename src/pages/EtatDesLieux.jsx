@@ -10,6 +10,7 @@
  * - removed employee text search area
  * - employee selector changed to normal dropdown
  * - department/site resolver made more robust for different backend payload shapes
+ * - added name/matricule search filter
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -45,13 +46,6 @@ const ICONS = {
 
 /**
  * Parse API date safely.
- * Supports:
- * - Date object
- * - ISO like "2026-02-24" or "2026-02-24T10:00:00Z"
- * - "DD-MM-YYYY" like "24-02-2026"
- * - "DD/MM/YYYY"
- *
- * Returns a Date, or null if invalid.
  */
 const parseApiDate = (value) => {
   if (!value) return null;
@@ -59,7 +53,6 @@ const parseApiDate = (value) => {
 
   if (typeof value === 'string') {
     const s = value.trim();
-
     const m = s.match(/^(\d{2})[-\/](\d{2})[-\/](\d{4})$/);
     if (m) {
       const dd = Number(m[1]);
@@ -68,7 +61,6 @@ const parseApiDate = (value) => {
       const d = new Date(yyyy, mm - 1, dd);
       return isNaN(d.getTime()) ? null : d;
     }
-
     const d = new Date(s);
     return isNaN(d.getTime()) ? null : d;
   }
@@ -174,7 +166,9 @@ const EtatDesLieux = () => {
     next: 'Suivant',
     today: "Aujourd'hui",
     department: 'Département',
-    employee: 'Employé'
+    employee: 'Employé',
+    search_employee: 'Rechercher un employé',
+    search_placeholder: 'Nom, prénom ou matricule...'
   }), []);
 
   const label = (key) => tf(key, FALLBACKS[key] ?? key);
@@ -195,6 +189,7 @@ const EtatDesLieux = () => {
   const [filterType, setFilterType] = useState('week');
   const [selectedEmployee, setSelectedEmployee] = useState('all');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [nameSearch, setNameSearch] = useState('');   // ← NEW: name search state
   const [viewMode, setViewMode] = useState('week');
   const [showDetailsPanel, setShowDetailsPanel] = useState(false);
   const [selectedAbsence, setSelectedAbsence] = useState(null);
@@ -313,68 +308,77 @@ const EtatDesLieux = () => {
     return dates;
   }, [viewMode, selectedDate, dateRange, customStartDate, customEndDate]);
 
+  // ← UPDATED: filteredEmployees now includes nameSearch
   const filteredEmployees = useMemo(() => {
     let filtered = employees;
+
     if (selectedDepartment !== 'all') {
       filtered = filtered.filter(emp => getEmployeeDepartment(emp) === selectedDepartment);
     }
+
     if (selectedEmployee !== 'all') {
       filtered = filtered.filter(emp => emp.id.toString() === selectedEmployee);
     }
+
+    if (nameSearch.trim()) {
+      const q = nameSearch.trim().toLowerCase();
+      filtered = filtered.filter(emp =>
+        `${emp.prenom} ${emp.nom}`.toLowerCase().includes(q) ||
+        (emp.matricule || '').toLowerCase().includes(q)
+      );
+    }
+
     return filtered;
-  }, [employees, selectedDepartment, selectedEmployee]);
+  }, [employees, selectedDepartment, selectedEmployee, nameSearch]);
 
-const getEmployeeStatusOnDate = (employeeId, date) => {
-  const currentDay = dayKeyLocal(date);
-  if (currentDay == null) {
-    return { status: 'available', color: statusColors.default, icon: ICONS.PRESENT };
-  }
+  const getEmployeeStatusOnDate = (employeeId, date) => {
+    const currentDay = dayKeyLocal(date);
+    if (currentDay == null) {
+      return { status: 'available', color: statusColors.default, icon: ICONS.PRESENT };
+    }
 
-  // Weekend always overrides any leave/mission/etc.
-  const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-  if (isWeekend) {
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    if (isWeekend) {
+      return {
+        status: 'weekend',
+        color: '#f3f4f6',
+        icon: '😴'
+      };
+    }
+
+    const demandesApprouvees = demandes.filter(
+      d => d.employe_id === employeeId && d.statut === 'approuve'
+    );
+
+    const demande = demandesApprouvees.find(d => {
+      const startDay = dayKeyLocal(d.date_depart);
+      const endDayRaw = dayKeyLocal(d.date_retour || d.date_depart);
+      if (startDay == null || endDayRaw == null) return false;
+
+      const exclusiveEndDay =
+        startDay === endDayRaw
+          ? startDay + 24 * 60 * 60 * 1000
+          : endDayRaw;
+
+      return currentDay >= startDay && currentDay < exclusiveEndDay;
+    });
+
+    if (!demande) {
+      return {
+        status: 'available',
+        color: statusColors.default,
+        icon: ICONS.PRESENT
+      };
+    }
+
+    const statusType = normalizeStatusType(demande.type_demande);
     return {
-      status: 'weekend',
-      color: '#f3f4f6',
-      icon: '😴'
+      status: statusType,
+      color: statusColors[statusType] || statusColors.default,
+      icon: statusIcons[statusType] || ICONS.AUTORISATION,
+      demande
     };
-  }
-
-  const demandesApprouvees = demandes.filter(
-    d => d.employe_id === employeeId && d.statut === 'approuve'
-  );
-
-  const demande = demandesApprouvees.find(d => {
-    const startDay = dayKeyLocal(d.date_depart);
-    const endDayRaw = dayKeyLocal(d.date_retour || d.date_depart);
-    if (startDay == null || endDayRaw == null) return false;
-
-    // date_retour = first day back at work, so excluded
-    // same-day leave still counts for that one day
-    const exclusiveEndDay =
-      startDay === endDayRaw
-        ? startDay + 24 * 60 * 60 * 1000
-        : endDayRaw;
-
-    return currentDay >= startDay && currentDay < exclusiveEndDay;
-  });
-
-  if (!demande) {
-    return {
-      status: 'available',
-      color: statusColors.default,
-      icon: ICONS.PRESENT
-    };
-  }
-
-  const statusType = normalizeStatusType(demande.type_demande);
-  return {
-    status: statusType,
-    color: statusColors[statusType] || statusColors.default,
-    icon: statusIcons[statusType] || ICONS.AUTORISATION,
-    demande
   };
-};
 
   const formatDate = (date) => {
     return date.toLocaleDateString('fr-FR', {
@@ -426,7 +430,6 @@ const getEmployeeStatusOnDate = (employeeId, date) => {
 
   const exportToExcel = () => { console.log(t('exportingData')); };
   const printReport = () => { window.print(); };
-
   const customLabel = () => {
     if (!customStartDate || !customEndDate) return label('edl_custom_choose');
     return `${customStartDate.toLocaleDateString('fr-FR')} → ${customEndDate.toLocaleDateString('fr-FR')}`;
@@ -550,6 +553,20 @@ const getEmployeeStatusOnDate = (employeeId, date) => {
           </div>
 
           <div className="advanced-filters">
+
+            {/* ← NEW: Name search filter */}
+            <div className="filter-group">
+              <label className="filter-label">{ICONS.FILTER} {label('search_employee')}</label>
+              <input
+                type="text"
+                value={nameSearch}
+                onChange={(e) => setNameSearch(e.target.value)}
+                placeholder={label('search_placeholder')}
+                className="filter-select"
+                style={{ minWidth: 220 }}
+              />
+            </div>
+
             <div className="filter-group">
               <label className="filter-label">{ICONS.DEPARTMENT} {t('department')}</label>
               <select
@@ -579,6 +596,7 @@ const getEmployeeStatusOnDate = (employeeId, date) => {
                 ))}
               </select>
             </div>
+
           </div>
         </div>
 
