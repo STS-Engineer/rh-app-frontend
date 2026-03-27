@@ -1260,11 +1260,18 @@ const DemandesRH = () => {
 
                     {/* ── CHANGE 3: card-actions with inline behavior ── */}
                     <div className="card-actions" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-
                       <button
-                        className="btn-action btn-view"
-                        onClick={() => handleViewDetails(demande)}
-                      >
+                          onClick={() => handleViewDetails(demande)}
+                          style={{
+                            background: 'red',
+                            color: 'white',
+                            border: '2px solid black',
+                            padding: '12px 18px',
+                            borderRadius: '8px',
+                            fontWeight: 'bold',
+                            display: 'inline-block'
+                          }}
+                        >
                           Voir les détails
                       </button>
 
