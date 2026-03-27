@@ -1643,3 +1643,144 @@
   outline: 2px solid var(--primary-orange);
   outline-offset: 2px;
 }
+.btn-approve-fr {
+  background: #16a34a;
+  color: #fff;
+  border: none;
+}
+
+.btn-approve-fr:hover { background: #15803d; }
+
+.btn-reject-fr {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+}
+
+.btn-reject-fr:hover { background: #b91c1c; }
+
+.btn-cancel-fr {
+  background: #6b7280;
+  color: #fff;
+  border: none;
+}
+
+.btn-cancel-fr:hover { background: #4b5563; }
+
+
+/* ── FORCE VISIBLE CARD ACTION BUTTONS ── */
+.card-actions .btn-action {
+  flex: unset !important;
+  padding: 10px 18px !important;
+  font-size: 0.9rem !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  border: 2px solid !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.card-actions .btn-view {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+
+.card-actions .btn-approve {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border-color: #15803d !important;
+}
+
+.card-actions .btn-refuse {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #b91c1c !important;
+}
+
+.card-actions .btn-action:hover {
+  opacity: 0.85 !important;
+  transform: translateY(-2px) !important;
+}
+
+.card-actions .btn-action:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+/* ── EMERGENCY FIX: paste at the very bottom of DemandesRH.css ── */
+
+/* Force animation to complete so cards are never stuck at opacity:0 */
+.demande-card {
+  opacity: 1 !important;
+  transform: none !important;
+  overflow: visible !important;
+}
+
+/* Make card-body never clip its children */
+.card-body {
+  overflow: visible !important;
+  padding-bottom: 30px !important;
+}
+
+/* Force card-actions to always show */
+.card-actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  margin-top: 20px !important;
+  padding-top: 20px !important;
+  border-top: 2px solid rgba(4, 110, 175, 0.15) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* Force all buttons inside card-actions to be visible */
+.card-actions button {
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 10px 16px !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  font-size: 0.9rem !important;
+  cursor: pointer !important;
+  border: 2px solid !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+}
+
+.card-actions .btn-view {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+}
+
+.card-actions .btn-approve {
+  background: #16a34a !important;
+  color: #ffffff !important;
+  border-color: #15803d !important;
+}
+
+.card-actions .btn-refuse {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  border-color: #b91c1c !important;
+}
+
+.card-actions button:hover:not(:disabled) {
+  opacity: 0.85 !important;
+  transform: translateY(-2px) !important;
+}
+
+.card-actions button:disabled {
+  opacity: 0.4 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
