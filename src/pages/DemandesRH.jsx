@@ -1265,7 +1265,7 @@ const DemandesRH = () => {
                         className="btn-action btn-view"
                         onClick={() => handleViewDetails(demande)}
                       >
-                        👁️ {t('viewDetails')}
+                          Voir les détails
                       </button>
 
                       {demande.statut === 'en_attente' && (
