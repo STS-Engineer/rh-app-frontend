@@ -741,7 +741,7 @@ button {
 
 .docs-table {
   width: 100%;
-  border-collapse: separate;
+  border-collapse: collapse;
   border-spacing: 0;
   margin-top: 12px;
   font-size: 0.9rem;
@@ -764,12 +764,11 @@ button {
 
 .docs-table td {
   padding: 16px 12px;
-  border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
 }
 
 .docs-table tbody tr {
-  transition: all 0.2s ease;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .docs-table tbody tr:hover {
@@ -839,6 +838,11 @@ button {
 .doc-UPLOADED {
   background: #fef3c7;
   color: #92400e;
+}
+
+.doc-GENERATED {
+  background: #dcfce7;
+  color: #166534;
 }
 
 .doc-REJECTED {
@@ -1180,6 +1184,29 @@ button:disabled {
   padding: 18px 28px 24px;
 }
 
+.visa-create-modal-header {
+  padding: 16px 22px 10px;
+}
+
+.visa-create-form {
+  gap: 12px;
+  padding: 12px 22px 16px;
+}
+
+.visa-create-form .form-row {
+  gap: 12px;
+}
+
+.visa-create-form .form-row label {
+  margin-bottom: 6px;
+}
+
+.visa-create-form .form-row input,
+.visa-create-form .form-row select {
+  height: 44px;
+  padding: 0 12px;
+}
+
 .form-row {
   display: flex;
   gap: 16px;
@@ -1270,6 +1297,12 @@ button:disabled {
   padding-top: 35px;
 }
 
+.visa-create-form .form-actions {
+  margin-top: 0;
+  gap: 10px;
+  padding-top: 16px;
+}
+
 /* Annuler */
 .form-actions .btn-outline {
   border: none;
@@ -1340,6 +1373,19 @@ button:disabled {
   }
   .form-actions button {
     width: 100%;
+  }
+
+  .visa-create-modal-header {
+    padding: 14px 16px 10px;
+  }
+
+  .visa-create-form {
+    gap: 10px;
+    padding: 10px 16px 14px;
+  }
+
+  .visa-create-form .form-actions {
+    padding-top: 12px;
   }
 }
 
