@@ -10,7 +10,21 @@ const API = process.env.REACT_APP_API_URL || "https://backend-rh.azurewebsites.n
  * Helpers
  * ------------------------------------------------------ */
 function isDocumentSatisfied(doc) {
-  if (doc.mode === "UPLOAD") return doc.status === "UPLOADED";
+  if (doc.mode === "UPLOAD") {
+    if (doc.code === "FICHES_PAIE") {
+      // For FICHES_PAIE, check if there are uploaded files
+      if (doc.status === "UPLOADED" && doc.fileUrl) {
+        try {
+          const files = JSON.parse(doc.fileUrl);
+          return Array.isArray(files) && files.length > 0;
+        } catch (e) {
+          return false;
+        }
+      }
+      return false;
+    }
+    return doc.status === "UPLOADED";
+  }
   if (doc.mode === "PHYSICAL") return doc.status === "RECEIVED_PHYSICAL";
   return false;
 }
@@ -38,7 +52,34 @@ function getDocumentType(docCode, t) {
       return t("visaDocTypePdfGeneration");
 
     default:
-      return t("visaDocTypeUploadPdf");
+      return "Upload PDF"; // Classe CSS stable
+  }
+}
+
+function getDocumentTypeDisplayLabel(docCode, t) {
+  switch (docCode) {
+    case "PASSEPORT_ORIGINAL":
+    case "PHOTOS":
+    case "COPIE_PAGE_1_PASSEPORT":
+      return t("visaDocTypeBring");
+
+    case "ASSURANCE":
+    case "BILLET_AVION":
+      return t("visaDocTypeSpecificEmail");
+
+    case "RESERVATION_HOTEL":
+      return t("visaDocTypeBooking");
+
+    case "FRAIS_VISA":
+      return t("visaDocTypeFranceVisas");
+
+    case "ATTESTATION_TRAVAIL":
+    case "ORDRE_MISSION":
+    case "INVITATION":
+      return t("visaDocTypePdfGeneration");
+
+    default:
+      return t("visaDocTypeUploadPdf"); // Texte affiché modifié
   }
 }
 
@@ -55,6 +96,35 @@ function isValidHttpUrl(u) {
   }
 }
 
+function isPdfFileRef(fileUrl, originalFilename) {
+  return /\.pdf($|\?)/i.test(String(fileUrl || "")) || /\.pdf$/i.test(String(originalFilename || ""));
+}
+
+function getGeneratedDocumentUrl(doc) {
+  return doc?.generatedFileUrl || (!isPdfFileRef(doc?.fileUrl, doc?.originalFilename) ? doc?.fileUrl || "" : "");
+}
+
+function getDisplayDocumentStatus(doc) {
+  if (!doc) return "";
+
+  if (doc.code === "INVITATION") {
+    if (isPdfFileRef(doc.fileUrl, doc.originalFilename) && doc.status === "UPLOADED") {
+      return "UPLOADED";
+    }
+    return getGeneratedDocumentUrl(doc) ? "GENERATED" : doc.status;
+  }
+
+  if (
+    (doc.code === "ATTESTATION_TRAVAIL" || doc.code === "ORDRE_MISSION") &&
+    doc.status === "UPLOADED" &&
+    getGeneratedDocumentUrl(doc)
+  ) {
+    return "GENERATED";
+  }
+
+  return doc.status;
+}
+
 /** -------------------------------------------------------
  * i18n maps
  * ------------------------------------------------------ */
@@ -67,6 +137,7 @@ const getSteps = (t) => [
 const getDocumentStatusLabel = (t) => ({
   MISSING: t("docStatusMissing"),
   UPLOADED: t("docStatusUploaded"),
+  GENERATED: t("docStatusGenerated"),
   REJECTED: t("docStatusRejected"),
   RECEIVED_PHYSICAL: t("docStatusReceivedPhysical"),
 });
@@ -377,7 +448,7 @@ function Section({ t, title, sectionStatus, innerRef, dossiers, onOpen, onAbando
                       style={{ marginLeft: 8, padding: "4px 10px", fontSize: "0.82rem" }}
                       onClick={() => onAbandonner(d)}
                     >
-                      🗑 Abandonner
+                      {t("visaAbandonDossier")}
                     </button>
                   )}
                 </td>
@@ -604,6 +675,8 @@ function DossierDetail({
             <tbody>
               {(dossier.documents || []).map((doc) => {
                 const typeLabel = getDocumentType(doc.code, t);
+                const displayLabel = getDocumentTypeDisplayLabel(doc.code, t);
+                const displayStatus = getDisplayDocumentStatus(doc);
                 const badgeClass = `document-type-badge ${typeToCssClass(typeLabel)}`;
                 const isOk = isDocumentSatisfied(doc);
 
@@ -615,11 +688,11 @@ function DossierDetail({
                     </td>
 
                     <td>
-                      <span className={badgeClass}>{typeLabel}</span>
+                      <span className={badgeClass}>{displayLabel}</span>
                     </td>
 
                     <td>
-                      <span className={`doc-status doc-${doc.status}`}>{docStatusLabelMap[doc.status] || doc.status}</span>
+                      <span className={`doc-status doc-${displayStatus}`}>{docStatusLabelMap[displayStatus] || displayStatus}</span>
                     </td>
 
                     <td className="doc-actions">
@@ -644,6 +717,7 @@ function DossierDetail({
                               <button onClick={() => onSendSpecificEmail(doc)}>{t("visaSendEmailBtn")}</button>
                               <button onClick={() => onUploadPdf(doc)}>{t("visaUploadPdfBtn")}</button>
                               <button
+                                disabled={!doc.fileUrl}
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error(t("visaMissingPdf"));
                                   onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
@@ -669,6 +743,7 @@ function DossierDetail({
                               </button>
                               <button onClick={() => onUploadPdf(doc)}>{t("visaUploadReceiptBtn")}</button>
                               <button
+                                disabled={!doc.fileUrl}
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error(t("visaMissingReceiptPdf"));
                                   onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
@@ -689,6 +764,7 @@ function DossierDetail({
                               </button>
                               <button onClick={() => onUploadPdf(doc)}>{t("visaUploadPdfBtn")}</button>
                               <button
+                                disabled={!doc.fileUrl}
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error(t("visaMissingBookingPdf"));
                                   onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
@@ -699,12 +775,41 @@ function DossierDetail({
                             </>
                           )}
 
-                          {(doc.code === "ATTESTATION_TRAVAIL" ||
-                            doc.code === "INVITATION" ||
-                            doc.code === "ORDRE_MISSION") && (
+                          {doc.code === "INVITATION" && (
                             <>
                               <button onClick={() => onGeneratePdf(doc)}>{t("visaGeneratePdfBtn")}</button>
                               <button
+                                disabled={!getGeneratedDocumentUrl(doc)}
+                                onClick={() => {
+                                  const generatedUrl =
+                                    getGeneratedDocumentUrl(doc);
+                                  if (!generatedUrl) return toast.error(t("visaNoGeneratedFile"));
+                                  onOpenProtectedFile(generatedUrl).catch((e) => toast.error(e.message));
+                                }}
+                              >
+                                {t("visaPreviewGeneratedBtn")}
+                              </button>
+                              <button onClick={() => onSendSpecificEmail(doc)}>{t("visaSendEmailBtn")}</button>
+                              <button onClick={() => onUploadPdf(doc)}>{t("visaUploadPdfBtn")}</button>
+                              <button
+                                disabled={!isPdfFileRef(doc.fileUrl, doc.originalFilename)}
+                                onClick={() => {
+                                  if (!isPdfFileRef(doc.fileUrl, doc.originalFilename)) {
+                                    return toast.error(t("visaMissingPdf"));
+                                  }
+                                  onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
+                                }}
+                              >
+                                {t("visaPreviewBtn")}
+                              </button>
+                            </>
+                          )}
+
+                          {(doc.code === "ATTESTATION_TRAVAIL" || doc.code === "ORDRE_MISSION") && (
+                            <>
+                              <button onClick={() => onGeneratePdf(doc)}>{t("visaGeneratePdfBtn")}</button>
+                              <button
+                                disabled={!doc.fileUrl}
                                 onClick={() => {
                                   if (!doc.fileUrl) return toast.error(t("visaNoGeneratedFile"));
                                   onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
@@ -727,14 +832,58 @@ function DossierDetail({
                             ].includes(doc.code) && (
                               <>
                                 <button onClick={() => onUploadPdf(doc)}>{t("visaUploadPdfBtn")}</button>
-                                <button
-                                  onClick={() => {
-                                    if (!doc.fileUrl) return toast.error(t("visaMissingPdf"));
-                                    onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
-                                  }}
-                                >
-                                  {t("visaPreviewBtn")}
-                                </button>
+                                {doc.code === "FICHES_PAIE" ? (
+                                  // Special handling for multiple files
+                                  doc.fileUrl ? (
+                                    (() => {
+                                      try {
+                                        const files = JSON.parse(doc.fileUrl);
+                                        return files.map((file, index) => (
+                                          <button
+                                            key={index}
+                                            onClick={() => {
+                                              onOpenProtectedFile(file.url).catch((e) => toast.error(e.message));
+                                            }}
+                                          >
+                                            {t("visaPreviewBtn")} {index + 1}
+                                          </button>
+                                        ));
+                                      } catch (e) {
+                                        return (
+                                          <button
+                                            onClick={() => {
+                                              onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
+                                            }}
+                                          >
+                                            {t("visaPreviewBtn")}
+                                          </button>
+                                        );
+                                      }
+                                    })()
+                                  ) : (
+                                    <>
+                                      <button disabled title="Fiche de paie 1 - À télécharger">
+                                        {t("visaPreviewBtn")} 1
+                                      </button>
+                                      <button disabled title="Fiche de paie 2 - À télécharger">
+                                        {t("visaPreviewBtn")} 2
+                                      </button>
+                                      <button disabled title="Fiche de paie 3 - À télécharger">
+                                        {t("visaPreviewBtn")} 3
+                                      </button>
+                                    </>
+                                  )
+                                ) : (
+                                  <button
+                                    disabled={!doc.fileUrl}
+                                    onClick={() => {
+                                      if (!doc.fileUrl) return toast.error(t("visaMissingPdf"));
+                                      onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
+                                    }}
+                                  >
+                                    {t("visaPreviewBtn")}
+                                  </button>
+                                )}
                               </>
                             )}
                         </>
@@ -845,7 +994,7 @@ function DossierDetail({
                           <strong>{doc.label}</strong>
                           <div className="ready-doc-meta">
                             {t("visaType")}: {getDocumentType(doc.code, t)} | {t("visaStatus")}:{" "}
-                            {docStatusLabelMap[doc.status] || doc.status}
+                            {docStatusLabelMap[getDisplayDocumentStatus(doc)] || getDisplayDocumentStatus(doc)}
                           </div>
                         </li>
                       ))}
@@ -932,6 +1081,7 @@ const EMPTY_FORM = {
   departureDate: "",
   returnDate: "",
   motif: "",
+  destination: "",
 };
 
 export default function Visa() {
@@ -1102,7 +1252,7 @@ export default function Visa() {
   // ✅ CHANGED: Confirm delete dossier
   async function handleAbandonnerConfirm() {
     if (!abandonnerTarget) return;
-    const loadingId = toast.loading("Suppression en cours...");
+    const loadingId = toast.loading(t("visaAbandonLoading"));
     try {
       const res = await fetch(`${API}/api/visa-dossiers/${abandonnerTarget.id}`, {
         method: "DELETE",
@@ -1135,9 +1285,9 @@ export default function Visa() {
 
   async function handleCreateDossier(e) {
     e.preventDefault();
-    const { employeeId, departureDate, returnDate, motif } = newDossierForm;
+    const { employeeId, departureDate, returnDate, motif, destination } = newDossierForm;
 
-    if (!employeeId || !departureDate || !returnDate || !motif) {
+    if (!employeeId || !departureDate || !returnDate || !motif || !destination) {
       setFormError(t("visaFillAllRequired"));
       toast.error(t("visaFillAllRequired"));
       return;
@@ -1161,6 +1311,7 @@ export default function Visa() {
           motif,
           departureDate,
           returnDate,
+          destination,
         }),
       });
 
@@ -1221,12 +1372,26 @@ export default function Visa() {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "application/pdf";
+
+    // Allow multiple files for FICHES_PAIE
+    if (doc.code === "FICHES_PAIE") {
+      input.multiple = true;
+    }
+
     input.onchange = async () => {
-      const file = input.files && input.files[0];
-      if (!file) return;
+      const files = input.files;
+      if (!files || files.length === 0) return;
 
       const form = new FormData();
-      form.append("pdfFile", file);
+
+      // Handle multiple files for FICHES_PAIE
+      if (doc.code === "FICHES_PAIE") {
+        for (let i = 0; i < files.length; i++) {
+          form.append("pdfFiles", files[i]);
+        }
+      } else {
+        form.append("pdfFile", files[0]);
+      }
 
       const loadingId = toast.loading(t("visaPdfUploading"));
       try {
@@ -1301,7 +1466,7 @@ export default function Visa() {
 
       toast.success(t("visaGeneratedSuccess"));
 
-      if (data?.fileUrl) {
+      if (data?.fileUrl && doc.code !== "INVITATION") {
         await openProtectedFile(data.fileUrl);
       }
 
@@ -1315,31 +1480,70 @@ export default function Visa() {
   async function sendSpecificEmail(doc) {
     if (!selectedDossierId) return;
 
-    const endpoint =
-      doc.code === "ASSURANCE"
-        ? `${API}/api/email/assurance`
-        : doc.code === "BILLET_AVION"
-        ? `${API}/api/email/billet`
-        : null;
+    // Récupérer les informations du dossier
+    const dossier = await fetchJson(`${API}/api/visa-dossiers/${selectedDossierId}`);
+    const employeeName =
+      dossier?.employee?.name ||
+      `${dossier?.employee?.prenom || ""} ${dossier?.employee?.nom || ""}`.trim() ||
+      t("visaEmployeeGeneric");
+    dossier.date_depart = dossier?.departureDate || dossier?.date_depart || "-";
+    dossier.date_retour = dossier?.returnDate || dossier?.date_retour || "-";
 
-    if (!endpoint) {
+    let subject = "";
+    let body = "";
+
+    if (doc.code === "ASSURANCE") {
+      subject = `Demande Assurance Voyage – ${employeeName}`;
+      body = `Bonjour,
+
+Merci de fournir l'assurance voyage pour :
+
+Employé : ${employeeName}
+Date départ : ${dossier.date_depart}
+Date retour : ${dossier.date_retour}
+
+Merci,
+${"RH Application"}`;
+    } else if (doc.code === "BILLET_AVION") {
+      subject = `Demande Billet d'avion – ${employeeName}`;
+      body = `Bonjour,
+
+Merci de fournir le billet d'avion pour :
+
+Employé : ${employeeName}
+Date départ : ${dossier.date_depart}
+Date retour : ${dossier.date_retour}
+
+Merci,
+${"RH Application"}`;
+    } else if (doc.code === "INVITATION") {
+      const generatedUrl =
+        doc.generatedFileUrl || (!isPdfFileRef(doc.fileUrl, doc.originalFilename) ? doc.fileUrl : "");
+      if (!generatedUrl) {
+        toast.error(t("visaNoGeneratedFile"));
+        return;
+      }
+
+      subject = `Invitation(s) a signer - ${employeeName}`;
+      body = `Bonjour,
+
+Merci de bien vouloir signer le(s) invitation(s) ci-joint et me les renvoyer dans les plus brefs délais.
+
+Bien cordialement.`;
+    } else {
       toast.error(t("visaEmailNotAvailable"));
       return;
     }
 
-    const loadingId = toast.loading(t("visaSendingEmail"));
-    try {
-      await fetchJson(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dossierId: selectedDossierId }),
-      });
-      toast.dismiss(loadingId);
-      toast.success(t("visaEmailSent"));
-    } catch (e) {
-      toast.dismiss(loadingId);
-      toast.error(`${t("visaEmailNotSent")} ${e.message}`);
-    }
+    // Encoder pour l'URL
+    const encodedSubject = encodeURIComponent(subject);
+    const encodedBody = encodeURIComponent(body);
+
+    // Ouvrir Outlook avec mailto
+    const mailtoUrl = `mailto:?subject=${encodedSubject}&body=${encodedBody}`;
+    window.location.href = mailtoUrl;
+
+    toast.success(t("visaEmailOpened"));
   }
 
   function handleStatusJump(e) {
@@ -1488,15 +1692,15 @@ export default function Visa() {
 
         {!selectedDossier && isCreating && (
           <div className="modal-overlay">
-            <div className="modal">
-              <div className="modal-header">
+            <div className="modal visa-create-modal">
+              <div className="modal-header visa-create-modal-header">
                 <h2>{t("visaCreateNewFile")}</h2>
                 <button className="modal-close" onClick={handleCancelCreate}>
                   ✕
                 </button>
               </div>
 
-              <form onSubmit={handleCreateDossier} className="create-form">
+              <form onSubmit={handleCreateDossier} className="create-form visa-create-form">
                 <div className="form-row">
                   <div>
                     <EmployeeSearchSelect
@@ -1527,6 +1731,39 @@ export default function Visa() {
                 <div className="form-row">
                   <div>
                     <label>
+                      {t("visaDestination")} <span className="required">*</span>
+                    </label>
+                    <select
+                      name="destination"
+                      value={newDossierForm.destination}
+                      onChange={(e) => setNewDossierForm((p) => ({ ...p, destination: e.target.value }))}
+                      required
+                    >
+                      <option value="">Sélectionnez une ville</option>
+                      <option value="Paris">Paris</option>
+                      <option value="Lyon">Lyon</option>
+                      <option value="Marseille">Marseille</option>
+                      <option value="Toulouse">Toulouse</option>
+                      <option value="Nice">Nice</option>
+                      <option value="Nantes">Nantes</option>
+                      <option value="Strasbourg">Strasbourg</option>
+                      <option value="Montpellier">Montpellier</option>
+                      <option value="Bordeaux">Bordeaux</option>
+                      <option value="Lille">Lille</option>
+                      <option value="Rennes">Rennes</option>
+                      <option value="Reims">Reims</option>
+                      <option value="Le Havre">Le Havre</option>
+                      <option value="Saint-Étienne">Saint-Étienne</option>
+                      <option value="Toulon">Toulon</option>
+                      <option value="Grenoble">Grenoble</option>
+                      <option value="Dijon">Dijon</option>
+                      <option value="Angers">Angers</option>
+                      <option value="Nîmes">Nîmes</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label>
                       {t("visaDeparture")} <span className="required">*</span>
                     </label>
                     <input
@@ -1536,6 +1773,9 @@ export default function Visa() {
                       onChange={(e) => setNewDossierForm((p) => ({ ...p, departureDate: e.target.value }))}
                     />
                   </div>
+                </div>
+
+                <div className="form-row">
                   <div>
                     <label>
                       {t("visaReturn")} <span className="required">*</span>
@@ -1656,20 +1896,21 @@ export default function Visa() {
           <div className="modal-overlay" onMouseDown={() => setAbandonnerTarget(null)}>
             <div className="modal" onMouseDown={(e) => e.stopPropagation()}>
               <div className="modal-header">
-                <h2>🗑 Abandonner le dossier</h2>
+                <h2>{t("visaAbandonDossier")}</h2>
                 <button className="modal-close" onClick={() => setAbandonnerTarget(null)}>✕</button>
               </div>
               <div className="create-form">
                 <p style={{ marginTop: 0 }}>
-                  Confirmer la suppression du dossier de <strong>{abandonnerTarget.employee?.name}</strong> ?
-                  Cette action est <strong>irréversible</strong>.
+                  {t("visaAbandonConfirmMessage")} <strong>{abandonnerTarget.employee?.name}</strong> ?
+                  <br />
+                  <strong>{t("visaAbandonIrreversible")}</strong>
                 </p>
                 <div className="form-actions">
                   <button type="button" className="btn-outline" onClick={() => setAbandonnerTarget(null)}>
-                    Annuler
+                    {t("visaAbandonCancel")}
                   </button>
                   <button type="button" className="btn-danger" onClick={handleAbandonnerConfirm}>
-                    🗑 Confirmer la suppression
+                    {t("visaAbandonConfirmButton")}
                   </button>
                 </div>
               </div>
