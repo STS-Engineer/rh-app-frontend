@@ -9,6 +9,17 @@ const API_BASE_URL ='https://backend-rh.azurewebsites.net/api';
 export const getToken = () =>
   localStorage.getItem('token') || sessionStorage.getItem('token');
 
+export const getCurrentUser = () => {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload;
+  } catch {
+    return null;
+  }
+};
+
 // Création d'une instance axios
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -224,6 +235,12 @@ export const utilsAPI = {
       throw new Error('Impossible de se connecter au serveur');
     }
   }
+};
+
+export const tenantV2API = {
+  getEmployees: () => api.get('/v2/employees'),
+  getFranceEmergencyContact: (employeeId) => api.get(`/v2/france/emergency-contacts/${employeeId}`),
+  saveFranceEmergencyContact: (employeeId, data) => api.put(`/v2/france/emergency-contacts/${employeeId}`, data)
 };
 
 // Export par défaut

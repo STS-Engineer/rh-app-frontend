@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { employeesAPI, deleteDossierRH } from '../services/api';
+import { employeesAPI, deleteDossierRH, tenantV2API, getCurrentUser } from '../services/api';
 import { photoService } from '../services/photoService';
 import ArchiveModal from './ArchiveModal';
 import DossierRHModal from './DossierRHModal';
@@ -159,6 +159,9 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
   const [deletingDossier, setDeletingDossier] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState('');
+  const [emergencyContact, setEmergencyContact] = useState({ nom: '', prenom: '', relation: '', telephone: '', email: '' });
+  const user = getCurrentUser();
+  const isFranceTenant = (user?.plant || '').toLowerCase().includes('france');
 
   /* ✅ Sync formData */
   useEffect(() => {
@@ -170,6 +173,19 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
     setSelectedFile(null);
     setPhotoPreview('');
   }, [employee?.id, isOpen, isEditing, employee]);
+
+  useEffect(() => {
+    const loadEmergencyContact = async () => {
+      if (!isFranceTenant || !employee?.id || !isOpen) return;
+      try {
+        const response = await tenantV2API.getFranceEmergencyContact(employee.id);
+        if (response.data) setEmergencyContact(response.data);
+      } catch (e) {
+        console.error('Emergency contact load failed', e);
+      }
+    };
+    loadEmergencyContact();
+  }, [isFranceTenant, employee?.id, isOpen]);
 
   const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -376,6 +392,9 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
       }
 
       const response = await employeesAPI.update(employee.id, updatedData);
+      if (isFranceTenant && emergencyContact.telephone) {
+        await tenantV2API.saveFranceEmergencyContact(employee.id, emergencyContact);
+      }
       
       // Mettre à jour les données locales
       const updatedEmployee = response.data || response;
@@ -419,7 +438,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
     } finally {
       setSaving(false);
     }
-  }, [saving, formData, isValidEmail, t, selectedFile, employee?.id, onUpdate, refreshParent]);
+  }, [saving, formData, isValidEmail, t, selectedFile, employee?.id, onUpdate, refreshParent, isFranceTenant, emergencyContact]);
 
   const handleDeleteDossier = useCallback(async () => {
     if (!employee?.id) return;
@@ -702,6 +721,16 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                   <DetailRow label={t('supervisor1Email')} value={formData.mail_responsable1 || t('notSpecified')} />
                   <DetailRow label={t('supervisor2Email')} value={formData.mail_responsable2 || t('notSpecified')} />
                 </div>
+                {isFranceTenant && (
+                  <div className="detail-section">
+                    <h4>🚨 Contact d'urgence (France)</h4>
+                    <DetailRow label="Nom" value={emergencyContact.nom || t('notSpecified')} />
+                    <DetailRow label="Prénom" value={emergencyContact.prenom || t('notSpecified')} />
+                    <DetailRow label="Relation" value={emergencyContact.relation || t('notSpecified')} />
+                    <DetailRow label="Téléphone" value={emergencyContact.telephone || t('notSpecified')} />
+                    <DetailRow label="Email" value={emergencyContact.email || t('notSpecified')} />
+                  </div>
+                )}
 
                 <div className="detail-section">
                   <h4>📎 {t('documents')}</h4>
@@ -905,6 +934,18 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                     />
                   </div>
                 </div>
+                {isFranceTenant && (
+                  <div className="form-section">
+                    <h4>🚨 Contact d'urgence (France)</h4>
+                    <div className="form-grid">
+                      <FormInput label="Nom" name="nom" value={emergencyContact.nom} onChange={(e) => setEmergencyContact((p) => ({ ...p, nom: e.target.value }))} />
+                      <FormInput label="Prénom" name="prenom" value={emergencyContact.prenom} onChange={(e) => setEmergencyContact((p) => ({ ...p, prenom: e.target.value }))} />
+                      <FormInput label="Relation" name="relation" value={emergencyContact.relation} onChange={(e) => setEmergencyContact((p) => ({ ...p, relation: e.target.value }))} />
+                      <FormInput label="Téléphone" name="telephone" value={emergencyContact.telephone} onChange={(e) => setEmergencyContact((p) => ({ ...p, telephone: e.target.value }))} />
+                      <FormInput label="Email" name="email" type="email" value={emergencyContact.email} onChange={(e) => setEmergencyContact((p) => ({ ...p, email: e.target.value }))} />
+                    </div>
+                  </div>
+                )}
 
                 {/* Date départ + bouton archiver */}
                 <div className="archive-section">

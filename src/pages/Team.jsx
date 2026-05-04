@@ -4,7 +4,7 @@ import Sidebar from "../components/Sidebar";
 import EmployeeCard from "../components/EmployeeCard";
 import EmployeeModal from "../components/EmployeeModal";
 import AddEmployeeModal from "../components/AddEmployeeModal";
-import { employeesAPI } from "../services/api";
+import { tenantV2API } from "../services/api";
 import { useLanguage } from "../contexts/LanguageContext";
 import "./Team.css";
 
@@ -84,7 +84,7 @@ const Team = () => {
   const loadEmployees = async () => {
     try {
       setLoading(true);
-      const response = await employeesAPI.getAll();
+      const response = await tenantV2API.getEmployees();
       setEmployees(response.data);
       setFilteredEmployees(response.data);
     } catch (error) {

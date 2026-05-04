@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
-import { employeesAPI } from '../services/api';
+import { tenantV2API, getCurrentUser } from '../services/api';
 import { exportToPDF, exportToExcel, exportEmployeesToExcel } from '../services/exportService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
@@ -29,6 +29,8 @@ const Statistics = () => {
   const [selectedChart, setSelectedChart] = useState('department');
   const [timeRange, setTimeRange] = useState('monthly');
   const chartRef = useRef(null);
+  const user = getCurrentUser();
+  const isFranceTenant = (user?.plant || '').toLowerCase().includes('france');
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
   const AGE_GROUPS = ['18-25', '26-35', '36-45', '46-55', '56+'];
@@ -59,7 +61,7 @@ const Statistics = () => {
   const loadStatistics = async () => {
     try {
       setLoading(true);
-      const response = await employeesAPI.getAll();
+      const response = await tenantV2API.getEmployees();
       const employeesData = response.data;
       setEmployees(employeesData);
 
@@ -77,6 +79,7 @@ const Statistics = () => {
 
       const byDepartment = {};
       const byContract = {};
+      const byGender = { Homme: 0, Femme: 0, Non_renseigne: 0 };
       const byExperience = {
         '0-2 ans': 0,
         '2-5 ans': 0,
@@ -100,6 +103,10 @@ const Statistics = () => {
         
         // Contract stats
         byContract[emp.type_contrat] = (byContract[emp.type_contrat] || 0) + 1;
+        const g = (emp.sexe || emp.gender || '').toLowerCase();
+        if (g === 'homme' || g === 'male' || g === 'm') byGender.Homme++;
+        else if (g === 'femme' || g === 'female' || g === 'f') byGender.Femme++;
+        else byGender.Non_renseigne++;
         
         // Salary stats
         const salary = parseFloat(emp.salaire_brute || 0);
@@ -205,13 +212,19 @@ const Statistics = () => {
         byAgeGroup,
         monthlyHires: last12Months,
         salaryDistribution,
+        byGender,
         chartData: {
           departmentData,
           contractData,
           experienceData,
           ageData,
           salaryDistributionData,
-          monthlyHiresData: last12Months
+          monthlyHiresData: last12Months,
+          genderData: Object.entries(byGender).map(([name, value]) => ({ name, value })),
+          evolutionData: last12Months.map((m, i) => ({
+            ...m,
+            cumulative: last12Months.slice(0, i + 1).reduce((acc, x) => acc + x.hires, 0)
+          }))
         }
       });
 
@@ -402,6 +415,42 @@ const Statistics = () => {
         </div>
 
         <div className="professional-charts">
+          {isFranceTenant && (
+            <div className="charts-row">
+              <div className="chart-container medium">
+                <h3>Homme / Femme</h3>
+                <div className="chart-wrapper">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie data={stats.chartData?.genderData || []} dataKey="value" nameKey="name" outerRadius={110} label>
+                        {(stats.chartData?.genderData || []).map((entry, index) => (
+                          <Cell key={`g-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div className="chart-container medium">
+                <h3>Evolution des effectifs</h3>
+                <div className="chart-wrapper">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={stats.chartData?.evolutionData || []}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="hires" name="Nouveaux" stroke="#2563eb" />
+                      <Line type="monotone" dataKey="cumulative" name="Cumul" stroke="#16a34a" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="charts-row">
             <div className="chart-container large">
               <h3>📋 {t('departmentDistribution')}</h3>
