@@ -11,6 +11,9 @@ import FicheDePaie from './pages/FicheDePaie';
 import EtatDesLieux from './pages/EtatDesLieux'; 
 import Settings from './pages/Settings';
 import Visa from './pages/Visa';
+import FranceOnboarding from './pages/FranceOnboarding';
+import FranceCareerDevelopment from './pages/FranceCareerDevelopment';
+import FranceOffboarding from './pages/FranceOffboarding';
 import './styles/App.css';
 
 import Organigramme from './pages/Organigramme';
@@ -111,6 +114,30 @@ function App() {
                     <Visa />
                   </PrivateRoute>
                 } 
+              />
+              <Route
+                path="/france-onboarding"
+                element={
+                  <PrivateRoute>
+                    <FranceOnboarding />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/france-career-development"
+                element={
+                  <PrivateRoute>
+                    <FranceCareerDevelopment />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/france-offboarding"
+                element={
+                  <PrivateRoute>
+                    <FranceOffboarding />
+                  </PrivateRoute>
+                }
               />
             </Routes>
           </div>

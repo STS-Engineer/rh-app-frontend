@@ -321,7 +321,7 @@ const DemandesRH = () => {
   const pendingOpenIdRef = useRef(null);
   const isFirstMount = useRef(true);
 
-  const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   const statuts = ['en_attente', 'approuve', 'refuse'];
 

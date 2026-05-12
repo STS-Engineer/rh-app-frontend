@@ -3,7 +3,7 @@ import axios from 'axios';
 // =========================
 // Configuration de l'API
 // =========================
-const API_BASE_URL ='https://backend-rh.azurewebsites.net/api';
+const API_BASE_URL = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api`;
 
 // ✅ Token helper (localStorage OR sessionStorage)
 export const getToken = () =>
@@ -240,7 +240,17 @@ export const utilsAPI = {
 export const tenantV2API = {
   getEmployees: () => api.get('/v2/employees'),
   getFranceEmergencyContact: (employeeId) => api.get(`/v2/france/emergency-contacts/${employeeId}`),
-  saveFranceEmergencyContact: (employeeId, data) => api.put(`/v2/france/emergency-contacts/${employeeId}`, data)
+  saveFranceEmergencyContact: (employeeId, data) => api.put(`/v2/france/emergency-contacts/${employeeId}`, data),
+  getFranceOnboarding: (employeeId) => api.get(`/v2/france/onboarding/${employeeId}`),
+  saveFranceOnboarding: (employeeId, data) => api.put(`/v2/france/onboarding/${employeeId}`, data),
+  addFranceOnboardingTask: (employeeId, data) => api.post(`/v2/france/onboarding/${employeeId}/tasks`, data),
+  updateFranceOnboardingTask: (taskId, data) => api.patch(`/v2/france/onboarding/tasks/${taskId}`, data),
+  getFranceCareerEvents: (employeeId) => api.get(`/v2/france/career/${employeeId}/events`),
+  addFranceCareerEvent: (employeeId, data) => api.post(`/v2/france/career/${employeeId}/events`, data),
+  getFranceOffboarding: (employeeId) => api.get(`/v2/france/offboarding/${employeeId}`),
+  createFranceOffboarding: (employeeId, data) => api.post(`/v2/france/offboarding/${employeeId}`, data),
+  addFranceOffboardingTask: (employeeId, data) => api.post(`/v2/france/offboarding/${employeeId}/tasks`, data),
+  updateFranceOffboardingTask: (taskId, data) => api.patch(`/v2/france/offboarding/tasks/${taskId}`, data)
 };
 
 // Export par défaut

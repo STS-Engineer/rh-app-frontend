@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Sidebar.css';
 import logo from './logo_sts.png';
+import { getCurrentUser } from '../services/api';
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -10,6 +11,8 @@ const Sidebar = () => {
   const { t, language, getAvailableLanguages } = useLanguage();
 
   const [isOpen, setIsOpen] = useState(true);
+  const user = getCurrentUser();
+  const isFranceTenant = (user?.plant || '').toLowerCase().includes('france');
 
   useEffect(() => {
     const savedState = localStorage.getItem('sidebarOpen');
@@ -45,6 +48,13 @@ const Sidebar = () => {
     { path: '/statistics', label: t('statistics'), icon: '📈' },
     { path: '/etat-des-lieux', label: t('edlPresenceTracker'), icon: '📅' },
     { path: '/visa', label: t('visa'), icon: '✈️' },
+    ...(isFranceTenant
+      ? [
+          { path: '/france-onboarding', label: 'Onboarding (FR)', icon: '💻' },
+          { path: '/france-career-development', label: 'Career Dev (FR)', icon: '⭐' },
+          { path: '/france-offboarding', label: 'Offboarding (FR)', icon: '🚪' }
+        ]
+      : []),
     { path: '/settings', label: t('settings'), icon: '⚙️' },
     {
       path: 'https://pointeuse-sts.azurewebsites.net/',

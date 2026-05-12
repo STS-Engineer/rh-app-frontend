@@ -4,7 +4,7 @@ import "./Visa.css";
 import toast, { Toaster } from "react-hot-toast";
 import { useLanguage } from "../contexts/LanguageContext";
 
-const API = process.env.REACT_APP_API_URL || "https://backend-rh.azurewebsites.net";
+const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
 
 /** -------------------------------------------------------
  * Helpers

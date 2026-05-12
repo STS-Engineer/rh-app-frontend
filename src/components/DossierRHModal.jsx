@@ -14,7 +14,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const streamRef = useRef(null);
   const cameraContainerRef = useRef(null);
 
-  const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
   useEffect(() => {
     if (employee && employee.dossier_rh) {

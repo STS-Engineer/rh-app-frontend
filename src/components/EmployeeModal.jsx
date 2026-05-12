@@ -489,7 +489,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
         const token = localStorage.getItem('token');
         if (!token) throw new Error(t('notAuthenticated'));
 
-        const backendUrl = 'https://backend-rh.azurewebsites.net';
+        const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
         const archiveUrl = `${backendUrl}/api/employees/${employee.id}/archive`;
 
         let dateDepart = archiveData?.date_depart || formData.date_depart;

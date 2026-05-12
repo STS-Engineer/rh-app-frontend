@@ -54,7 +54,7 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate }) =
         throw new Error('Non authentifié. Veuillez vous reconnecter.');
       }
 
-      const backendUrl = 'https://backend-rh.azurewebsites.net';
+      const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
       const uploadUrl = `${backendUrl}/api/archive/upload-pdf`;
       
       const progressInterval = setInterval(() => {

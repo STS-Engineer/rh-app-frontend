@@ -37,7 +37,8 @@ const FicheDePaie = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('https://backend-rh.azurewebsites.net/api/fiche-paie/process', {
+      const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const response = await fetch(`${apiBaseUrl}/api/fiche-paie/process`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
