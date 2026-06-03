@@ -845,6 +845,11 @@ button {
   color: #166534;
 }
 
+.doc-RECEIVED {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .doc-REJECTED {
   background: #fee2e2;
   color: #b91c1c;
@@ -1052,6 +1057,12 @@ button:disabled {
   background: #f3e8ff;
   color: #6d3bbf;
   border-color: #e6d4ff;
+}
+
+.type-supporting-docs {
+  background: #ecfeff;
+  color: #0f766e;
+  border-color: #bff4f2;
 }
 
 .type-specific-email {
