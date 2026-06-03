@@ -11,19 +11,7 @@ const API = process.env.REACT_APP_API_URL || "https://backend-rh.azurewebsites.n
  * ------------------------------------------------------ */
 function isDocumentSatisfied(doc) {
   if (doc.mode === "UPLOAD") {
-    if (doc.code === "FICHES_PAIE") {
-      // For FICHES_PAIE, check if there are uploaded files
-      if (doc.status === "UPLOADED" && doc.fileUrl) {
-        try {
-          const files = JSON.parse(doc.fileUrl);
-          return Array.isArray(files) && files.length > 0;
-        } catch (e) {
-          return false;
-        }
-      }
-      return false;
-    }
-    return doc.status === "UPLOADED";
+    return doc.status === "UPLOADED" || doc.status === "RECEIVED_PHYSICAL";
   }
   if (doc.mode === "PHYSICAL") return doc.status === "RECEIVED_PHYSICAL";
   return false;
@@ -35,6 +23,10 @@ function getDocumentType(docCode, t) {
     case "PHOTOS":
     case "COPIE_PAGE_1_PASSEPORT":
       return t("visaDocTypeBring");
+
+    case "CNSS":
+    case "FICHES_PAIE":
+      return "Supporting Docs";
 
     case "ASSURANCE":
     case "BILLET_AVION":
@@ -62,6 +54,10 @@ function getDocumentTypeDisplayLabel(docCode, t) {
     case "PHOTOS":
     case "COPIE_PAGE_1_PASSEPORT":
       return t("visaDocTypeBring");
+
+    case "CNSS":
+    case "FICHES_PAIE":
+      return t("visaDocTypeSupportingDocs");
 
     case "ASSURANCE":
     case "BILLET_AVION":
@@ -107,6 +103,10 @@ function getGeneratedDocumentUrl(doc) {
 function getDisplayDocumentStatus(doc) {
   if (!doc) return "";
 
+  if (doc.status === "RECEIVED_PHYSICAL") {
+    return doc.mode === "UPLOAD" ? "RECEIVED" : "RECEIVED_PHYSICAL";
+  }
+
   if (doc.code === "INVITATION") {
     if (isPdfFileRef(doc.fileUrl, doc.originalFilename) && doc.status === "UPLOADED") {
       return "UPLOADED";
@@ -139,6 +139,7 @@ const getDocumentStatusLabel = (t) => ({
   UPLOADED: t("docStatusUploaded"),
   GENERATED: t("docStatusGenerated"),
   REJECTED: t("docStatusRejected"),
+  RECEIVED: t("visaReceivedBtn"),
   RECEIVED_PHYSICAL: t("docStatusReceivedPhysical"),
 });
 
@@ -361,7 +362,7 @@ function Section({ t, title, sectionStatus, innerRef, dossiers, onOpen, onAbando
   const isAccorde = sectionStatus === "VISA_ACCORDE";
   const showProgress = sectionStatus === "EN_COURS" || sectionStatus === "PRET_POUR_DEPOT";
   const showAbandonner = sectionStatus === "EN_COURS"; // ✅ CHANGED
-  const colCount = 5 + (showProgress ? 1 : 0) + (isAccorde ? 2 : 0) + 1 + (showAbandonner ? 1 : 0);
+  const colCount = 6 + (showProgress ? 1 : 0) + (isAccorde ? 2 : 0) + 1;
 
   return (
     <div className="dossier-section" ref={innerRef}>
@@ -378,6 +379,7 @@ function Section({ t, title, sectionStatus, innerRef, dossiers, onOpen, onAbando
             <th>{t("visaEmployee")}</th>
             <th>{t("visaStatus")}</th>
             <th>{t("visaReason")}</th>
+            <th>{t("visaDestination")}</th>
             <th>{t("visaDeparture")}</th>
             <th>{t("visaReturn")}</th>
             {showProgress && <th>{t("visaProgress")}</th>}
@@ -410,6 +412,7 @@ function Section({ t, title, sectionStatus, innerRef, dossiers, onOpen, onAbando
                 </td>
 
                 <td>{d.motif || "—"}</td>
+                <td>{d.destination || "—"}</td>
                 <td>{d.departureDate}</td>
                 <td>{d.returnDate}</td>
 
@@ -479,11 +482,9 @@ function DossierDetail({
   dossier,
   onUpdateDocStatus,
   onUpdateDossierStatus,
-  onUploadPdf,
   onGeneratePdf,
   onSendSpecificEmail,
   onOpenProtectedFile,
-  onOpenDossierPdf,
   steps,
   docStatusLabelMap,
 }) {
@@ -518,6 +519,12 @@ function DossierDetail({
   const canOpenPretDepotModal =
     (dossier.status === "EN_COURS" || dossier.status === "PRET_POUR_DEPOT") && allDocumentsProvided && !isFinal;
 
+  function markDocumentReceived(doc) {
+    const nextStatus = "RECEIVED_PHYSICAL";
+    onUpdateDocStatus(doc.id, nextStatus);
+    toast.success(t("visaReceivedBtn"));
+  }
+
   const canConfirmPretDepot = dossier.status === "EN_COURS" && allDocumentsProvided && !isFinal;
 
   const canDecideVisa = dossier.status === "PRET_POUR_DEPOT" && !isFinal;
@@ -535,15 +542,6 @@ function DossierDetail({
       return;
     }
     setShowPretDepotModal(true);
-  };
-
-  const handlePrintDocuments = async () => {
-    try {
-      await onOpenDossierPdf(dossier.id);
-      toast(t("visaOpenPdfToPrint"));
-    } catch (e) {
-      toast.error(e.message || t("visaPrintPdfError"));
-    }
   };
 
   const handleVisaAccordeSubmit = () => {
@@ -586,6 +584,10 @@ function DossierDetail({
 
             <p>
               {t("visaTripReason")} : <strong>{dossier.motif || "—"}</strong>
+            </p>
+
+            <p>
+              {t("visaDestination")} : <strong>{dossier.destination || "—"}</strong>
             </p>
 
             <p>
@@ -703,10 +705,7 @@ function DossierDetail({
                           {doc.mode === "PHYSICAL" && (
                             <button
                               className="btn-physical"
-                              onClick={() => {
-                                onUpdateDocStatus(doc.id, "RECEIVED_PHYSICAL");
-                                toast.success(t("docMarkedReceivedPhysical"));
-                              }}
+                              onClick={() => markDocumentReceived(doc)}
                             >
                               {t("visaReceivedBtn")}
                             </button>
@@ -715,16 +714,7 @@ function DossierDetail({
                           {(doc.code === "ASSURANCE" || doc.code === "BILLET_AVION") && (
                             <>
                               <button onClick={() => onSendSpecificEmail(doc)}>{t("visaSendEmailBtn")}</button>
-                              <button onClick={() => onUploadPdf(doc)}>{t("visaUploadPdfBtn")}</button>
-                              <button
-                                disabled={!doc.fileUrl}
-                                onClick={() => {
-                                  if (!doc.fileUrl) return toast.error(t("visaMissingPdf"));
-                                  onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
-                                }}
-                              >
-                                {t("visaPreviewBtn")}
-                              </button>
+                              <button onClick={() => markDocumentReceived(doc)}>{t("visaReceivedBtn")}</button>
                             </>
                           )}
 
@@ -741,16 +731,7 @@ function DossierDetail({
                               >
                                 {t("visaFillFormBtn")}
                               </button>
-                              <button onClick={() => onUploadPdf(doc)}>{t("visaUploadReceiptBtn")}</button>
-                              <button
-                                disabled={!doc.fileUrl}
-                                onClick={() => {
-                                  if (!doc.fileUrl) return toast.error(t("visaMissingReceiptPdf"));
-                                  onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
-                                }}
-                              >
-                                {t("visaPreviewPdfBtn")}
-                              </button>
+                              <button onClick={() => markDocumentReceived(doc)}>{t("visaReceivedBtn")}</button>
                             </>
                           )}
 
@@ -762,16 +743,7 @@ function DossierDetail({
                               >
                                 {t("visaBookHotelBtn")}
                               </button>
-                              <button onClick={() => onUploadPdf(doc)}>{t("visaUploadPdfBtn")}</button>
-                              <button
-                                disabled={!doc.fileUrl}
-                                onClick={() => {
-                                  if (!doc.fileUrl) return toast.error(t("visaMissingBookingPdf"));
-                                  onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
-                                }}
-                              >
-                                {t("visaPreviewBtn")}
-                              </button>
+                              <button onClick={() => markDocumentReceived(doc)}>{t("visaReceivedBtn")}</button>
                             </>
                           )}
 
@@ -781,27 +753,15 @@ function DossierDetail({
                               <button
                                 disabled={!getGeneratedDocumentUrl(doc)}
                                 onClick={() => {
-                                  const generatedUrl =
-                                    getGeneratedDocumentUrl(doc);
+                                  const generatedUrl = getGeneratedDocumentUrl(doc);
                                   if (!generatedUrl) return toast.error(t("visaNoGeneratedFile"));
                                   onOpenProtectedFile(generatedUrl).catch((e) => toast.error(e.message));
                                 }}
                               >
-                                {t("visaPreviewGeneratedBtn")}
-                              </button>
-                              <button onClick={() => onSendSpecificEmail(doc)}>{t("visaSendEmailBtn")}</button>
-                              <button onClick={() => onUploadPdf(doc)}>{t("visaUploadPdfBtn")}</button>
-                              <button
-                                disabled={!isPdfFileRef(doc.fileUrl, doc.originalFilename)}
-                                onClick={() => {
-                                  if (!isPdfFileRef(doc.fileUrl, doc.originalFilename)) {
-                                    return toast.error(t("visaMissingPdf"));
-                                  }
-                                  onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
-                                }}
-                              >
                                 {t("visaPreviewBtn")}
                               </button>
+                              <button onClick={() => onSendSpecificEmail(doc)}>{t("visaSendEmailBtn")}</button>
+                              <button onClick={() => markDocumentReceived(doc)}>{t("visaReceivedBtn")}</button>
                             </>
                           )}
 
@@ -809,14 +769,16 @@ function DossierDetail({
                             <>
                               <button onClick={() => onGeneratePdf(doc)}>{t("visaGeneratePdfBtn")}</button>
                               <button
-                                disabled={!doc.fileUrl}
+                                disabled={!getGeneratedDocumentUrl(doc)}
                                 onClick={() => {
-                                  if (!doc.fileUrl) return toast.error(t("visaNoGeneratedFile"));
-                                  onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
+                                  const generatedUrl = getGeneratedDocumentUrl(doc);
+                                  if (!generatedUrl) return toast.error(t("visaNoGeneratedFile"));
+                                  onOpenProtectedFile(generatedUrl).catch((e) => toast.error(e.message));
                                 }}
                               >
                                 {t("visaPreviewBtn")}
                               </button>
+                              <button onClick={() => markDocumentReceived(doc)}>{t("visaReceivedBtn")}</button>
                             </>
                           )}
 
@@ -831,15 +793,16 @@ function DossierDetail({
                               "BILLET_AVION",
                             ].includes(doc.code) && (
                               <>
-                                <button onClick={() => onUploadPdf(doc)}>{t("visaUploadPdfBtn")}</button>
+                                <button onClick={() => markDocumentReceived(doc)}>{t("visaReceivedBtn")}</button>
                                 {doc.code === "FICHES_PAIE" ? (
                                   // Special handling for multiple files
-                                  doc.fileUrl ? (
+                                  doc.fileUrl ? false && (
                                     (() => {
                                       try {
                                         const files = JSON.parse(doc.fileUrl);
                                         return files.map((file, index) => (
                                           <button
+                                            style={{ display: "none" }}
                                             key={index}
                                             onClick={() => {
                                               onOpenProtectedFile(file.url).catch((e) => toast.error(e.message));
@@ -851,6 +814,7 @@ function DossierDetail({
                                       } catch (e) {
                                         return (
                                           <button
+                                            style={{ display: "none" }}
                                             onClick={() => {
                                               onOpenProtectedFile(doc.fileUrl).catch((e) => toast.error(e.message));
                                             }}
@@ -860,7 +824,7 @@ function DossierDetail({
                                         );
                                       }
                                     })()
-                                  ) : (
+                                  ) : false && (
                                     <>
                                       <button disabled title="Fiche de paie 1 - À télécharger">
                                         {t("visaPreviewBtn")} 1
@@ -873,8 +837,9 @@ function DossierDetail({
                                       </button>
                                     </>
                                   )
-                                ) : (
+                                ) : false && (
                                   <button
+                                    style={{ display: "none" }}
                                     disabled={!doc.fileUrl}
                                     onClick={() => {
                                       if (!doc.fileUrl) return toast.error(t("visaMissingPdf"));
@@ -992,10 +957,6 @@ function DossierDetail({
                       .map((doc) => (
                         <li key={doc.id} className="ready-doc-item">
                           <strong>{doc.label}</strong>
-                          <div className="ready-doc-meta">
-                            {t("visaType")}: {getDocumentType(doc.code, t)} | {t("visaStatus")}:{" "}
-                            {docStatusLabelMap[getDisplayDocumentStatus(doc)] || getDisplayDocumentStatus(doc)}
-                          </div>
                         </li>
                       ))}
                   </ul>
@@ -1003,10 +964,6 @@ function DossierDetail({
               </div>
 
               <div className="form-actions">
-                <button type="button" className="btn-outline" onClick={handlePrintDocuments}>
-                  {t("visaPrintDocs")}
-                </button>
-
                 <button type="button" className="btn-outline" onClick={() => setShowPretDepotModal(false)}>
                   {t("visaCancel")}
                 </button>
@@ -1151,11 +1108,6 @@ export default function Visa() {
     },
     [t]
   );
-
-  const openDossierPdf = useCallback((dossierId) => {
-    const url = `${API}/api/visa-dossiers/${dossierId}/dossier-pdf`;
-    window.open(url, "_blank", "noopener,noreferrer");
-  }, []);
 
   useEffect(() => {
     if (!API) {
@@ -1346,8 +1298,10 @@ export default function Visa() {
         body: JSON.stringify({ status, ...extra }),
       });
 
-      if (selectedDossierId) await openDossier(selectedDossierId);
-      else await refreshDossiers();
+      if (selectedDossierId) {
+        await openDossier(selectedDossierId);
+        refreshDossiers();
+      } else await refreshDossiers();
     } catch (e) {
       toast.error(e.message || t("visaUpdateDocError"));
     }
@@ -1366,55 +1320,6 @@ export default function Visa() {
     } catch (e) {
       toast.error(e.message || t("visaUpdateFileError"));
     }
-  }
-
-  async function uploadPdf(doc) {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "application/pdf";
-
-    // Allow multiple files for FICHES_PAIE
-    if (doc.code === "FICHES_PAIE") {
-      input.multiple = true;
-    }
-
-    input.onchange = async () => {
-      const files = input.files;
-      if (!files || files.length === 0) return;
-
-      const form = new FormData();
-
-      // Handle multiple files for FICHES_PAIE
-      if (doc.code === "FICHES_PAIE") {
-        for (let i = 0; i < files.length; i++) {
-          form.append("pdfFiles", files[i]);
-        }
-      } else {
-        form.append("pdfFile", files[0]);
-      }
-
-      const loadingId = toast.loading(t("visaPdfUploading"));
-      try {
-        const res = await fetch(`${API}/api/visa-documents/${doc.id}/upload`, {
-          method: "POST",
-          body: form,
-          headers: { ...getAuthHeaders() },
-        });
-
-        const data = await res.json().catch(() => ({}));
-        toast.dismiss(loadingId);
-
-        if (res.status === 401) throw new Error(t("visaUnauthorized401"));
-        if (!res.ok) throw new Error(data?.message || t("visaUploadError"));
-
-        toast.success(t("visaPdfUploadedSuccess"));
-        await openDossier(selectedDossierId);
-      } catch (e) {
-        toast.dismiss(loadingId);
-        toast.error(e.message || t("visaUploadError"));
-      }
-    };
-    input.click();
   }
 
   async function generatePdf(doc) {
@@ -1881,11 +1786,9 @@ Bien cordialement.`;
             dossier={selectedDossier}
             onUpdateDocStatus={updateDocStatus}
             onUpdateDossierStatus={updateDossierStatus}
-            onUploadPdf={uploadPdf}
             onGeneratePdf={generatePdf}
             onSendSpecificEmail={sendSpecificEmail}
             onOpenProtectedFile={openProtectedFile}
-            onOpenDossierPdf={openDossierPdf}
             steps={steps}
             docStatusLabelMap={docStatusLabelMap}
           />
