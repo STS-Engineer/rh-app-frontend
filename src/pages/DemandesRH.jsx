@@ -539,10 +539,10 @@ const DemandesRH = () => {
         throw new Error(errData.error || 'Erreur lors de l\'approbation');
       }
       setDemandes(prev => prev.map(d =>
-        d.id === demandeToAct.id ? { ...d, statut: 'approuve', approuve_responsable1: true } : d
+        d.id === demandeToAct.id ? { ...d, statut: 'approuve', approuve_responsable2: true } : d
       ));
       setSelectedDemande(prev =>
-        prev?.id === demandeToAct.id ? { ...prev, statut: 'approuve', approuve_responsable1: true } : prev
+        prev?.id === demandeToAct.id ? { ...prev, statut: 'approuve', approuve_responsable2: true } : prev
       );
       handleCloseModal();
     } catch (e) {
@@ -575,12 +575,12 @@ const DemandesRH = () => {
       }
       setDemandes(prev => prev.map(d =>
         d.id === demandeToAct.id
-          ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: rejectComment }
+          ? { ...d, statut: 'refuse', approuve_responsable2: false, commentaire_refus: rejectComment }
           : d
       ));
       setSelectedDemande(prev =>
         prev?.id === demandeToAct.id
-          ? { ...prev, statut: 'refuse', approuve_responsable1: false, commentaire_refus: rejectComment }
+          ? { ...prev, statut: 'refuse', approuve_responsable2: false, commentaire_refus: rejectComment }
           : prev
       );
       handleCloseModal();
@@ -616,7 +616,7 @@ const DemandesRH = () => {
       }
       setDemandes(prev => prev.map(d =>
         d.id === demandeToAct.id
-          ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: changeStatusComment }
+          ? { ...d, statut: 'refuse', approuve_responsable2: false, commentaire_refus: changeStatusComment }
           : d
       ));
       setAllDemandes(prev => prev.map(d =>
@@ -651,9 +651,7 @@ const DemandesRH = () => {
         throw new Error(errData.error || 'Erreur lors du changement de statut');
       }
       setDemandes(prev => prev.map(d =>
-        d.id === demandeToAct.id
-          ? { ...d, statut: 'approuve', approuve_responsable1: true, commentaire_refus: null }
-          : d
+        d.id === demandeToAct.id ? { ...d, statut: 'approuve', approuve_responsable2: true, commentaire_refus: null } : d
       ));
       setAllDemandes(prev => prev.map(d =>
         d.id === demandeToAct.id
@@ -686,7 +684,7 @@ const DemandesRH = () => {
       }
       setDemandes(prev => prev.map(d =>
         d.id === demande.id
-          ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: comment }
+          ? { ...d, statut: 'refuse', approuve_responsable2: false, commentaire_refus: comment }
           : d
       ));
       setAllDemandes(prev => prev.map(d =>
@@ -717,7 +715,7 @@ const DemandesRH = () => {
       }
       setDemandes(prev => prev.map(d =>
         d.id === demande.id
-          ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: comment }
+          ? { ...d, statut: 'refuse', approuve_responsable2: false, commentaire_refus: comment }
           : d
       ));
       setAllDemandes(prev => prev.map(d =>
