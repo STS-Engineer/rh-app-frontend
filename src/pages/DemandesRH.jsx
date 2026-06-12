@@ -323,7 +323,7 @@ const DemandesRH = () => {
 
   const API_BASE_URL = 'https://backend-rh.azurewebsites.net';
 
-  const statuts = ['en_attente', 'approuve', 'refuse'];
+  const statuts = ['en_attente', 'approuve', 'refuse', 'annulee'];
 
   const getActiveFiltersCount = () => {
     let count = 0;
@@ -337,7 +337,7 @@ const DemandesRH = () => {
   const activeFiltersCount = getActiveFiltersCount();
 
   const getStatutLabel = (statut) => {
-    const labels = { en_attente: t('pending'), approuve: t('approved'), refuse: t('refused') };
+    const labels = { en_attente: t('pending'), approuve: t('approved'), refuse: t('refused'), annulee: 'Demande annulée' };
     return labels[statut] || statut;
   };
 
@@ -371,7 +371,8 @@ const DemandesRH = () => {
     const cfg = {
       en_attente: { label: t('pending'), class: 'statut-en-attente' },
       approuve: { label: t('approved'), class: 'statut-approuve' },
-      refuse: { label: t('refused'), class: 'statut-refuse' }
+      refuse: { label: t('refused'), class: 'statut-refuse' },
+      annulee: { label: 'Demande annulée', class: 'statut-annulee' }
     };
     const c = cfg[statut] || { label: statut, class: 'statut-default' };
     return <span className={`statut-badge ${c.class}`}>{c.label}</span>;
@@ -1042,6 +1043,13 @@ const DemandesRH = () => {
           <div className="stat-content">
             <div className="stat-number">{allDemandes.filter(d => d.statut === 'refuse').length}</div>
             <div className="stat-label">{t('refused')}</div>
+          </div>
+        </div>
+        <div className="stat-card cancelled" style={{ cursor: 'pointer' }} onClick={() => handleFilterChange('statut', 'annulee')}>
+          <div className="stat-icon">↩</div>
+          <div className="stat-content">
+            <div className="stat-number">{allDemandes.filter(d => d.statut === 'annulee').length}</div>
+            <div className="stat-label">Demandes annulées</div>
           </div>
         </div>
       </div>
