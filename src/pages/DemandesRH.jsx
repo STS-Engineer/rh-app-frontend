@@ -323,7 +323,7 @@ const DemandesRH = () => {
 
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
 
-  const statuts = ['en_attente', 'approuve', 'refuse'];
+  const statuts = ['en_attente', 'approuve', 'refuse', 'annulee'];
 
   const getActiveFiltersCount = () => {
     let count = 0;
@@ -337,7 +337,7 @@ const DemandesRH = () => {
   const activeFiltersCount = getActiveFiltersCount();
 
   const getStatutLabel = (statut) => {
-    const labels = { en_attente: t('pending'), approuve: t('approved'), refuse: t('refused') };
+    const labels = { en_attente: t('pending'), approuve: t('approved'), refuse: t('refused'), annulee: 'Demande annulée' };
     return labels[statut] || statut;
   };
 
@@ -371,7 +371,8 @@ const DemandesRH = () => {
     const cfg = {
       en_attente: { label: t('pending'), class: 'statut-en-attente' },
       approuve: { label: t('approved'), class: 'statut-approuve' },
-      refuse: { label: t('refused'), class: 'statut-refuse' }
+      refuse: { label: t('refused'), class: 'statut-refuse' },
+      annulee: { label: 'Demande annulée', class: 'statut-annulee' }
     };
     const c = cfg[statut] || { label: statut, class: 'statut-default' };
     return <span className={`statut-badge ${c.class}`}>{c.label}</span>;
@@ -539,10 +540,10 @@ const DemandesRH = () => {
         throw new Error(errData.error || 'Erreur lors de l\'approbation');
       }
       setDemandes(prev => prev.map(d =>
-        d.id === demandeToAct.id ? { ...d, statut: 'approuve', approuve_responsable1: true } : d
+        d.id === demandeToAct.id ? { ...d, statut: 'approuve', approuve_responsable2: true } : d
       ));
       setSelectedDemande(prev =>
-        prev?.id === demandeToAct.id ? { ...prev, statut: 'approuve', approuve_responsable1: true } : prev
+        prev?.id === demandeToAct.id ? { ...prev, statut: 'approuve', approuve_responsable2: true } : prev
       );
       handleCloseModal();
     } catch (e) {
@@ -575,12 +576,12 @@ const DemandesRH = () => {
       }
       setDemandes(prev => prev.map(d =>
         d.id === demandeToAct.id
-          ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: rejectComment }
+          ? { ...d, statut: 'refuse', approuve_responsable2: false, commentaire_refus: rejectComment }
           : d
       ));
       setSelectedDemande(prev =>
         prev?.id === demandeToAct.id
-          ? { ...prev, statut: 'refuse', approuve_responsable1: false, commentaire_refus: rejectComment }
+          ? { ...prev, statut: 'refuse', approuve_responsable2: false, commentaire_refus: rejectComment }
           : prev
       );
       handleCloseModal();
@@ -616,7 +617,7 @@ const DemandesRH = () => {
       }
       setDemandes(prev => prev.map(d =>
         d.id === demandeToAct.id
-          ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: changeStatusComment }
+          ? { ...d, statut: 'refuse', approuve_responsable2: false, commentaire_refus: changeStatusComment }
           : d
       ));
       setAllDemandes(prev => prev.map(d =>
@@ -651,9 +652,7 @@ const DemandesRH = () => {
         throw new Error(errData.error || 'Erreur lors du changement de statut');
       }
       setDemandes(prev => prev.map(d =>
-        d.id === demandeToAct.id
-          ? { ...d, statut: 'approuve', approuve_responsable1: true, commentaire_refus: null }
-          : d
+        d.id === demandeToAct.id ? { ...d, statut: 'approuve', approuve_responsable2: true, commentaire_refus: null } : d
       ));
       setAllDemandes(prev => prev.map(d =>
         d.id === demandeToAct.id
@@ -686,7 +685,7 @@ const DemandesRH = () => {
       }
       setDemandes(prev => prev.map(d =>
         d.id === demande.id
-          ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: comment }
+          ? { ...d, statut: 'refuse', approuve_responsable2: false, commentaire_refus: comment }
           : d
       ));
       setAllDemandes(prev => prev.map(d =>
@@ -717,7 +716,7 @@ const DemandesRH = () => {
       }
       setDemandes(prev => prev.map(d =>
         d.id === demande.id
-          ? { ...d, statut: 'refuse', approuve_responsable1: false, commentaire_refus: comment }
+          ? { ...d, statut: 'refuse', approuve_responsable2: false, commentaire_refus: comment }
           : d
       ));
       setAllDemandes(prev => prev.map(d =>
@@ -1044,6 +1043,13 @@ const DemandesRH = () => {
           <div className="stat-content">
             <div className="stat-number">{allDemandes.filter(d => d.statut === 'refuse').length}</div>
             <div className="stat-label">{t('refused')}</div>
+          </div>
+        </div>
+        <div className="stat-card cancelled" style={{ cursor: 'pointer' }} onClick={() => handleFilterChange('statut', 'annulee')}>
+          <div className="stat-icon">↩</div>
+          <div className="stat-content">
+            <div className="stat-number">{allDemandes.filter(d => d.statut === 'annulee').length}</div>
+            <div className="stat-label">Demandes annulées</div>
           </div>
         </div>
       </div>
