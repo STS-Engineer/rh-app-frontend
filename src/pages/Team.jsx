@@ -4,7 +4,7 @@ import Sidebar from "../components/Sidebar";
 import EmployeeCard from "../components/EmployeeCard";
 import EmployeeModal from "../components/EmployeeModal";
 import AddEmployeeModal from "../components/AddEmployeeModal";
-import { tenantV2API } from "../services/api";
+import { employeesAPI, getCurrentUser, isGlobalHrManager } from "../services/api";
 import { useLanguage } from "../contexts/LanguageContext";
 import "./Team.css";
 
@@ -12,6 +12,7 @@ const Team = () => {
   const { t } = useLanguage();
   const location = useLocation(); // ✅ ADDED
   const navigate = useNavigate(); // ✅ ADDED
+  const canFilterByPlant = isGlobalHrManager(getCurrentUser());
 
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
@@ -84,7 +85,7 @@ const Team = () => {
   const loadEmployees = async () => {
     try {
       setLoading(true);
-      const response = await tenantV2API.getEmployees();
+      const response = await employeesAPI.getAll();
       setEmployees(response.data);
       setFilteredEmployees(response.data);
     } catch (error) {
@@ -175,7 +176,7 @@ const Team = () => {
       if (!matchesSearch) return false;
 
       // Filtres texte
-      if (filters.site_dep && emp.site_dep !== filters.site_dep) return false;
+      if (canFilterByPlant && filters.site_dep && emp.site_dep !== filters.site_dep) return false;
       if (filters.poste && emp.poste !== filters.poste) return false;
       if (filters.type_contrat && emp.type_contrat !== filters.type_contrat)
         return false;
@@ -218,7 +219,7 @@ const Team = () => {
     });
 
     setFilteredEmployees(result);
-  }, [searchTerm, employees, filters]);
+  }, [searchTerm, employees, filters, canFilterByPlant]);
 
   const updateFilter = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
@@ -261,7 +262,7 @@ const Team = () => {
       <div className="team-content">
         <header className="team-header">
           <h1>👥 Équipe</h1>
-          <p>Consultez et gérez la liste des employés.</p>
+          <p>{t("consultEmployees")}</p>
         </header>
 
         {/* ✅ ADDED: Banner shown when redirected from dashboard */}
@@ -296,11 +297,11 @@ const Team = () => {
         <div className="toolbar">
           {/* Recherche */}
           <div className="toolbar-search">
-            <label className="toolbar-label">Recherche</label>
+            <label className="toolbar-label">{t("teamSearchLabel")}</label>
             <div className="search-bar">
               <input
                 type="text"
-                placeholder="Nom, prénom ou matricule..."
+                placeholder={t("teamSearchPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="search-input toolbar-control"
@@ -310,31 +311,33 @@ const Team = () => {
           </div>
 
           {/* Département */}
-          <div className="toolbar-field">
-            <label className="toolbar-label">Département</label>
-            <select
-              value={filters.site_dep}
-              onChange={(e) => updateFilter("site_dep", e.target.value)}
-              className="toolbar-control"
-            >
-              <option value="">Tous</option>
-              {filterOptions.departments.map((dep) => (
-                <option key={dep} value={dep}>
-                  {dep}
-                </option>
-              ))}
-            </select>
-          </div>
+          {canFilterByPlant && (
+            <div className="toolbar-field">
+              <label className="toolbar-label">{t("department") || t("teamFilterDepartment")}</label>
+              <select
+                value={filters.site_dep}
+                onChange={(e) => updateFilter("site_dep", e.target.value)}
+                className="toolbar-control"
+              >
+                <option value="">{t("teamFilterAll")}</option>
+                {filterOptions.departments.map((dep) => (
+                  <option key={dep} value={dep}>
+                    {dep}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Poste */}
           <div className="toolbar-field">
-            <label className="toolbar-label">Poste</label>
+            <label className="toolbar-label">{t("teamFilterPosition")}</label>
             <select
               value={filters.poste}
               onChange={(e) => updateFilter("poste", e.target.value)}
               className="toolbar-control"
             >
-              <option value="">Tous</option>
+              <option value="">{t("teamFilterAll")}</option>
               {filterOptions.postes.map((p) => (
                 <option key={p} value={p}>
                   {p}
@@ -345,13 +348,13 @@ const Team = () => {
 
           {/* Type de contrat */}
           <div className="toolbar-field">
-            <label className="toolbar-label">Type de contrat</label>
+            <label className="toolbar-label">{t("teamFilterContractType")}</label>
             <select
               value={filters.type_contrat}
               onChange={(e) => updateFilter("type_contrat", e.target.value)}
               className="toolbar-control"
             >
-              <option value="">Tous</option>
+              <option value="">{t("teamFilterAll")}</option>
               {filterOptions.contractTypes.map((ct) => (
                 <option key={ct} value={ct}>
                   {ct}
@@ -383,7 +386,7 @@ const Team = () => {
 
           {/* Fin contrat (du / au) */}
           <div className="toolbar-field">
-            <label className="toolbar-label">Fin de contrat (Du)</label>
+            <label className="toolbar-label">{t("teamFilterContractEndFrom")}</label>
             <input
               type="date"
               value={filters.date_fin_contrat_from}
@@ -395,7 +398,7 @@ const Team = () => {
           </div>
 
           <div className="toolbar-field">
-            <label className="toolbar-label">Fin de contrat (Au)</label>
+            <label className="toolbar-label">{t("teamFilterContractEndTo")}</label>
             <input
               type="date"
               value={filters.date_fin_contrat_to}
@@ -438,7 +441,7 @@ const Team = () => {
         <div className="employees-grid">
           {filteredEmployees.map((employee) => (
             <EmployeeCard
-              key={employee.id}
+              key={`${employee.tenant_schema || 'public'}-${employee.id}`}
               employee={employee}
               onClick={handleEmployeeClick}
             />
@@ -483,3 +486,5 @@ const Team = () => {
 };
 
 export default Team;
+
+

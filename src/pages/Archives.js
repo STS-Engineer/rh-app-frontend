@@ -173,7 +173,7 @@ const Archives = () => {
 
         <div className="archives-grid">
           {filteredEmployees.map(employee => (
-            <div key={employee.id} className="archive-card-wrapper">
+            <div key={`${employee.tenant_schema || 'public'}-${employee.id}`} className="archive-card-wrapper">
               <div onClick={() => handleEmployeeClick(employee)} style={{ cursor: 'pointer' }}>
                 <EmployeeCard
                   employee={employee}

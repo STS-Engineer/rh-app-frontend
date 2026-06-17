@@ -20,6 +20,17 @@ export const getCurrentUser = () => {
   }
 };
 
+const GLOBAL_HR_ROLES = new Set([
+  'group_hr',
+  'hr_group',
+  'hr_manager_group',
+  'global_hr',
+  'super_admin'
+]);
+
+export const isGlobalHrManager = (user = getCurrentUser()) =>
+  GLOBAL_HR_ROLES.has(String(user?.role || '').trim().toLowerCase());
+
 // Création d'une instance axios
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -151,14 +162,16 @@ export const dossierRhAPI = {
 };
 
 // Fonction pour supprimer le dossier RH
-export const deleteDossierRH = async (employeeId) => {
+export const deleteDossierRH = async (employeeId, tenantSchema = null) => {
   try {
     const token = getToken();
     if (!token) {
       throw new Error('Non authentifié');
     }
 
-    const response = await fetch(`${API_BASE_URL}/employees/${employeeId}/dossier-rh`, {
+    const query = tenantSchema ? `?tenant_schema=${encodeURIComponent(tenantSchema)}` : '';
+
+    const response = await fetch(`${API_BASE_URL}/employees/${employeeId}/dossier-rh${query}`, {
       method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -241,15 +254,29 @@ export const tenantV2API = {
   getEmployees: () => api.get('/v2/employees'),
   getFranceEmergencyContact: (employeeId) => api.get(`/v2/france/emergency-contacts/${employeeId}`),
   saveFranceEmergencyContact: (employeeId, data) => api.put(`/v2/france/emergency-contacts/${employeeId}`, data),
-  getFranceOnboarding: (employeeId) => api.get(`/v2/france/onboarding/${employeeId}`),
-  saveFranceOnboarding: (employeeId, data) => api.put(`/v2/france/onboarding/${employeeId}`, data),
-  addFranceOnboardingTask: (employeeId, data) => api.post(`/v2/france/onboarding/${employeeId}/tasks`, data),
+  getFranceOnboarding: (employeeId, tenantSchema) =>
+    api.get(`/v2/france/onboarding/${employeeId}`, {
+      params: tenantSchema ? { tenant_schema: tenantSchema } : {}
+    }),
+  saveFranceOnboarding: (employeeId, data, tenantSchema) =>
+    api.put(`/v2/france/onboarding/${employeeId}`, { ...data, tenant_schema: tenantSchema || data?.tenant_schema }),
+  addFranceOnboardingTask: (employeeId, data, tenantSchema) =>
+    api.post(`/v2/france/onboarding/${employeeId}/tasks`, { ...data, tenant_schema: tenantSchema || data?.tenant_schema }),
   updateFranceOnboardingTask: (taskId, data) => api.patch(`/v2/france/onboarding/tasks/${taskId}`, data),
-  getFranceCareerEvents: (employeeId) => api.get(`/v2/france/career/${employeeId}/events`),
-  addFranceCareerEvent: (employeeId, data) => api.post(`/v2/france/career/${employeeId}/events`, data),
-  getFranceOffboarding: (employeeId) => api.get(`/v2/france/offboarding/${employeeId}`),
-  createFranceOffboarding: (employeeId, data) => api.post(`/v2/france/offboarding/${employeeId}`, data),
-  addFranceOffboardingTask: (employeeId, data) => api.post(`/v2/france/offboarding/${employeeId}/tasks`, data),
+  getFranceCareerEvents: (employeeId, tenantSchema) =>
+    api.get(`/v2/france/career/${employeeId}/events`, {
+      params: tenantSchema ? { tenant_schema: tenantSchema } : {}
+    }),
+  addFranceCareerEvent: (employeeId, data, tenantSchema) =>
+    api.post(`/v2/france/career/${employeeId}/events`, { ...data, tenant_schema: tenantSchema || data?.tenant_schema }),
+  getFranceOffboarding: (employeeId, tenantSchema) =>
+    api.get(`/v2/france/offboarding/${employeeId}`, {
+      params: tenantSchema ? { tenant_schema: tenantSchema } : {}
+    }),
+  createFranceOffboarding: (employeeId, data, tenantSchema) =>
+    api.post(`/v2/france/offboarding/${employeeId}`, { ...data, tenant_schema: tenantSchema || data?.tenant_schema }),
+  addFranceOffboardingTask: (employeeId, data, tenantSchema) =>
+    api.post(`/v2/france/offboarding/${employeeId}/tasks`, { ...data, tenant_schema: tenantSchema || data?.tenant_schema }),
   updateFranceOffboardingTask: (taskId, data) => api.patch(`/v2/france/offboarding/tasks/${taskId}`, data)
 };
 

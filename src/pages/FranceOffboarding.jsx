@@ -1,152 +1,502 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Sidebar from '../components/Sidebar';
-import { employeesAPI, tenantV2API } from '../services/api';
+import { employeesAPI, getCurrentUser, isGlobalHrManager } from '../services/api';
 import './FranceModules.css';
 
+const IT_TEST_EMAIL = 'rami.mejri@avocarbon.com';
+const departments = ['Engineering', 'Design', 'Product', 'HR', 'Finance'];
+const reasons = ['Resignation', 'End of contract', 'Retirement', 'Redundancy', 'Dismissal'];
+
+const licences = [
+  { name: 'Microsoft 365', category: 'Productivity' },
+  { name: 'Slack', category: 'Communication' },
+  { name: 'Jira', category: 'Project management' },
+  { name: 'GitHub', category: 'Engineering' },
+  { name: 'Figma', category: 'Design' },
+  { name: 'Notion', category: 'Knowledge base' },
+  { name: 'Zoom', category: 'Meetings' },
+  { name: 'Azure AD', category: 'Identity' },
+  { name: 'VPN', category: 'Security' },
+  { name: 'Salesforce', category: 'Sales' }
+];
+
+const allLicenceNames = licences.map((licence) => licence.name);
+
+const initialForm = {
+  fullName: '',
+  jobTitle: '',
+  department: departments[0],
+  lastWorkingDay: '',
+  personalEmail: '',
+  reason: reasons[0],
+  revokeNotes: ''
+};
+
+const initialQuestions = [
+  { id: 'q1', text: 'What made you decide to leave?', type: 'Open text' },
+  { id: 'q2', text: 'How would you rate your overall experience?', type: 'Rating 1–5' },
+  { id: 'q3', text: 'Did you feel supported by your manager?', type: 'Yes/No' },
+  { id: 'q4', text: 'What should we improve for future employees?', type: 'Open text' },
+  { id: 'q5', text: 'Would you recommend the company as a workplace?', type: 'Yes/No' }
+];
+
+const getEmployeeKey = (employee) => `${employee.tenant_schema || 'public'}-${employee.id}`;
+const getEmployeeName = (employee) =>
+  `${employee.prenom || ''} ${employee.nom || ''}`.trim() || employee.name || 'Unnamed employee';
+const getEmployeeDepartment = (employee) =>
+  employee.site_dep || employee.departement || employee.department || departments[0];
+
 const FranceOffboarding = () => {
+  const canFilterByPlant = isGlobalHrManager(getCurrentUser());
   const [employees, setEmployees] = useState([]);
-  const [selectedId, setSelectedId] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ date_depart: '', entretien_depart: '', statut: 'actif' });
-  const [tasks, setTasks] = useState([]);
+  const [employeeSearch, setEmployeeSearch] = useState('');
+  const [plantFilter, setPlantFilter] = useState('');
+  const [selectedEmployeeKey, setSelectedEmployeeKey] = useState('');
+  const [form, setForm] = useState(initialForm);
+  const [selectedLicences, setSelectedLicences] = useState(allLicenceNames);
+  const [questions, setQuestions] = useState(initialQuestions);
+  const [newQuestion, setNewQuestion] = useState({ text: '', type: 'Open text' });
+  const [previewTab, setPreviewTab] = useState('it');
+  const [success, setSuccess] = useState(false);
+  const [lookupError, setLookupError] = useState('');
 
   useEffect(() => {
-    const load = async () => {
+    const loadEmployees = async () => {
       try {
         const response = await employeesAPI.getAll();
         setEmployees(response.data || []);
-      } finally {
-        setLoading(false);
+      } catch (error) {
+        setLookupError(error?.response?.data?.error || error.message || 'Unable to load employees.');
       }
     };
-    load();
+
+    loadEmployees();
   }, []);
 
-  const selectedEmployee = useMemo(
-    () => employees.find((e) => String(e.id) === String(selectedId)),
-    [employees, selectedId]
+  const filteredEmployees = useMemo(() => {
+    const query = employeeSearch.trim().toLowerCase();
+    const scopedEmployees = canFilterByPlant && plantFilter
+      ? employees.filter((employee) => getEmployeeDepartment(employee) === plantFilter)
+      : employees;
+
+    if (!query) return scopedEmployees.slice(0, 30);
+
+    return scopedEmployees
+      .filter((employee) =>
+        [
+          getEmployeeName(employee),
+          employee.adresse_mail,
+          employee.matricule,
+          employee.poste,
+          getEmployeeDepartment(employee)
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase()
+          .includes(query)
+      )
+      .slice(0, 30);
+  }, [employees, employeeSearch, plantFilter, canFilterByPlant]);
+
+  const plantOptions = useMemo(
+    () =>
+      Array.from(new Set(employees.map((employee) => getEmployeeDepartment(employee)).filter(Boolean))).sort((a, b) =>
+        String(a).localeCompare(String(b))
+      ),
+    [employees]
   );
 
-  useEffect(() => {
-    if (!selectedEmployee) return;
-    setForm({
-      date_depart: selectedEmployee.date_depart ? String(selectedEmployee.date_depart).slice(0, 10) : '',
-      entretien_depart: selectedEmployee.entretien_depart || '',
-      statut: selectedEmployee.statut || 'actif'
-    });
-  }, [selectedEmployee]);
+  const departmentOptions = useMemo(
+    () =>
+      Array.from(
+        new Set([...departments, ...employees.map((employee) => getEmployeeDepartment(employee)).filter(Boolean)])
+      ),
+    [employees]
+  );
 
-  useEffect(() => {
-    const loadOffboarding = async () => {
-      if (!selectedEmployee) return;
-      const r = await tenantV2API.getFranceOffboarding(selectedEmployee.id);
-      setTasks(r.data?.tasks || []);
-    };
-    loadOffboarding();
-  }, [selectedEmployee]);
+  const updateField = (field, value) => {
+    setSuccess(false);
+    setForm((current) => ({ ...current, [field]: value }));
+  };
 
-  const handleSave = async () => {
-    if (!selectedEmployee) return;
-    setSaving(true);
-    try {
-      await employeesAPI.update(selectedEmployee.id, { ...selectedEmployee, ...form });
-      if (form.date_depart) {
-        await tenantV2API.createFranceOffboarding(selectedEmployee.id, {
-          departure_date: form.date_depart,
-          reason: 'offboarding',
-          interview_notes: form.entretien_depart
-        });
+  const selectEmployee = (employeeKey) => {
+    setSelectedEmployeeKey(employeeKey);
+    setSuccess(false);
+
+    const employee = employees.find((item) => getEmployeeKey(item) === employeeKey);
+    if (!employee) return;
+
+    const department = getEmployeeDepartment(employee);
+    setForm((current) => ({
+      ...current,
+      fullName: getEmployeeName(employee),
+      jobTitle: employee.poste || current.jobTitle,
+      department,
+      personalEmail: employee.adresse_mail || current.personalEmail
+    }));
+  };
+
+  const toggleLicence = (licenceName) => {
+    setSuccess(false);
+    setSelectedLicences((current) =>
+      current.includes(licenceName)
+        ? current.filter((name) => name !== licenceName)
+        : [...current, licenceName]
+    );
+  };
+
+  const updateQuestion = (questionId, text) => {
+    setSuccess(false);
+    setQuestions((current) =>
+      current.map((question) => (question.id === questionId ? { ...question, text } : question))
+    );
+  };
+
+  const deleteQuestion = (questionId) => {
+    setSuccess(false);
+    setQuestions((current) => current.filter((question) => question.id !== questionId));
+  };
+
+  const addQuestion = () => {
+    const text = newQuestion.text.trim();
+    if (!text) return;
+
+    setQuestions((current) => [
+      ...current,
+      {
+        id: `q${Date.now()}`,
+        text,
+        type: newQuestion.type
       }
-      alert('Offboarding data saved.');
-    } catch (e) {
-      alert(e?.response?.data?.error || e.message || 'Save failed');
-    } finally {
-      setSaving(false);
-    }
+    ]);
+    setNewQuestion({ text: '', type: 'Open text' });
+    setSuccess(false);
   };
-  const addOffTask = async (task_code, title) => {
-    if (!selectedEmployee || !form.date_depart) return alert('Set departure date and save first.');
-    await tenantV2API.addFranceOffboardingTask(selectedEmployee.id, { task_code, title });
-    const r = await tenantV2API.getFranceOffboarding(selectedEmployee.id);
-    setTasks(r.data?.tasks || []);
+
+  const resetForm = () => {
+    setForm(initialForm);
+    setSelectedEmployeeKey('');
+    setEmployeeSearch('');
+    setSelectedLicences(allLicenceNames);
+    setQuestions(initialQuestions);
+    setNewQuestion({ text: '', type: 'Open text' });
+    setPreviewTab('it');
+    setSuccess(false);
   };
-  const updateTask = async (id, status) => {
-    await tenantV2API.updateFranceOffboardingTask(id, { status });
-    const r = await tenantV2API.getFranceOffboarding(selectedEmployee.id);
-    setTasks(r.data?.tasks || []);
-  };
+
+  const itPreview = useMemo(() => {
+    const name = form.fullName || '[employee name]';
+    const licenceList = selectedLicences.length
+      ? selectedLicences.map((licenceName) => `- ${licenceName}`).join('\n')
+      : '- No licences selected yet';
+
+    return `To: ${IT_TEST_EMAIL}
+Subject: Offboarding — licence cancellation for ${name}
+
+Hello IT team,
+
+Please schedule access and licence cancellation for:
+
+Name: ${name}
+Job title: ${form.jobTitle || '[job title]'}
+Department: ${form.department}
+Last working day: ${form.lastWorkingDay || '[last working day]'}
+Reason: ${form.reason}
+
+Licences/access to cancel:
+${licenceList}
+
+Extra access to revoke:
+${form.revokeNotes || 'No extra access listed.'}
+
+Please confirm completion once the offboarding actions are done.`;
+  }, [form, selectedLicences]);
+
+  const surveyPreview = useMemo(() => {
+    const name = form.fullName || '[employee name]';
+    const questionList = questions.length
+      ? questions.map((question, index) => `${index + 1}. ${question.text} (${question.type})`).join('\n')
+      : 'No questions configured.';
+
+    return `To: ${form.personalEmail || '[personal email]'}
+Subject: We’d love your feedback — exit survey
+
+Hello ${name},
+
+Thank you for your contribution and for the time you spent with us. We would appreciate your feedback through this short exit survey.
+
+Questions:
+${questionList}
+
+Your answers help HR improve the employee experience for future team members.
+
+Thank you.`;
+  }, [form.fullName, form.personalEmail, questions]);
 
   return (
     <div className="fr-module-layout">
       <Sidebar />
       <main className="fr-module-content">
-        <h1>France - Offboarding</h1>
-        <p className="fr-module-subtitle">Manage departure status and administrative notes for offboarding.</p>
-        <div className="fr-module-card">
-          {loading ? (
-            <p>Loading employees...</p>
-          ) : (
-            <>
-              <label className="fr-label">Employee</label>
-              <select className="fr-input" value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
-                <option value="">Select employee...</option>
-                {employees.map((e) => (
-                  <option key={e.id} value={e.id}>
-                    {e.prenom} {e.nom} ({e.matricule})
-                  </option>
-                ))}
-              </select>
+        <section className="lifecycle-shell">
+          <div className="lifecycle-topbar">
+            <div>
+              <h1 className="lifecycle-title">Offboarding</h1>
+              <p className="lifecycle-subtitle">
+                Manage licence cancellation and exit satisfaction survey.
+              </p>
+            </div>
+          </div>
 
-              {selectedEmployee && (
-                <>
-                  <div className="fr-kpis">
-                    <div className="fr-kpi"><div className="fr-kpi-label">Current Status</div><div className="fr-kpi-value" style={{ fontSize: 16 }}>{form.statut}</div></div>
-                    <div className="fr-kpi"><div className="fr-kpi-label">Departure Date</div><div className="fr-kpi-value" style={{ fontSize: 16 }}>{form.date_depart || '-'}</div></div>
-                    <div className="fr-kpi"><div className="fr-kpi-label">Archive PDF</div><div className="fr-kpi-value" style={{ fontSize: 16 }}>{selectedEmployee.pdf_archive_url ? 'Yes' : 'No'}</div></div>
-                    <div className="fr-kpi"><div className="fr-kpi-label">RH File</div><div className="fr-kpi-value" style={{ fontSize: 16 }}>{selectedEmployee.dossier_rh ? 'Yes' : 'No'}</div></div>
-                  </div>
-                  <div className="fr-grid">
-                    <input className="fr-input" type="date" value={form.date_depart} onChange={(e) => setForm((p) => ({ ...p, date_depart: e.target.value }))} />
-                    <select className="fr-input" value={form.statut} onChange={(e) => setForm((p) => ({ ...p, statut: e.target.value }))}>
-                      <option value="actif">Actif</option>
-                      <option value="archive">Archive</option>
+          <div className="lifecycle-stack">
+            {success && (
+              <div className="life-alert">
+                Offboarding emails prepared: IT cancellation for {IT_TEST_EMAIL} and employee survey are ready.
+              </div>
+            )}
+
+            <section className="lifecycle-card">
+              <h2>Leaving employee details</h2>
+              {lookupError && <p className="lifecycle-card-note">{lookupError}</p>}
+              <div className="lifecycle-grid" style={{ marginBottom: 14 }}>
+                {canFilterByPlant && (
+                  <div className="lifecycle-field">
+                    <label>Plant / site</label>
+                    <select
+                      className="lifecycle-select"
+                      value={plantFilter}
+                      onChange={(event) => setPlantFilter(event.target.value)}
+                    >
+                      <option value="">All plants</option>
+                      {plantOptions.map((plant) => (
+                        <option key={plant} value={plant}>
+                          {plant}
+                        </option>
+                      ))}
                     </select>
                   </div>
-                  <textarea
-                    className="fr-input fr-textarea"
-                    placeholder="Departure interview / access revocation notes"
-                    value={form.entretien_depart}
-                    onChange={(e) => setForm((p) => ({ ...p, entretien_depart: e.target.value }))}
+                )}
+                <div className="lifecycle-field">
+                  <label>Search employee by name or email</label>
+                  <input
+                    className="lifecycle-input"
+                    value={employeeSearch}
+                    onChange={(event) => setEmployeeSearch(event.target.value)}
+                    placeholder="Type a name, matricule, or email..."
                   />
-
-                  <button className="fr-btn" onClick={handleSave} disabled={saving}>
-                    {saving ? 'Saving...' : 'Save Offboarding'}
-                  </button>
-                  <h3 className="fr-section-title">Offboarding Actions</h3>
-                  <div className="fr-grid">
-                    <button className="fr-btn secondary" onClick={() => addOffTask('remove_licenses', 'Send email to IT to remove licenses')}>Request IT License Removal</button>
-                    <button className="fr-btn secondary" onClick={() => addOffTask('satisfaction_form', 'Send employee satisfaction form')}>Send Satisfaction Form</button>
-                    <button className="fr-btn secondary" onClick={() => addOffTask('equipment_return', 'Verify equipment return')}>Track Equipment Return</button>
-                  </div>
-                  <ul className="fr-task-list">
-                    {tasks.map((t) => (
-                      <li key={t.id} className="fr-task-item">
-                        <div><strong>{t.title}</strong><div style={{ fontSize: 12, color: '#64748b' }}>{t.task_code}</div></div>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <span className={`fr-badge ${t.status}`}>{t.status}</span>
-                          <select className="fr-input" style={{ width: 130 }} value={t.status} onChange={(e) => updateTask(t.id, e.target.value)}>
-                            <option value="todo">todo</option><option value="in_progress">in_progress</option><option value="done">done</option><option value="blocked">blocked</option>
-                          </select>
-                        </div>
-                      </li>
+                </div>
+                <div className="lifecycle-field">
+                  <label>Select employee</label>
+                  <select
+                    className="lifecycle-select"
+                    value={selectedEmployeeKey}
+                    onChange={(event) => selectEmployee(event.target.value)}
+                  >
+                    <option value="">Select employee...</option>
+                    {filteredEmployees.map((employee) => (
+                      <option key={getEmployeeKey(employee)} value={getEmployeeKey(employee)}>
+                        {getEmployeeName(employee)} — {employee.adresse_mail || 'email missing'}
+                      </option>
                     ))}
-                  </ul>
-                </>
-              )}
-            </>
-          )}
-        </div>
+                  </select>
+                </div>
+              </div>
+              <div className="lifecycle-grid">
+                <div className="lifecycle-field">
+                  <label>Full name</label>
+                  <input
+                    className="lifecycle-input"
+                    value={form.fullName}
+                    onChange={(event) => updateField('fullName', event.target.value)}
+                    placeholder="Alex Martin"
+                  />
+                </div>
+                <div className="lifecycle-field">
+                  <label>Job title</label>
+                  <input
+                    className="lifecycle-input"
+                    value={form.jobTitle}
+                    onChange={(event) => updateField('jobTitle', event.target.value)}
+                    placeholder="Product Engineer"
+                  />
+                </div>
+                <div className="lifecycle-field">
+                  <label>Department</label>
+                  <select
+                    className="lifecycle-select"
+                    value={form.department}
+                    onChange={(event) => updateField('department', event.target.value)}
+                  >
+                    {departmentOptions.map((department) => (
+                      <option key={department} value={department}>
+                        {department}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="lifecycle-field">
+                  <label>Last working day</label>
+                  <input
+                    className="lifecycle-input"
+                    type="date"
+                    value={form.lastWorkingDay}
+                    onChange={(event) => updateField('lastWorkingDay', event.target.value)}
+                  />
+                </div>
+                <div className="lifecycle-field">
+                  <label>Survey email</label>
+                  <input
+                    className="lifecycle-input"
+                    type="email"
+                    value={form.personalEmail}
+                    onChange={(event) => updateField('personalEmail', event.target.value)}
+                    placeholder="alex.personal@email.com"
+                  />
+                </div>
+                <div className="lifecycle-field">
+                  <label>Reason</label>
+                  <select
+                    className="lifecycle-select"
+                    value={form.reason}
+                    onChange={(event) => updateField('reason', event.target.value)}
+                  >
+                    {reasons.map((reason) => (
+                      <option key={reason} value={reason}>
+                        {reason}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            <section className="lifecycle-card">
+              <h2>Licences to cancel</h2>
+              <div className="tool-grid">
+                {licences.map((licence) => {
+                  const checked = selectedLicences.includes(licence.name);
+                  return (
+                    <label
+                      className={`tool-card danger${checked ? ' selected' : ''}`}
+                      key={licence.name}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleLicence(licence.name)}
+                      />
+                      <span>
+                        <span className="tool-name">{licence.name}</span>
+                        <span className="tool-category">{licence.category}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              <div className="lifecycle-field" style={{ marginTop: 14 }}>
+                <label>Extra access to revoke</label>
+                <textarea
+                  className="lifecycle-textarea"
+                  value={form.revokeNotes}
+                  onChange={(event) => updateField('revokeNotes', event.target.value)}
+                  placeholder="Shared folders, admin groups, building badge, special systems..."
+                />
+              </div>
+            </section>
+
+            <section className="lifecycle-card">
+              <h2>Satisfaction survey (HR editable)</h2>
+              <div className="question-list">
+                {questions.map((question, index) => (
+                  <div className="question-row" key={question.id}>
+                    <span className="question-number">{index + 1}</span>
+                    <input
+                      className="lifecycle-input"
+                      value={question.text}
+                      onChange={(event) => updateQuestion(question.id, event.target.value)}
+                    />
+                    <span className="question-type">{question.type}</span>
+                    <button
+                      className="delete-question"
+                      type="button"
+                      onClick={() => deleteQuestion(question.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="inline-form">
+                <div className="lifecycle-grid">
+                  <div className="lifecycle-field">
+                    <label>Add question</label>
+                    <input
+                      className="lifecycle-input"
+                      value={newQuestion.text}
+                      onChange={(event) =>
+                        setNewQuestion((current) => ({ ...current, text: event.target.value }))
+                      }
+                      placeholder="What would have made your experience better?"
+                    />
+                  </div>
+                  <div className="lifecycle-field">
+                    <label>Question type</label>
+                    <select
+                      className="lifecycle-select"
+                      value={newQuestion.type}
+                      onChange={(event) =>
+                        setNewQuestion((current) => ({ ...current, type: event.target.value }))
+                      }
+                    >
+                      <option value="Open text">Open text</option>
+                      <option value="Rating 1–5">Rating 1–5</option>
+                      <option value="Yes/No">Yes/No</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="lifecycle-actions">
+                  <button
+                    className="life-btn danger"
+                    type="button"
+                    disabled={!newQuestion.text.trim()}
+                    onClick={addQuestion}
+                  >
+                    Add question
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <section className="lifecycle-card">
+              <h2>Email previews</h2>
+              <div className="preview-tabs">
+                <button
+                  className={`preview-tab${previewTab === 'it' ? ' active' : ''}`}
+                  type="button"
+                  onClick={() => setPreviewTab('it')}
+                >
+                  IT cancellation
+                </button>
+                <button
+                  className={`preview-tab${previewTab === 'survey' ? ' active' : ''}`}
+                  type="button"
+                  onClick={() => setPreviewTab('survey')}
+                >
+                  Survey to employee
+                </button>
+              </div>
+              <pre className="email-preview">{previewTab === 'it' ? itPreview : surveyPreview}</pre>
+              <div className="lifecycle-actions">
+                <button className="life-btn ghost" type="button" onClick={resetForm}>
+                  Reset
+                </button>
+                <button className="life-btn danger" type="button" onClick={() => setSuccess(true)}>
+                  Send both emails
+                </button>
+              </div>
+            </section>
+          </div>
+        </section>
       </main>
     </div>
   );

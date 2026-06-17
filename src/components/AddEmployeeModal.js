@@ -4,10 +4,25 @@ import { photoService } from '../services/photoService';
 import { useLanguage } from '../contexts/LanguageContext';
 import './AddEmployeeModal.css';
 
+const GROUP_ROLES = new Set(['group_hr', 'hr_group', 'hr_manager_group', 'global_hr', 'super_admin']);
+
+const COUNTRY_SCHEMA_OPTIONS = [
+  { label: 'Tunisia', value: 'public' },
+  { label: 'France', value: 'schema_fr' },
+  { label: 'China', value: 'schema_cn' },
+  { label: 'Germany', value: 'schema_de' },
+  { label: 'India', value: 'schema_in' },
+  { label: 'Luxembourg', value: 'schema_lu' },
+  { label: 'Mexico', value: 'schema_mx' },
+  { label: 'South Korea', value: 'schema_kr' }
+];
+
 const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
   const { t } = useLanguage();
   const user = getCurrentUser();
   const isFranceTenant = (user?.plant || '').toLowerCase().includes('france');
+  const isGroupHr = GROUP_ROLES.has((user?.role || '').toLowerCase());
+  const defaultTenantSchema = user?.tenant_schema || 'public';
 
   const [formData, setFormData] = useState({
     matricule: '',
@@ -26,7 +41,8 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     salaire_brute: '',
     adresse_mail: '',
     mail_responsable1: '',
-    mail_responsable2: ''
+    mail_responsable2: '',
+    tenant_schema: defaultTenantSchema
   });
 
   const [emergencyContact, setEmergencyContact] = useState({
@@ -83,6 +99,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
 
       const employeeData = {
         ...formData,
+        tenant_schema: formData.tenant_schema || defaultTenantSchema,
         photo: photoUrl,
         mail_responsable1: formData.mail_responsable1 || null,
         mail_responsable2: formData.mail_responsable2 || null
@@ -112,7 +129,8 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       date_emission_passport: '', date_expiration_passport: '', date_naissance: '',
       poste: '', site_dep: t('headquarters'), type_contrat: 'CDI',
       date_debut: '', date_fin_contrat: '', salaire_brute: '',
-      adresse_mail: '', mail_responsable1: '', mail_responsable2: ''
+      adresse_mail: '', mail_responsable1: '', mail_responsable2: '',
+      tenant_schema: defaultTenantSchema
     });
     setEmergencyContact({ nom: '', prenom: '', relation: '', telephone: '', email: '' });
     setSelectedFile(null);
@@ -147,6 +165,21 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 <input name="adresse_mail" value={formData.adresse_mail} onChange={handleInputChange} placeholder="Email employe" required />
                 <input name="mail_responsable1" value={formData.mail_responsable1} onChange={handleInputChange} placeholder="Email responsable 1" />
                 <input name="mail_responsable2" value={formData.mail_responsable2} onChange={handleInputChange} placeholder="Email responsable 2" />
+                {isGroupHr && (
+                  <select
+                    name="tenant_schema"
+                    value={formData.tenant_schema}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Choisir un pays</option>
+                    {COUNTRY_SCHEMA_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {isFranceTenant && (

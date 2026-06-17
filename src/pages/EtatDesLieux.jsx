@@ -664,7 +664,7 @@ const EtatDesLieux = () => {
               </thead>
               <tbody>
                 {filteredEmployees.map((employee) => (
-                  <tr key={employee.id} className="employee-row">
+                  <tr key={`${employee.tenant_schema || 'public'}-${employee.id}`} className="employee-row">
                     <td className="employee-cell">
                       <div className="employee-info">
                         <div className="employee-name">

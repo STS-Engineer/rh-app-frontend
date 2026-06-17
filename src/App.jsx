@@ -14,6 +14,7 @@ import Visa from './pages/Visa';
 import FranceOnboarding from './pages/FranceOnboarding';
 import FranceCareerDevelopment from './pages/FranceCareerDevelopment';
 import FranceOffboarding from './pages/FranceOffboarding';
+import { getCurrentUser } from './services/api';
 import './styles/App.css';
 
 import Organigramme from './pages/Organigramme';
@@ -21,6 +22,34 @@ import Organigramme from './pages/Organigramme';
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem('token');
   return token ? children : <Navigate to="/" />;
+};
+
+const isTunisiaTenantUser = (user) => {
+  const tenantText = [
+    user?.country,
+    user?.plant,
+    user?.tenant_schema,
+    user?.tenant_id
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  return (
+    tenantText.includes('tunisia') ||
+    tenantText.includes('public') ||
+    tenantText.includes('sts') ||
+    tenantText.includes('sceet') ||
+    tenantText.includes('same service') ||
+    tenantText.includes('same-service')
+  );
+};
+
+const TunisiaOnlyRoute = ({ children }) => {
+  const user = getCurrentUser();
+  return isTunisiaTenantUser(user) ? children : <Navigate to="/dashboard" replace />;
+};
+
+const NonTunisiaOnlyRoute = ({ children }) => {
+  const user = getCurrentUser();
+  return !isTunisiaTenantUser(user) ? children : <Navigate to="/dashboard" replace />;
 };
 
 function App() {
@@ -111,34 +140,45 @@ function App() {
                 path="/visa" 
                 element={
                   <PrivateRoute>
-                    <Visa />
+                    <TunisiaOnlyRoute>
+                      <Visa />
+                    </TunisiaOnlyRoute>
                   </PrivateRoute>
                 } 
               />
               <Route
-                path="/france-onboarding"
+                path="/onboarding"
                 element={
                   <PrivateRoute>
-                    <FranceOnboarding />
+                    <NonTunisiaOnlyRoute>
+                      <FranceOnboarding />
+                    </NonTunisiaOnlyRoute>
                   </PrivateRoute>
                 }
               />
               <Route
-                path="/france-career-development"
+                path="/career-development"
                 element={
                   <PrivateRoute>
-                    <FranceCareerDevelopment />
+                    <NonTunisiaOnlyRoute>
+                      <FranceCareerDevelopment />
+                    </NonTunisiaOnlyRoute>
                   </PrivateRoute>
                 }
               />
               <Route
-                path="/france-offboarding"
+                path="/offboarding"
                 element={
                   <PrivateRoute>
-                    <FranceOffboarding />
+                    <NonTunisiaOnlyRoute>
+                      <FranceOffboarding />
+                    </NonTunisiaOnlyRoute>
                   </PrivateRoute>
                 }
               />
+              <Route path="/france-onboarding" element={<Navigate to="/onboarding" replace />} />
+              <Route path="/france-career-development" element={<Navigate to="/career-development" replace />} />
+              <Route path="/france-offboarding" element={<Navigate to="/offboarding" replace />} />
             </Routes>
           </div>
         </div>

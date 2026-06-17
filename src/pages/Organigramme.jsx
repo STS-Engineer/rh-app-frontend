@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { employeesAPI } from '../services/api';
+import { employeesAPI, getCurrentUser, isGlobalHrManager } from '../services/api';
 import * as d3 from 'd3';
 import {
   ZoomIn,
@@ -19,10 +19,12 @@ import './Organigramme.css';
 
 const Organigramme = () => {
   const { t } = useLanguage();
+  const canFilterByPlant = isGlobalHrManager(getCurrentUser());
 
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [plantFilter, setPlantFilter] = useState('');
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [selectedNode, setSelectedNode] = useState(null);
@@ -31,6 +33,8 @@ const Organigramme = () => {
   const svgRef = useRef();
   const containerRef = useRef();
   const chartWrapperRef = useRef();
+  const plantOptions = Array.from(new Set(employees.map((employee) => employee.site_dep).filter(Boolean)))
+    .sort((a, b) => String(a).localeCompare(String(b)));
 
   // ✅ CHANGED: Colors updated to match the blue/grey chart palette
   const departmentColors = {
@@ -79,14 +83,32 @@ const Organigramme = () => {
     return poste.replace(/\s+[A-Z]{2,}$/g, '').replace(/[-–—][A-Z]{2,}$/g, '').trim();
   };
 
-  const buildHierarchy = () => {
+  const normalizeEmail = (email) => (email || '').trim().toLowerCase();
+
+  const createVirtualRoot = (children = []) => ({
+    id: 'organization-root',
+    prenom: t('orgTitle'),
+    nom: '',
+    poste: t('orgActiveEmployees'),
+    matricule: '',
+    site_dep: 'Organization',
+    adresse_mail: '',
+    children,
+    depth: 0,
+    isCEO: true,
+    isManager: true,
+    isVirtual: true
+  });
+
+  const buildHierarchy = (sourceEmployees = employees) => {
     const employeeMap = new Map();
-    employees.forEach((emp) => {
-      const email = emp.adresse_mail?.toLowerCase();
+    sourceEmployees.forEach((emp) => {
+      const email = normalizeEmail(emp.adresse_mail);
       if (email) {
         employeeMap.set(email, {
           ...emp,
           id: email,
+          employeeId: emp.id,
           prenom: emp.prenom?.trim() || '',
           nom: emp.nom?.trim() || '',
           poste: cleanPosition(emp.poste),
@@ -98,84 +120,65 @@ const Organigramme = () => {
       }
     });
 
-    let fethiNode = null;
-    let fethiEmail = '';
-    for (const [email, emp] of employeeMap.entries()) {
-      if (emp.prenom?.toLowerCase().includes('fethi') && emp.nom?.toLowerCase().includes('chaouachi')) {
-        fethiNode = emp;
-        fethiEmail = email;
-        break;
-      }
-    }
+    if (employeeMap.size === 0) return createVirtualRoot();
 
-    if (!fethiNode) {
-      fethiNode = {
-        id: 'ceo', prenom: 'Fethi', nom: 'Chaouachi', poste: 'Plant Manager',
-        matricule: '', site_dep: 'CEO', adresse_mail: 'fethi.chaouachi@exemple.com',
-        children: [], depth: 0, isCEO: true, isManager: true
-      };
-      fethiEmail = 'fethi.chaouachi@exemple.com';
-      employeeMap.set(fethiEmail, fethiNode);
-    } else {
-      fethiNode.isCEO = true;
-      fethiNode.isManager = true;
-      fethiNode.poste = 'Plant Manager';
-      fethiNode.site_dep = 'CEO';
-    }
-
-    employees.forEach((emp) => {
-      const resp1 = emp.mail_responsable1?.toLowerCase();
+    sourceEmployees.forEach((emp) => {
+      const resp1 = normalizeEmail(emp.mail_responsable1);
       if (resp1 && employeeMap.has(resp1)) employeeMap.get(resp1).isManager = true;
-      const resp2 = emp.mail_responsable2?.toLowerCase();
+      const resp2 = normalizeEmail(emp.mail_responsable2);
       if (resp2 && employeeMap.has(resp2) && resp2 !== resp1) employeeMap.get(resp2).isManager = true;
     });
 
-    const processed = new Set([fethiEmail]);
+    const roots = [];
+    employeeMap.forEach((node) => {
+      const resp1 = normalizeEmail(node.mail_responsable1);
+      const resp2 = normalizeEmail(node.mail_responsable2);
+      const managerEmail = employeeMap.has(resp1) ? resp1 : employeeMap.has(resp2) ? resp2 : null;
 
-    const directReports = employees.filter((e) => {
-      const email = e.adresse_mail?.toLowerCase();
-      return email !== fethiEmail && e.mail_responsable1?.toLowerCase() === fethiEmail;
-    });
-
-    directReports.forEach((emp) => {
-      const email = emp.adresse_mail?.toLowerCase();
-      if (email && employeeMap.has(email) && !processed.has(email)) {
-        const node = employeeMap.get(email);
-        node.depth = 1;
-        node.parentId = fethiEmail;
-        fethiNode.children.push(node);
-        processed.add(email);
+      if (managerEmail && managerEmail !== node.id) {
+        const manager = employeeMap.get(managerEmail);
+        manager.isManager = true;
+        manager.children.push(node);
+        node.parentId = managerEmail;
+      } else {
+        roots.push(node);
       }
     });
 
-    const processManager = (managerEmail) => {
-      const manager = employeeMap.get(managerEmail);
-      if (!manager || !manager.isManager) return;
-      const subordinates = employees.filter((e) => {
-        const email = e.adresse_mail?.toLowerCase();
-        const resp1 = e.mail_responsable1?.toLowerCase();
-        const resp2 = e.mail_responsable2?.toLowerCase();
-        return email !== managerEmail && !processed.has(email) && (resp1 === managerEmail || resp2 === managerEmail);
-      });
-      subordinates.forEach((sub) => {
-        const email = sub.adresse_mail?.toLowerCase();
-        if (email && employeeMap.has(email) && !processed.has(email)) {
-          const subNode = employeeMap.get(email);
-          subNode.depth = manager.depth + 1;
-          subNode.parentId = managerEmail;
-          if (!manager.children) manager.children = [];
-          manager.children.push(subNode);
-          processed.add(email);
-          if (subNode.isManager) processManager(email);
-        }
-      });
+    if (roots.length === 0) {
+      const fallbackRoot = Array.from(employeeMap.values()).find((emp) => emp.isManager) ||
+        Array.from(employeeMap.values())[0];
+      if (fallbackRoot) roots.push(fallbackRoot);
+    }
+
+    const setDepth = (node, depth = 0, visited = new Set()) => {
+      if (!node || visited.has(node.id)) return;
+      visited.add(node.id);
+      node.depth = depth;
+      node.children = (node.children || []).filter((child) => child.id !== node.id && !visited.has(child.id));
+      node.children.forEach((child) => setDepth(child, depth + 1, new Set(visited)));
     };
 
-    Array.from(employeeMap.values())
-      .filter((emp) => emp.isManager && emp.id !== fethiEmail && processed.has(emp.id))
-      .forEach((manager) => processManager(manager.id));
+    const fethiRoot = roots.find((emp) =>
+      emp.prenom?.toLowerCase().includes('fethi') &&
+      emp.nom?.toLowerCase().includes('chaouachi')
+    );
+    const managerRoot = roots.find((emp) => emp.isManager) || roots[0];
+    const rootNode = fethiRoot || managerRoot;
 
-    return fethiNode;
+    if (roots.length === 1 && rootNode) {
+      rootNode.isCEO = true;
+      rootNode.isManager = true;
+      setDepth(rootNode);
+      return rootNode;
+    }
+
+    const virtualRoot = createVirtualRoot(roots);
+    virtualRoot.children.forEach((child) => {
+      child.parentId = virtualRoot.id;
+    });
+    setDepth(virtualRoot);
+    return virtualRoot;
   };
 
   useEffect(() => { fetchEmployees(); }, []);
@@ -195,17 +198,21 @@ const Organigramme = () => {
   };
 
   useEffect(() => {
+    const scopedEmployees = canFilterByPlant && plantFilter
+      ? employees.filter((employee) => employee.site_dep === plantFilter)
+      : employees;
+
     if (searchTerm.trim() === '') {
-      setFilteredEmployees(employees);
+      setFilteredEmployees(scopedEmployees);
     } else {
       const q = searchTerm.toLowerCase();
-      setFilteredEmployees(employees.filter((emp) => {
+      setFilteredEmployees(scopedEmployees.filter((emp) => {
         const fullName = cleanName(emp.prenom, emp.nom).toLowerCase();
         const position = cleanPosition(emp.poste).toLowerCase();
         return fullName.includes(q) || position.includes(q) || emp.site_dep?.toLowerCase().includes(q) || emp.matricule?.toLowerCase().includes(q);
       }));
     }
-  }, [searchTerm, employees]);
+  }, [searchTerm, employees, plantFilter, canFilterByPlant]);
 
   useEffect(() => {
     if (loading || !svgRef.current || filteredEmployees.length === 0) return;
@@ -219,7 +226,7 @@ const Organigramme = () => {
     const horizontalSpacing = 350;
     const verticalSpacing = 180;
 
-    const hierarchyData = buildHierarchy();
+    const hierarchyData = buildHierarchy(filteredEmployees);
     const root = d3.hierarchy(hierarchyData);
     const tree = d3.tree().nodeSize([horizontalSpacing, verticalSpacing * 2]).separation(() => 1);
     tree(root);
@@ -484,6 +491,10 @@ const Organigramme = () => {
       return filteredEmployees.some((emp) => emp.mail_responsable1?.toLowerCase() === email);
     }).length
   };
+  const previewRoot = filteredEmployees.length > 0 ? buildHierarchy(filteredEmployees) : null;
+  const rootBadgeText = previewRoot && !previewRoot.isVirtual
+    ? `${previewRoot.poste || t('orgNotSpecifiedPos')} : ${cleanName(previewRoot.prenom, previewRoot.nom)}`
+    : t('orgTitle');
 
   if (loading) {
     return (
@@ -507,7 +518,7 @@ const Organigramme = () => {
         <div className="organigramme-header">
           <h1>{t('orgTitle')}</h1>
           <p className="subtitle">
-            <span className="ceo-badge">{t('orgPlantManager')}</span>
+            <span className="ceo-badge">{rootBadgeText}</span>
             <span className="disposition-badge-horizontal">{t('orgLevel1Badge')}</span>
             <span className="disposition-badge-vertical">{t('orgTeamsBadge')}</span>
           </p>
@@ -529,6 +540,23 @@ const Organigramme = () => {
         </div>
 
         <div className="organigramme-controls">
+          {canFilterByPlant && (
+            <div className="search-box filter-box">
+              <select
+                value={plantFilter}
+                onChange={(event) => setPlantFilter(event.target.value)}
+                className="search-input filter-select"
+              >
+                <option value="">{t('teamFilterAll')}</option>
+                {plantOptions.map((plant) => (
+                  <option key={plant} value={plant}>
+                    {plant}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="search-box">
             <input
               type="text"

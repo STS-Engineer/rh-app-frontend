@@ -23,7 +23,8 @@ const Settings = () => {
       de: 'Deutsch',
       zh: '中文 (Chinese)',
       ko: '한국어 (Korean)',
-      hi: 'हिन्दी (Hindi)'
+      es: 'Español (Spanish)',
+      ta: 'தமிழ் (Tamil)'
     };
     return labels[lang] || lang;
   };
@@ -35,7 +36,8 @@ const Settings = () => {
       de: '🇩🇪',
       zh: '🇨🇳',
       ko: '🇰🇷',
-      hi: '🇮🇳'
+      es: '🇪🇸',
+      ta: '🇮🇳'
     };
     return flags[lang] || '🌐';
   };
@@ -93,7 +95,6 @@ const Settings = () => {
                   {language === 'en' && <span className="checkmark">✓</span>}
                 </button>
 
-                {/* ✅ ADDED GERMAN LANGUAGE OPTION */}
                 <button 
                   className={`language-option ${language === 'de' ? 'active' : ''}`}
                   onClick={() => handleLanguageChange('de')}
@@ -130,16 +131,30 @@ const Settings = () => {
                   {language === 'ko' && <span className="checkmark">✓</span>}
                 </button>
 
+                {/* ✅ SPANISH LANGUAGE OPTION */}
                 <button 
-                  className={`language-option ${language === 'hi' ? 'active' : ''}`}
-                  onClick={() => handleLanguageChange('hi')}
+                  className={`language-option ${language === 'es' ? 'active' : ''}`}
+                  onClick={() => handleLanguageChange('es')}
+                >
+                  <span className="flag">🇪🇸</span>
+                  <div className="language-info">
+                    <strong>Español</strong>
+                    <small>Spanish language</small>
+                  </div>
+                  {language === 'es' && <span className="checkmark">✓</span>}
+                </button>
+
+                {/* ✅ TAMIL LANGUAGE OPTION */}
+                <button 
+                  className={`language-option ${language === 'ta' ? 'active' : ''}`}
+                  onClick={() => handleLanguageChange('ta')}
                 >
                   <span className="flag">🇮🇳</span>
                   <div className="language-info">
-                    <strong>हिन्दी</strong>
-                    <small>Hindi language</small>
+                    <strong>தமிழ்</strong>
+                    <small>Tamil language</small>
                   </div>
-                  {language === 'hi' && <span className="checkmark">✓</span>}
+                  {language === 'ta' && <span className="checkmark">✓</span>}
                 </button>
               </div>
               

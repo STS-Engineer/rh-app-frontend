@@ -12,7 +12,20 @@ const Sidebar = () => {
 
   const [isOpen, setIsOpen] = useState(true);
   const user = getCurrentUser();
-  const isFranceTenant = (user?.plant || '').toLowerCase().includes('france');
+  const tenantText = [
+    user?.country,
+    user?.plant,
+    user?.tenant_schema,
+    user?.tenant_id
+  ].filter(Boolean).join(' ').toLowerCase();
+  const isTunisiaTenant =
+    tenantText.includes('tunisia') ||
+    tenantText.includes('public') ||
+    tenantText.includes('sts') ||
+    tenantText.includes('sceet') ||
+    tenantText.includes('same service') ||
+    tenantText.includes('same-service');
+  const showSharedTenantModules = Boolean(user) && !isTunisiaTenant;
 
   useEffect(() => {
     const savedState = localStorage.getItem('sidebarOpen');
@@ -47,21 +60,29 @@ const Sidebar = () => {
     { path: '/archives', label: t('archives'), icon: '📁' },
     { path: '/statistics', label: t('statistics'), icon: '📈' },
     { path: '/etat-des-lieux', label: t('edlPresenceTracker'), icon: '📅' },
-    { path: '/visa', label: t('visa'), icon: '✈️' },
-    ...(isFranceTenant
+    ...(isTunisiaTenant
       ? [
-          { path: '/france-onboarding', label: 'Onboarding (FR)', icon: '💻' },
-          { path: '/france-career-development', label: 'Career Dev (FR)', icon: '⭐' },
-          { path: '/france-offboarding', label: 'Offboarding (FR)', icon: '🚪' }
+          { path: '/visa', label: t('visa'), icon: '✈️' }
+        ]
+      : []),
+    ...(showSharedTenantModules
+      ? [
+          { path: '/onboarding', label: t('onboarding') || 'Onboarding', icon: '💻' },
+          { path: '/career-development', label: t('careerDevelopment') || 'Career Development', icon: '⭐' },
+          { path: '/offboarding', label: t('offboarding') || 'Offboarding', icon: '🚪' }
         ]
       : []),
     { path: '/settings', label: t('settings'), icon: '⚙️' },
-    {
-      path: 'https://pointeuse-sts.azurewebsites.net/',
-      label: 'Pointeuse',
-      icon: '🕐',
-      external: true,
-    },
+    ...(isTunisiaTenant
+      ? [
+          {
+            path: 'https://pointeuse-sts.azurewebsites.net/',
+            label: t('pointeuse'),
+            icon: '🕐',
+            external: true,
+          }
+        ]
+      : []),
   ];
 
   const handleLogout = () => {
@@ -119,3 +140,4 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+

@@ -376,6 +376,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
     setSaving(true);
     try {
       let updatedData = { ...formData };
+      updatedData.tenant_schema = employee?.tenant_schema || formData.tenant_schema || null;
 
       // Debug: afficher les données envoyées
       console.log('📤 Données envoyées au backend:', JSON.stringify(updatedData, null, 2));
@@ -446,7 +447,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
     try {
       setDeletingDossier(true);
       
-      const response = await deleteDossierRH(employee.id);
+      const response = await deleteDossierRH(employee.id, employee?.tenant_schema || formData.tenant_schema || null);
       
       // Mettre à jour les données locales
       setFormData(prev => ({ ...prev, dossier_rh: null }));
@@ -504,7 +505,8 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
         const requestData = {
           pdf_url: pdfUrl,
           entretien_depart: t('archivedDepartureInterview'),
-          date_depart: dateDepart
+          date_depart: dateDepart,
+          tenant_schema: employee?.tenant_schema || formData.tenant_schema || null
         };
 
         const response = await fetch(archiveUrl, {

@@ -142,6 +142,11 @@
   min-width: 300px;
 }
 
+.filter-box {
+  flex: 0 0 240px;
+  min-width: 240px;
+}
+
 .search-input {
   width: 100%;
   padding: 12px 20px;
@@ -157,6 +162,10 @@
   border-color: #046eaf;
   background: white;
   box-shadow: 0 0 0 3px rgba(4, 110, 175, 0.1);
+}
+
+.filter-select {
+  appearance: auto;
 }
 
 .controls-group {
