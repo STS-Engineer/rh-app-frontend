@@ -3,8 +3,9 @@ import Sidebar from "../components/Sidebar";
 import "./Visa.css";
 import toast, { Toaster } from "react-hot-toast";
 import { useLanguage } from "../contexts/LanguageContext";
+import { getBackendBaseUrl } from "../utils/backendUrl";
 
-const API = process.env.REACT_APP_API_URL || "http://localhost:5000";
+const API = getBackendBaseUrl();
 
 /** -------------------------------------------------------
  * Helpers

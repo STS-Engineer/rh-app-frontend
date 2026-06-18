@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './DossierRHModal.css';
+import { getBackendBaseUrl } from '../utils/backendUrl';
 
 const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const [files, setFiles] = useState([]);
@@ -14,7 +15,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const streamRef = useRef(null);
   const cameraContainerRef = useRef(null);
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const API_BASE_URL = getBackendBaseUrl();
 
   useEffect(() => {
     if (employee && employee.dossier_rh) {

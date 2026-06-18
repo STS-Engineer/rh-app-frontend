@@ -1,9 +1,10 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '../utils/backendUrl';
 
 // =========================
 // Configuration de l'API
 // =========================
-const API_BASE_URL = `${process.env.REACT_APP_API_URL || 'http://localhost:5000'}/api`;
+const API_BASE_URL = getApiBaseUrl();
 
 // ✅ Token helper (localStorage OR sessionStorage)
 export const getToken = () =>

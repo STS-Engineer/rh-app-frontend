@@ -3,6 +3,7 @@ import './DemandesRH.css';
 import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { getBackendBaseUrl } from '../utils/backendUrl';
 
 // ─── Modal moved OUTSIDE DemandesRH so it never gets redefined on re-render
 const Modal = ({
@@ -321,7 +322,7 @@ const DemandesRH = () => {
   const pendingOpenIdRef = useRef(null);
   const isFirstMount = useRef(true);
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const API_BASE_URL = getBackendBaseUrl();
 
   const statuts = ['en_attente', 'approuve', 'refuse', 'annulee'];
 

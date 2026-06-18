@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import './NotificationIcon.css';
+import { getBackendBaseUrl } from '../utils/backendUrl';
 
 const NotificationIcon = () => {
   const { t } = useLanguage();
@@ -17,7 +18,7 @@ const NotificationIcon = () => {
     return saved ? JSON.parse(saved) : false;
   });
 
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const API_BASE_URL = getBackendBaseUrl();
 
   const fetchNotificationCount = useCallback(async () => {
     try {

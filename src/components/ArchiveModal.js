@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import './ArchiveModal.css';
+import { getBackendBaseUrl } from '../utils/backendUrl';
 
 const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate }) => {
   const [pdfUrl, setPdfUrl] = useState('');
@@ -54,7 +55,7 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate }) =
         throw new Error('Non authentifié. Veuillez vous reconnecter.');
       }
 
-      const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const backendUrl = getBackendBaseUrl();
       const uploadUrl = `${backendUrl}/api/archive/upload-pdf`;
       
       const progressInterval = setInterval(() => {

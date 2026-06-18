@@ -4,6 +4,7 @@ import { photoService } from '../services/photoService';
 import ArchiveModal from './ArchiveModal';
 import DossierRHModal from './DossierRHModal';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getBackendBaseUrl } from '../utils/backendUrl';
 import './EmployeeModal.css';
 
 /* =========================
@@ -490,7 +491,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
         const token = localStorage.getItem('token');
         if (!token) throw new Error(t('notAuthenticated'));
 
-        const backendUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+        const backendUrl = getBackendBaseUrl();
         const archiveUrl = `${backendUrl}/api/employees/${employee.id}/archive`;
 
         let dateDepart = archiveData?.date_depart || formData.date_depart;

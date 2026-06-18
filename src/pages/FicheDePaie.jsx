@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import './FicheDePaie.css';
 import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../contexts/LanguageContext';
+import { getBackendBaseUrl } from '../utils/backendUrl';
 
 const FicheDePaie = () => {
   const { t } = useLanguage();
@@ -37,7 +38,7 @@ const FicheDePaie = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+      const apiBaseUrl = getBackendBaseUrl();
       const response = await fetch(`${apiBaseUrl}/api/fiche-paie/process`, {
         method: 'POST',
         headers: {
