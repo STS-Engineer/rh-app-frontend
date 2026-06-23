@@ -540,12 +540,7 @@ const DemandesRH = () => {
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.error || 'Erreur lors de l\'approbation');
       }
-      setDemandes(prev => prev.map(d =>
-        d.id === demandeToAct.id ? { ...d, statut: 'approuve', approuve_responsable2: true } : d
-      ));
-      setSelectedDemande(prev =>
-        prev?.id === demandeToAct.id ? { ...prev, statut: 'approuve', approuve_responsable2: true } : prev
-      );
+      await fetchDemandes(true);
       handleCloseModal();
     } catch (e) {
       alert(e.message || t('connectionError') || 'Erreur');
@@ -575,16 +570,7 @@ const DemandesRH = () => {
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.error || 'Erreur lors du refus');
       }
-      setDemandes(prev => prev.map(d =>
-        d.id === demandeToAct.id
-          ? { ...d, statut: 'refuse', approuve_responsable2: false, commentaire_refus: rejectComment }
-          : d
-      ));
-      setSelectedDemande(prev =>
-        prev?.id === demandeToAct.id
-          ? { ...prev, statut: 'refuse', approuve_responsable2: false, commentaire_refus: rejectComment }
-          : prev
-      );
+      await fetchDemandes(true);
       handleCloseModal();
     } catch (e) {
       alert(e.message || t('connectionError') || 'Erreur');
@@ -616,16 +602,7 @@ const DemandesRH = () => {
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.error || 'Erreur lors du changement de statut');
       }
-      setDemandes(prev => prev.map(d =>
-        d.id === demandeToAct.id
-          ? { ...d, statut: 'refuse', approuve_responsable2: false, commentaire_refus: changeStatusComment }
-          : d
-      ));
-      setAllDemandes(prev => prev.map(d =>
-        d.id === demandeToAct.id
-          ? { ...d, statut: 'refuse' }
-          : d
-      ));
+      await fetchDemandes(true);
       handleCloseModal();
     } catch (e) {
       alert(e.message || t('connectionError') || 'Erreur');
@@ -652,14 +629,7 @@ const DemandesRH = () => {
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.error || 'Erreur lors du changement de statut');
       }
-      setDemandes(prev => prev.map(d =>
-        d.id === demandeToAct.id ? { ...d, statut: 'approuve', approuve_responsable2: true, commentaire_refus: null } : d
-      ));
-      setAllDemandes(prev => prev.map(d =>
-        d.id === demandeToAct.id
-          ? { ...d, statut: 'approuve' }
-          : d
-      ));
+      await fetchDemandes(true);
       handleCloseModal();
     } catch (e) {
       alert(e.message || t('connectionError') || 'Erreur');
@@ -684,14 +654,7 @@ const DemandesRH = () => {
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.error || 'Erreur lors du refus');
       }
-      setDemandes(prev => prev.map(d =>
-        d.id === demande.id
-          ? { ...d, statut: 'refuse', approuve_responsable2: false, commentaire_refus: comment }
-          : d
-      ));
-      setAllDemandes(prev => prev.map(d =>
-        d.id === demande.id ? { ...d, statut: 'refuse' } : d
-      ));
+      await fetchDemandes(true);
     } catch (e) {
       alert(e.message || 'Erreur');
     } finally {
@@ -715,14 +678,7 @@ const DemandesRH = () => {
         const errData = await response.json().catch(() => ({}));
         throw new Error(errData.error || 'Erreur lors du changement de statut');
       }
-      setDemandes(prev => prev.map(d =>
-        d.id === demande.id
-          ? { ...d, statut: 'refuse', approuve_responsable2: false, commentaire_refus: comment }
-          : d
-      ));
-      setAllDemandes(prev => prev.map(d =>
-        d.id === demande.id ? { ...d, statut: 'refuse' } : d
-      ));
+      await fetchDemandes(true);
     } catch (e) {
       alert(e.message || 'Erreur');
     } finally {
