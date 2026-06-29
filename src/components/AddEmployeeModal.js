@@ -21,6 +21,8 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
   const { t } = useLanguage();
   const user = getCurrentUser();
   const isFranceTenant = (user?.plant || '').toLowerCase().includes('france');
+  const isTunisiaTenant = (user?.tenant_schema || user?.country || '').toLowerCase().includes('public') ||
+    (user?.country || '').toLowerCase().includes('tunisia');
   const isGroupHr = GROUP_ROLES.has((user?.role || '').toLowerCase());
   const defaultTenantSchema = user?.tenant_schema || 'public';
 
@@ -42,6 +44,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     adresse_mail: '',
     mail_responsable1: '',
     mail_responsable2: '',
+    mail_responsable_fonctionnel: '',
     tenant_schema: defaultTenantSchema
   });
 
@@ -80,7 +83,8 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     e.preventDefault();
     if (saving || uploading) return;
 
-    if (!formData.adresse_mail || !isValidEmail(formData.adresse_mail)) return alert('Email employe invalide');
+    if (formData.adresse_mail && !isValidEmail(formData.adresse_mail)) return alert('Email employé invalide');
+    if (formData.mail_responsable_fonctionnel && !isValidEmail(formData.mail_responsable_fonctionnel)) return alert('Email responsable fonctionnel invalide');
     if (formData.mail_responsable1 && !isValidEmail(formData.mail_responsable1)) return alert('Email responsable 1 invalide');
     if (formData.mail_responsable2 && !isValidEmail(formData.mail_responsable2)) return alert('Email responsable 2 invalide');
 
@@ -102,7 +106,10 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
         tenant_schema: formData.tenant_schema || defaultTenantSchema,
         photo: photoUrl,
         mail_responsable1: formData.mail_responsable1 || null,
-        mail_responsable2: formData.mail_responsable2 || null
+        mail_responsable2: formData.mail_responsable2 || null,
+        mail_responsable_fonctionnel: isTunisiaTenant
+          ? (formData.mail_responsable_fonctionnel || null)
+          : null
       };
 
       const response = await employeesAPI.create(employeeData);
@@ -130,6 +137,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       poste: '', site_dep: t('headquarters'), type_contrat: 'CDI',
       date_debut: '', date_fin_contrat: '', salaire_brute: '',
       adresse_mail: '', mail_responsable1: '', mail_responsable2: '',
+      mail_responsable_fonctionnel: '',
       tenant_schema: defaultTenantSchema
     });
     setEmergencyContact({ nom: '', prenom: '', relation: '', telephone: '', email: '' });
@@ -160,11 +168,19 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 <input name="matricule" value={formData.matricule} onChange={handleInputChange} placeholder="Matricule" required />
                 <input name="nom" value={formData.nom} onChange={handleInputChange} placeholder="Nom" required />
                 <input name="prenom" value={formData.prenom} onChange={handleInputChange} placeholder="Prenom" required />
-                <input name="cin" value={formData.cin} onChange={handleInputChange} placeholder="CIN" required />
-                <input name="poste" value={formData.poste} onChange={handleInputChange} placeholder="Poste" required />
-                <input name="adresse_mail" value={formData.adresse_mail} onChange={handleInputChange} placeholder="Email employe" required />
+                <input name="cin" value={formData.cin} onChange={handleInputChange} placeholder="CIN" />
+                <input name="poste" value={formData.poste} onChange={handleInputChange} placeholder="Poste" />
+                <input name="adresse_mail" value={formData.adresse_mail} onChange={handleInputChange} placeholder="Email employé" />
                 <input name="mail_responsable1" value={formData.mail_responsable1} onChange={handleInputChange} placeholder="Email responsable 1" />
                 <input name="mail_responsable2" value={formData.mail_responsable2} onChange={handleInputChange} placeholder="Email responsable 2" />
+                {isTunisiaTenant && (
+                  <input
+                    name="mail_responsable_fonctionnel"
+                    value={formData.mail_responsable_fonctionnel}
+                    onChange={handleInputChange}
+                    placeholder="Email responsable fonctionnel (notification uniquement)"
+                  />
+                )}
                 {isGroupHr && (
                   <select
                     name="tenant_schema"
