@@ -20,13 +20,16 @@ const COUNTRY_SCHEMA_OPTIONS = [
 const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
   const { t } = useLanguage();
   const user = getCurrentUser();
+
   const isFranceTenant = (user?.plant || '').toLowerCase().includes('france');
-  const isTunisiaTenant = (user?.tenant_schema || user?.country || '').toLowerCase().includes('public') ||
+  const isTunisiaTenant =
+    (user?.tenant_schema || user?.country || '').toLowerCase().includes('public') ||
     (user?.country || '').toLowerCase().includes('tunisia');
+
   const isGroupHr = GROUP_ROLES.has((user?.role || '').toLowerCase());
   const defaultTenantSchema = user?.tenant_schema || 'public';
 
-  const [formData, setFormData] = useState({
+  const initialFormData = {
     matricule: '',
     nom: '',
     prenom: '',
@@ -46,7 +49,9 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     mail_responsable2: '',
     mail_responsable_fonctionnel: '',
     tenant_schema: defaultTenantSchema
-  });
+  };
+
+  const [formData, setFormData] = useState(initialFormData);
 
   const [emergencyContact, setEmergencyContact] = useState({
     nom: '',
@@ -64,9 +69,19 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) return alert('Image invalide');
-    if (file.size > 5 * 1024 * 1024) return alert('Image trop volumineuse (max 5MB)');
+
+    if (!file.type.startsWith('image/')) {
+      alert('Image invalide');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image trop volumineuse (max 5MB)');
+      return;
+    }
+
     setSelectedFile(file);
+
     const reader = new FileReader();
     reader.onloadend = () => setPhotoPreview(reader.result);
     reader.readAsDataURL(file);
@@ -79,18 +94,59 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
 
   const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+  const cleanEmployeeData = (data) => {
+    const cleaned = { ...data };
+
+    const dateFields = [
+      'date_emission_passport',
+      'date_expiration_passport',
+      'date_naissance',
+      'date_debut',
+      'date_fin_contrat'
+    ];
+
+    dateFields.forEach((field) => {
+      if (cleaned[field] === '') {
+        cleaned[field] = null;
+      }
+    });
+
+    return cleaned;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (saving || uploading) return;
 
-    if (formData.adresse_mail && !isValidEmail(formData.adresse_mail)) return alert('Email employé invalide');
-    if (formData.mail_responsable_fonctionnel && !isValidEmail(formData.mail_responsable_fonctionnel)) return alert('Email responsable fonctionnel invalide');
-    if (formData.mail_responsable1 && !isValidEmail(formData.mail_responsable1)) return alert('Email responsable 1 invalide');
-    if (formData.mail_responsable2 && !isValidEmail(formData.mail_responsable2)) return alert('Email responsable 2 invalide');
+    if (formData.adresse_mail && !isValidEmail(formData.adresse_mail)) {
+      alert('Email employé invalide');
+      return;
+    }
+
+    if (
+      formData.mail_responsable_fonctionnel &&
+      !isValidEmail(formData.mail_responsable_fonctionnel)
+    ) {
+      alert('Email responsable fonctionnel invalide');
+      return;
+    }
+
+    if (formData.mail_responsable1 && !isValidEmail(formData.mail_responsable1)) {
+      alert('Email responsable 1 invalide');
+      return;
+    }
+
+    if (formData.mail_responsable2 && !isValidEmail(formData.mail_responsable2)) {
+      alert('Email responsable 2 invalide');
+      return;
+    }
 
     setSaving(true);
+
     try {
       let photoUrl = photoService.generateDefaultAvatar(formData.nom, formData.prenom);
+
       if (selectedFile) {
         setUploading(true);
         try {
@@ -101,16 +157,18 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
         }
       }
 
-      const employeeData = {
+      let employeeData = {
         ...formData,
         tenant_schema: formData.tenant_schema || defaultTenantSchema,
         photo: photoUrl,
         mail_responsable1: formData.mail_responsable1 || null,
         mail_responsable2: formData.mail_responsable2 || null,
         mail_responsable_fonctionnel: isTunisiaTenant
-          ? (formData.mail_responsable_fonctionnel || null)
+          ? formData.mail_responsable_fonctionnel || null
           : null
       };
+
+      employeeData = cleanEmployeeData(employeeData);
 
       const response = await employeesAPI.create(employeeData);
       const created = response.data?.data || response.data;
@@ -123,24 +181,49 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       handleClose();
       alert('Employe cree avec succes');
     } catch (error) {
-      const message = error.response?.data?.error || error.message;
+      const message =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message;
+
       alert(`Erreur creation: ${message}`);
     } finally {
       setSaving(false);
+      setUploading(false);
     }
   };
 
   const handleClose = () => {
     setFormData({
-      matricule: '', nom: '', prenom: '', cin: '', passeport: '',
-      date_emission_passport: '', date_expiration_passport: '', date_naissance: '',
-      poste: '', site_dep: t('headquarters'), type_contrat: 'CDI',
-      date_debut: '', date_fin_contrat: '', salaire_brute: '',
-      adresse_mail: '', mail_responsable1: '', mail_responsable2: '',
+      matricule: '',
+      nom: '',
+      prenom: '',
+      cin: '',
+      passeport: '',
+      date_emission_passport: '',
+      date_expiration_passport: '',
+      date_naissance: '',
+      poste: '',
+      site_dep: t('headquarters'),
+      type_contrat: 'CDI',
+      date_debut: '',
+      date_fin_contrat: '',
+      salaire_brute: '',
+      adresse_mail: '',
+      mail_responsable1: '',
+      mail_responsable2: '',
       mail_responsable_fonctionnel: '',
       tenant_schema: defaultTenantSchema
     });
-    setEmergencyContact({ nom: '', prenom: '', relation: '', telephone: '', email: '' });
+
+    setEmergencyContact({
+      nom: '',
+      prenom: '',
+      relation: '',
+      telephone: '',
+      email: ''
+    });
+
     setSelectedFile(null);
     setPhotoPreview('');
     onClose();
@@ -160,7 +243,9 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
           <div className="form-layout">
             <div className="photo-column">
               <input type="file" accept="image/*" onChange={handleFileSelect} />
-              {photoPreview && <img src={photoPreview} alt="preview" className="preview-image" />}
+              {photoPreview && (
+                <img src={photoPreview} alt="preview" className="preview-image" />
+              )}
             </div>
 
             <div className="fields-column">
@@ -173,6 +258,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 <input name="adresse_mail" value={formData.adresse_mail} onChange={handleInputChange} placeholder="Email employé" />
                 <input name="mail_responsable1" value={formData.mail_responsable1} onChange={handleInputChange} placeholder="Email responsable 1" />
                 <input name="mail_responsable2" value={formData.mail_responsable2} onChange={handleInputChange} placeholder="Email responsable 2" />
+
                 {isTunisiaTenant && (
                   <input
                     name="mail_responsable_fonctionnel"
@@ -181,6 +267,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                     placeholder="Email responsable fonctionnel (notification uniquement)"
                   />
                 )}
+
                 {isGroupHr && (
                   <select
                     name="tenant_schema"
@@ -214,8 +301,13 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
           </div>
 
           <div className="form-actions">
-            <button type="submit" className="save-btn" disabled={saving || uploading}>{saving ? 'Creation...' : 'Creer'}</button>
-            <button type="button" className="cancel-btn" onClick={handleClose} disabled={saving || uploading}>Annuler</button>
+            <button type="submit" className="save-btn" disabled={saving || uploading}>
+              {saving ? 'Creation...' : 'Creer'}
+            </button>
+
+            <button type="button" className="cancel-btn" onClick={handleClose} disabled={saving || uploading}>
+              Annuler
+            </button>
           </div>
         </form>
       </div>
