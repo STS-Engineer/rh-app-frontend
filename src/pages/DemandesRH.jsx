@@ -791,52 +791,55 @@ const DemandesRH = () => {
     setChangeStatusMode(null);
     setChangeStatusComment('');
   };
-
   const handleExportExcel = () => {
-    if (!demandes || demandes.length === 0) {
-      alert(t('noRequestsToExport'));
-      return;
-    }
-    const headers = [
-      'ID', t('title'), t('type'), t('leaveType'), t('status'),
-      t('employee'), t('employeeID'), t('position'),
-      t('startDateReq'), t('returnDate'), t('departureTime'), t('returnTime'),
-      t('numberOfWorkingDays'), t('halfDay'),
-      t('supervisor1'), t('supervisor1Status'),
-      t('supervisor2'), t('supervisor2Status'),
-      t('refusalComment'), t('creationDate'), t('lastUpdated')
-    ];
-    const rows = demandes.map(d => [
-      d.id, d.titre,
-      getTypeDemandeLabel(d.type_demande),
-      d.type_conge === 'autre' ? d.type_conge_autre || t('other') : d.type_conge || '',
-      getStatutLabel(d.statut),
-      `${d.employe_prenom} ${d.employe_nom}`,
-      d.employe_matricule || '', d.employe_poste || '',
-      formatDate(d.date_depart), formatDate(d.date_retour),
-      d.heure_depart || '', d.heure_retour || '',
-      calculateWorkingDays(d.date_depart, d.date_retour, d.demi_journee, d.type_demande),
-      d.demi_journee ? t('yes') : t('no'),
-      d.mail_responsable1 || t('notAssigned'),
-      getResponsableStatusLabel(getResponsableStatus(d, 1)),
-      d.mail_responsable2 || t('notRequired'),
-      d.mail_responsable2 ? getResponsableStatusLabel(getResponsableStatus(d, 2)) : '',
-      d.commentaire_refus || '',
-      formatDateTime(d.created_at), formatDateTime(d.updated_at)
-    ]);
-    const csv = [headers, ...rows]
-      .map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(';'))
-      .join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `demandes_RH_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+  if (!demandes || demandes.length === 0) {
+    alert(t('noRequestsToExport'));
+    return;
+  }
+
+  const headers = [
+    'Matricule',
+    'Employé',
+    'Type de demande',
+    'Type de congé',
+    'Statut',
+    'Date de début',
+    'Date de retour',
+    'Heure de départ',
+    'Heure de retour',
+    'Nombre de jours ouvrables',
+    'Demi-journée',
+  ];
+
+  const rows = demandes.map(d => [
+    d.employe_matricule || 'N/A',
+    `${d.employe_prenom} ${d.employe_nom}`,
+    getTypeDemandeLabel(d.type_demande),
+    d.type_conge === 'autre' ? d.type_conge_autre || 'Autre' : d.type_conge || 'N/A',
+    getStatutLabel(d.statut),
+    formatDate(d.date_depart),
+    formatDate(d.date_retour),
+    d.heure_depart || 'N/A',
+    d.heure_retour || 'N/A',
+    calculateWorkingDays(d.date_depart, d.date_retour, d.demi_journee, d.type_demande),
+    d.demi_journee ? 'Oui' : 'Non',
+  ]);
+
+  const csv = [headers, ...rows]
+    .map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(';'))
+    .join('\n');
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `demandes_RH_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+  
 
   return (
     <div className="demandes-rh">
