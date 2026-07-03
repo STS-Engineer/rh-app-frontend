@@ -5,6 +5,11 @@ import EmployeeCard from "../components/EmployeeCard";
 import EmployeeModal from "../components/EmployeeModal";
 import AddEmployeeModal from "../components/AddEmployeeModal";
 import { employeesAPI, getCurrentUser, isGlobalHrManager } from "../services/api";
+import {
+  getEmployeeDepartment,
+  getEmployeeGrade,
+  getEmployeeRole
+} from "../utils/employeeProfile";
 import { useLanguage } from "../contexts/LanguageContext";
 import "./Team.css";
 
@@ -30,7 +35,8 @@ const Team = () => {
   // ✅ Filtres
   const [filters, setFilters] = useState({
     site_dep: "",
-    poste: "",
+    role: "",
+    grade: "",
     type_contrat: "",
     date_debut_from: "",
     date_debut_to: "",
@@ -89,8 +95,8 @@ const Team = () => {
       setEmployees(response.data);
       setFilteredEmployees(response.data);
     } catch (error) {
-      console.error("Erreur lors du chargement des employés", error);
-      alert("Erreur lors du chargement des employés.");
+      console.error(t("errorLoadingEmployees"), error);
+      alert(t("errorLoadingEmployeesAlert"));
     } finally {
       setLoading(false);
     }
@@ -137,8 +143,9 @@ const Team = () => {
       );
 
     return {
-      departments: uniq(employees.map((e) => e.site_dep)),
-      postes: uniq(employees.map((e) => e.poste)),
+      departments: uniq(employees.map((e) => getEmployeeDepartment(e))),
+      roles: uniq(employees.map((e) => getEmployeeRole(e))),
+      grades: uniq(employees.map((e) => getEmployeeGrade(e))),
       contractTypes: uniq(employees.map((e) => e.type_contrat)),
     };
   }, [employees]);
@@ -171,13 +178,15 @@ const Team = () => {
         ? true
         : (emp.nom || "").toLowerCase().includes(term) ||
           (emp.prenom || "").toLowerCase().includes(term) ||
-          (emp.matricule || "").toLowerCase().includes(term);
+          (emp.matricule || "").toLowerCase().includes(term) ||
+          getEmployeeDepartment(emp).toLowerCase().includes(term);
 
       if (!matchesSearch) return false;
 
       // Filtres texte
-      if (canFilterByPlant && filters.site_dep && emp.site_dep !== filters.site_dep) return false;
-      if (filters.poste && emp.poste !== filters.poste) return false;
+      if (canFilterByPlant && filters.site_dep && getEmployeeDepartment(emp) !== filters.site_dep) return false;
+      if (filters.role && getEmployeeRole(emp) !== filters.role) return false;
+      if (filters.grade && getEmployeeGrade(emp) !== filters.grade) return false;
       if (filters.type_contrat && emp.type_contrat !== filters.type_contrat)
         return false;
 
@@ -229,7 +238,8 @@ const Team = () => {
     setDashboardFilter(null); // ✅ ADDED: also clear the banner
     setFilters({
       site_dep: "",
-      poste: "",
+      role: "",
+      grade: "",
       type_contrat: "",
       date_debut_from: "",
       date_debut_to: "",
@@ -249,7 +259,7 @@ const Team = () => {
       <div className="team-container">
         <Sidebar />
         <div className="team-content">
-          <div className="loading">Chargement des employés...</div>
+          <div className="loading">{t("loadingEmployees")}</div>
         </div>
       </div>
     );
@@ -261,7 +271,7 @@ const Team = () => {
 
       <div className="team-content">
         <header className="team-header">
-          <h1>👥 Équipe</h1>
+          <h1>👥 {t("team")}</h1>
           <p>{t("consultEmployees")}</p>
         </header>
 
@@ -281,14 +291,14 @@ const Team = () => {
             fontWeight: 600
           }}>
             <span>
-              {dashboardFilter === 'newThisMonth' && '📊 Filtre actif : Employés embauchés ce mois-ci'}
-              {dashboardFilter === 'contractsToRenew' && '📅 Filtre actif : Contrats CDD à renouveler dans 30 jours'}
+              {dashboardFilter === 'newThisMonth' && `📊 ${t("activeFilterNewThisMonth")}`}
+              {dashboardFilter === 'contractsToRenew' && `📅 ${t("activeFilterContractsToRenew")}`}
             </span>
             <button
               onClick={clearFilters}
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1d4ed8', fontWeight: 700, fontSize: '1rem' }}
             >
-              ✕ Effacer
+              ✕ {t("clearFilters")}
             </button>
           </div>
         )}
@@ -329,18 +339,35 @@ const Team = () => {
             </div>
           )}
 
-          {/* Poste */}
+          {/* Role */}
           <div className="toolbar-field">
             <label className="toolbar-label">{t("teamFilterPosition")}</label>
             <select
-              value={filters.poste}
-              onChange={(e) => updateFilter("poste", e.target.value)}
+              value={filters.role}
+              onChange={(e) => updateFilter("role", e.target.value)}
               className="toolbar-control"
             >
               <option value="">{t("teamFilterAll")}</option>
-              {filterOptions.postes.map((p) => (
-                <option key={p} value={p}>
-                  {p}
+              {filterOptions.roles.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Grade */}
+          <div className="toolbar-field">
+            <label className="toolbar-label">{t("teamFilterGrade")}</label>
+            <select
+              value={filters.grade}
+              onChange={(e) => updateFilter("grade", e.target.value)}
+              className="toolbar-control"
+            >
+              <option value="">{t("teamFilterAll")}</option>
+              {filterOptions.grades.map((grade) => (
+                <option key={grade} value={grade}>
+                  {grade}
                 </option>
               ))}
             </select>
@@ -365,7 +392,7 @@ const Team = () => {
 
           {/* Date début (du / au) */}
           <div className="toolbar-field">
-            <label className="toolbar-label">Date d'embauche (Du)</label>
+            <label className="toolbar-label">{t("teamFilterHireDateFrom")}</label>
             <input
               type="date"
               value={filters.date_debut_from}
@@ -375,7 +402,7 @@ const Team = () => {
           </div>
 
           <div className="toolbar-field">
-            <label className="toolbar-label">Date d'embauche (Au)</label>
+            <label className="toolbar-label">{t("teamFilterHireDateTo")}</label>
             <input
               type="date"
               value={filters.date_debut_to}
@@ -412,27 +439,27 @@ const Team = () => {
           {/* Actions */}
           <div className="toolbar-actions">
             <div className="employees-count">
-              {filteredEmployees.length} employé(s)
+              {filteredEmployees.length} {t("teamCount")}
             </div>
 
             <button className="refresh-btn" onClick={loadEmployees}>
-              🔄 Actualiser
+              🔄 {t("teamRefresh")}
             </button>
 
             <button
               className="add-employee-btn"
               onClick={() => setIsAddModalOpen(true)}
             >
-              ➕ Ajouter
+              ➕ {t("teamAdd")}
             </button>
 
             <button
               className="clear-filters-btn"
               onClick={clearFilters}
               disabled={!hasActiveFilters}
-              title="Réinitialiser les filtres"
+              title={t("teamResetFilters")}
             >
-              🧹 Réinitialiser
+              🧹 {t("teamReset")}
             </button>
           </div>
         </div>
@@ -451,17 +478,17 @@ const Team = () => {
         {filteredEmployees.length === 0 && (
           <div className="no-results">
             <div className="no-results-icon">👥</div>
-            <h3>Aucun résultat</h3>
+            <h3>{t("teamNoResults")}</h3>
             <p>
               {searchTerm || hasActiveFilters
-                ? "Aucun employé ne correspond à vos critères."
-                : "Aucun employé actif."}
+                ? t("teamNoResultsCriteria")
+                : t("teamNoActive")}
             </p>
             <button
               className="add-first-btn"
               onClick={() => setIsAddModalOpen(true)}
             >
-              ➕ Ajouter un employé
+              ➕ {t("teamAddEmployee")}
             </button>
           </div>
         )}

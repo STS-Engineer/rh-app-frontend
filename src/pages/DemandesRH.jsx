@@ -172,7 +172,7 @@ const Modal = ({
               <textarea
                 value={rejectComment}
                 onChange={(e) => setRejectComment(e.target.value)}
-                placeholder={t('refusalComment') || 'Motif du refus'}
+                placeholder={t('rejectReasonPlaceholder')}
                 rows={3}
                 style={{ width: '100%' }}
                 disabled={actionLoading}
@@ -182,11 +182,11 @@ const Modal = ({
 
           {canChangeToRefused && changeStatusMode === 'to_refused' && (
             <div className="modal-section">
-              <h3>🔄 Motif du changement de statut</h3>
+              <h3>🔄 {t('statusChangeReason')}</h3>
               <textarea
                 value={changeStatusComment}
                 onChange={(e) => setChangeStatusComment(e.target.value)}
-                placeholder="Indiquez le motif du refus..."
+                placeholder={t('rejectReasonPlaceholder')}
                 rows={3}
                 style={{ width: '100%' }}
                 disabled={actionLoading}
@@ -206,14 +206,14 @@ const Modal = ({
                 onClick={() => onApprove(demande)}
                 disabled={actionLoading}
               >
-                ✅ {actionLoading ? (t('processing') || 'Traitement...') : 'Approuver'}
+                ✅ {actionLoading ? t('processing') : t('approve')}
               </button>
               <button
                 className="btn-action btn-refuse"
                 onClick={() => setRejectMode(true)}
                 disabled={actionLoading}
               >
-                ❌ Refuser
+                ❌ {t('reject')}
               </button>
             </>
           )}
@@ -225,7 +225,7 @@ const Modal = ({
                 onClick={() => onReject(demande)}
                 disabled={actionLoading}
               >
-                ❌ {actionLoading ? (t('processing') || 'Traitement...') : 'Confirmer le refus'}
+                ❌ {actionLoading ? t('processing') : t('confirmRefusal')}
               </button>
               <button
                 className="btn-close-modal"
@@ -243,7 +243,7 @@ const Modal = ({
               onClick={() => setChangeStatusMode('to_refused')}
               disabled={actionLoading}
             >
-              🔄 Changer en Refusé
+              🔄 {t('changeToRefused')}
             </button>
           )}
 
@@ -254,7 +254,7 @@ const Modal = ({
                 onClick={() => onChangeToRefused(demande)}
                 disabled={actionLoading}
               >
-                ❌ {actionLoading ? 'Traitement...' : 'Confirmer le refus'}
+                ❌ {actionLoading ? t('processing') : t('confirmRefusal')}
               </button>
               <button
                 className="btn-close-modal"
@@ -272,7 +272,7 @@ const Modal = ({
               onClick={() => onChangeToApproved(demande)}
               disabled={actionLoading}
             >
-              🔄 {actionLoading ? 'Traitement...' : 'Changer en Approuvé'}
+              🔄 {actionLoading ? t('processing') : t('changeToApproved')}
             </button>
           )}
         </div>
@@ -338,7 +338,7 @@ const DemandesRH = () => {
   const activeFiltersCount = getActiveFiltersCount();
 
   const getStatutLabel = (statut) => {
-    const labels = { en_attente: t('pending'), approuve: t('approved'), refuse: t('refused'), annulee: 'Demande annulée' };
+    const labels = { en_attente: t('pending'), approuve: t('approved'), refuse: t('refused'), annulee: t('cancelledRequest') };
     return labels[statut] || statut;
   };
 
@@ -373,7 +373,7 @@ const DemandesRH = () => {
       en_attente: { label: t('pending'), class: 'statut-en-attente' },
       approuve: { label: t('approved'), class: 'statut-approuve' },
       refuse: { label: t('refused'), class: 'statut-refuse' },
-      annulee: { label: 'Demande annulée', class: 'statut-annulee' }
+      annulee: { label: t('cancelledRequest'), class: 'statut-annulee' }
     };
     const c = cfg[statut] || { label: statut, class: 'statut-default' };
     return <span className={`statut-badge ${c.class}`}>{c.label}</span>;
@@ -552,7 +552,7 @@ const DemandesRH = () => {
   const rejectSelected = async (demandeToAct = selectedDemande) => {
     if (!demandeToAct) return;
     if (!rejectComment.trim()) {
-      alert(t('refusalComment') || 'Motif du refus requis');
+      alert(t('rejectionReasonRequired'));
       return;
     }
     setActionLoading(true);
@@ -584,7 +584,7 @@ const DemandesRH = () => {
   const changeToRefused = async (demandeToAct = selectedDemande) => {
     if (!demandeToAct) return;
     if (!changeStatusComment.trim()) {
-      alert('Veuillez indiquer le motif du refus');
+      alert(t('rejectionReasonRequired'));
       return;
     }
     setActionLoading(true);
@@ -793,50 +793,54 @@ const DemandesRH = () => {
   };
 
   const handleExportExcel = () => {
-    if (!demandes || demandes.length === 0) {
-      alert(t('noRequestsToExport'));
-      return;
-    }
-    const headers = [
-      'ID', t('title'), t('type'), t('leaveType'), t('status'),
-      t('employee'), t('employeeID'), t('position'),
-      t('startDateReq'), t('returnDate'), t('departureTime'), t('returnTime'),
-      t('numberOfWorkingDays'), t('halfDay'),
-      t('supervisor1'), t('supervisor1Status'),
-      t('supervisor2'), t('supervisor2Status'),
-      t('refusalComment'), t('creationDate'), t('lastUpdated')
-    ];
-    const rows = demandes.map(d => [
-      d.id, d.titre,
-      getTypeDemandeLabel(d.type_demande),
-      d.type_conge === 'autre' ? d.type_conge_autre || t('other') : d.type_conge || '',
-      getStatutLabel(d.statut),
-      `${d.employe_prenom} ${d.employe_nom}`,
-      d.employe_matricule || '', d.employe_poste || '',
-      formatDate(d.date_depart), formatDate(d.date_retour),
-      d.heure_depart || '', d.heure_retour || '',
-      calculateWorkingDays(d.date_depart, d.date_retour, d.demi_journee, d.type_demande),
-      d.demi_journee ? t('yes') : t('no'),
-      d.mail_responsable1 || t('notAssigned'),
-      getResponsableStatusLabel(getResponsableStatus(d, 1)),
-      d.mail_responsable2 || t('notRequired'),
-      d.mail_responsable2 ? getResponsableStatusLabel(getResponsableStatus(d, 2)) : '',
-      d.commentaire_refus || '',
-      formatDateTime(d.created_at), formatDateTime(d.updated_at)
-    ]);
-    const csv = [headers, ...rows]
-      .map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(';'))
-      .join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `demandes_RH_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
+   if (!demandes || demandes.length === 0) {
+     alert(t('noRequestsToExport'));
+    return;
+  }
+
+  const headers = [
+    'Matricule',
+    'Employé',
+    'Type de demande',
+    'Type de congé',
+    'Statut',
+    'Date de début',
+    'Date de retour',
+    'Heure de départ',
+    'Heure de retour',
+    'Nombre de jours ouvrables',
+    'Demi-journée',
+  ];
+
+  const rows = demandes.map(d => [
+    d.employe_matricule || 'N/A',
+    `${d.employe_prenom} ${d.employe_nom}`,
+    getTypeDemandeLabel(d.type_demande),
+    d.type_conge === 'autre' ? d.type_conge_autre || 'Autre' : d.type_conge || 'N/A',
+    getStatutLabel(d.statut),
+    formatDate(d.date_depart),
+    formatDate(d.date_retour),
+    d.heure_depart || 'N/A',
+    d.heure_retour || 'N/A',
+    calculateWorkingDays(d.date_depart, d.date_retour, d.demi_journee, d.type_demande),
+    d.demi_journee ? 'Oui' : 'Non',
+  ]);
+
+  const csv = [headers, ...rows]
+    .map(row => row.map(cell => `"${String(cell || '').replace(/"/g, '""')}"`).join(';'))
+    .join('\n');
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `demandes_RH_${new Date().toISOString().split('T')[0]}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+  
 
   return (
     <div className="demandes-rh">
@@ -915,10 +919,10 @@ const DemandesRH = () => {
             )}
           </div>
           <div className="filter-group">
-            <label>👤 Nom employé</label>
+            <label>👤 {t('employeeName')}</label>
             <input
               type="text"
-              placeholder="Rechercher par nom..."
+              placeholder={t('searchByNamePlaceholder')}
               value={filters.nom_employe}
               onChange={(e) => handleFilterChange('nom_employe', e.target.value)}
             />
@@ -958,7 +962,7 @@ const DemandesRH = () => {
                 )}
                 {filters.nom_employe && (
                   <span className="tag">
-                    Employé: {filters.nom_employe}
+                    {t('employee')}: {filters.nom_employe}
                   </span>
                 )}
                 {filters.date_debut && (
@@ -1006,7 +1010,7 @@ const DemandesRH = () => {
           <div className="stat-icon">↩</div>
           <div className="stat-content">
             <div className="stat-number">{allDemandes.filter(d => d.statut === 'annulee').length}</div>
-            <div className="stat-label">Demandes annulées</div>
+            <div className="stat-label">{t('cancelledRequests')}</div>
           </div>
         </div>
       </div>
@@ -1181,7 +1185,7 @@ const DemandesRH = () => {
                         className="btn-action btn-view"
                         onClick={() => handleViewDetails(demande)}
                       >
-                        👁️ Voir les détails
+                        👁️ {t('viewDetails')}
                       </button>
 
                       {demande.statut === 'en_attente' && (
@@ -1191,7 +1195,7 @@ const DemandesRH = () => {
                             disabled={actionLoading}
                             onClick={() => approveSelected(demande)}
                           >
-                            ✅ Approuver
+                            ✅ {t('approve')}
                           </button>
 
                           <button
@@ -1205,17 +1209,17 @@ const DemandesRH = () => {
                               )
                             }
                           >
-                            ❌ Refuser
+                            ❌ {t('reject')}
                           </button>
 
                           {inlineReject.id === demande.id && (
                             <div style={{ width: '100%', marginTop: 6, background: '#fff3f3', border: '1px solid #fca5a5', borderRadius: 8, padding: 12 }}>
                               <div style={{ fontSize: 12, color: '#991b1b', marginBottom: 6, fontWeight: 600 }}>
-                                Motif du refus
+                                {t('rejectionReason')}
                               </div>
                               <textarea
                                 rows={2}
-                                placeholder="Indiquez le motif du refus..."
+                                placeholder={t('rejectReasonPlaceholder')}
                                 value={inlineReject.comment}
                                 onChange={e => setInlineReject(prev => ({ ...prev, comment: e.target.value }))}
                                 style={{ width: '100%', borderRadius: 6, padding: '6px 8px', border: '1px solid #fca5a5', fontSize: 13, resize: 'none' }}
@@ -1226,19 +1230,19 @@ const DemandesRH = () => {
                                   className="btn-action btn-refuse"
                                   disabled={actionLoading}
                                   onClick={async () => {
-                                    if (!inlineReject.comment.trim()) { alert('Motif du refus requis'); return; }
+                                    if (!inlineReject.comment.trim()) { alert(t('rejectionReasonRequired')); return; }
                                     await rejectInline(demande, inlineReject.comment);
                                     setInlineReject({ id: null, comment: '' });
                                   }}
                                 >
-                                  ❌ {actionLoading ? 'Traitement...' : 'Confirmer le refus'}
+                                  ❌ {actionLoading ? t('processing') : t('confirmRefusal')}
                                 </button>
                                 <button
                                   className="btn-action btn-view"
                                   onClick={() => setInlineReject({ id: null, comment: '' })}
                                   disabled={actionLoading}
                                 >
-                                  Annuler
+                                  {t('cancel')}
                                 </button>
                               </div>
                             </div>
@@ -1259,17 +1263,17 @@ const DemandesRH = () => {
                               )
                             }
                           >
-                            🔄 Changer en Refusé
+                            🔄 {t('changeToRefused')}
                           </button>
 
                           {inlineChangeRefuse.id === demande.id && (
                             <div style={{ width: '100%', marginTop: 6, background: '#fff3f3', border: '1px solid #fca5a5', borderRadius: 8, padding: 12 }}>
                               <div style={{ fontSize: 12, color: '#991b1b', marginBottom: 6, fontWeight: 600 }}>
-                                Motif du changement de statut
+                                {t('statusChangeReason')}
                               </div>
                               <textarea
                                 rows={2}
-                                placeholder="Indiquez le motif du refus..."
+                                placeholder={t('rejectReasonPlaceholder')}
                                 value={inlineChangeRefuse.comment}
                                 onChange={e => setInlineChangeRefuse(prev => ({ ...prev, comment: e.target.value }))}
                                 style={{ width: '100%', borderRadius: 6, padding: '6px 8px', border: '1px solid #fca5a5', fontSize: 13, resize: 'none' }}
@@ -1280,19 +1284,19 @@ const DemandesRH = () => {
                                   className="btn-action btn-refuse"
                                   disabled={actionLoading}
                                   onClick={async () => {
-                                    if (!inlineChangeRefuse.comment.trim()) { alert('Motif du refus requis'); return; }
+                                    if (!inlineChangeRefuse.comment.trim()) { alert(t('rejectionReasonRequired')); return; }
                                     await changeToRefusedInline(demande, inlineChangeRefuse.comment);
                                     setInlineChangeRefuse({ id: null, comment: '' });
                                   }}
                                 >
-                                  ❌ {actionLoading ? 'Traitement...' : 'Confirmer'}
+                                  ❌ {actionLoading ? t('processing') : t('confirm')}
                                 </button>
                                 <button
                                   className="btn-action btn-view"
                                   onClick={() => setInlineChangeRefuse({ id: null, comment: '' })}
                                   disabled={actionLoading}
                                 >
-                                  Annuler
+                                  {t('cancel')}
                                 </button>
                               </div>
                             </div>
@@ -1306,7 +1310,7 @@ const DemandesRH = () => {
                           disabled={actionLoading}
                           onClick={() => changeToApproved(demande)}
                         >
-                          🔄 {actionLoading ? 'Traitement...' : 'Changer en Approuvé'}
+                          🔄 {actionLoading ? t('processing') : t('changeToApproved')}
                         </button>
                       )}
                     </div>

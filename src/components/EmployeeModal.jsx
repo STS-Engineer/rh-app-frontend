@@ -636,7 +636,8 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                 <p className="employee-matricule">
                   {t('employeeID')}: {formData.matricule}
                 </p>
-                <p className="employee-poste">{formData.poste}</p>
+                <p className="employee-poste">{formData.role || formData.poste}</p>
+                {formData.grade && <p className="employee-grade">{formData.grade}</p>}
                 <p className="employee-departement">{formData.site_dep}</p>
                 <p className="employee-contrat">{formData.type_contrat}</p>
                 <p className="employee-email">📧 {formData.adresse_mail || t('emailNotSpecified')}</p>
@@ -844,7 +845,9 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                 <div className="form-section">
                   <h4>💼 {t('professionalInfo')}</h4>
                   <div className="form-grid">
-                    <FormInput label={t('position')} name="poste" value={formData.poste} onChange={handleInputChange} required />
+                    <FormInput label={t('position')} name="poste" value={formData.poste} onChange={handleInputChange} />
+                    <FormInput label="Rôle" name="role" value={formData.role} onChange={handleInputChange} required />
+                    <FormInput label="Grade" name="grade" value={formData.grade} onChange={handleInputChange} />
 
                     <FormSelect
                       t={t}

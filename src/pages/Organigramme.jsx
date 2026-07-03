@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { employeesAPI, getCurrentUser, isGlobalHrManager } from '../services/api';
+import {
+  getEmployeeAvatarFallback,
+  getEmployeeAvatarSrc,
+  isTunisiaEmployeeRecord
+} from '../utils/employeeAvatar';
 import * as d3 from 'd3';
 import {
   ZoomIn,
@@ -625,9 +630,21 @@ const Organigramme = () => {
                 <div className="panel-content">
                   <div className="detail-header">
                     <div className="detail-avatar">
-                      <div className="avatar-placeholder">
-                        {selectedNode.prenom?.charAt(0)}{selectedNode.nom?.charAt(0)}
-                      </div>
+                      {isTunisiaEmployeeRecord(selectedNode) ? (
+                        <div className="avatar-placeholder">
+                          {selectedNode.prenom?.charAt(0)}{selectedNode.nom?.charAt(0)}
+                        </div>
+                      ) : (
+                        <img
+                          className="detail-avatar-image"
+                          src={getEmployeeAvatarSrc(selectedNode)}
+                          alt={cleanName(selectedNode.prenom, selectedNode.nom)}
+                          onError={(event) => {
+                            event.currentTarget.onerror = null;
+                            event.currentTarget.src = getEmployeeAvatarFallback(selectedNode);
+                          }}
+                        />
+                      )}
                     </div>
                     <div className="detail-titles">
                       <h4>{cleanName(selectedNode.prenom, selectedNode.nom)}</h4>

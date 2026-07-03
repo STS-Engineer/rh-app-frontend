@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Sidebar.css';
 import logo from './logo_sts.png';
-import { getCurrentUser } from '../services/api';
+import { getCurrentUser, isGlobalHrManager } from '../services/api';
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -25,7 +25,7 @@ const Sidebar = () => {
     tenantText.includes('sceet') ||
     tenantText.includes('same service') ||
     tenantText.includes('same-service');
-  const showSharedTenantModules = Boolean(user) && !isTunisiaTenant;
+  const showSharedTenantModules = Boolean(user) && (!isTunisiaTenant || isGlobalHrManager(user));
 
   useEffect(() => {
     const savedState = localStorage.getItem('sidebarOpen');
@@ -72,7 +72,7 @@ const Sidebar = () => {
           { path: '/offboarding', label: t('offboarding') || 'Offboarding', icon: '🚪' }
         ]
       : []),
-    { path: '/settings', label: t('settings'), icon: '⚙️' },
+    { path: '/settings', label: `${t('settings')} / ${t('language')}`, icon: '⚙️' },
     ...(isTunisiaTenant
       ? [
           {
@@ -109,27 +109,40 @@ const Sidebar = () => {
 
         <nav className="sidebar-nav">
           {menuItems.map((item) => (
-            <button
-              key={item.path}
-              className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
-              onClick={() =>
-                item.external
-                  ? handlePointeuseClick()
-                  : navigate(item.path)
-              }
-            >
-              <span className="nav-icon">{item.icon}</span>
-              <span className="nav-label">{item.label}</span>
-            </button>
+            item.external ? (
+              <button
+                key={item.path}
+                type="button"
+                className="nav-item"
+                onClick={handlePointeuseClick}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                <span className="nav-label">{item.label}</span>
+              </button>
+            ) : (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                <span className="nav-label">{item.label}</span>
+              </Link>
+            )
           ))}
         </nav>
 
         <div className="sidebar-footer">
-          <div className="language-indicator">
+          <button
+            type="button"
+            className="language-indicator"
+            onClick={() => navigate('/settings')}
+            title={t('settings')}
+          >
             <span className="language-text">
               {t('language')}: {language.toUpperCase()}
             </span>
-          </div>
+          </button>
           <button className="logout-btn" onClick={handleLogout}>
             🚪 {t('logout')}
           </button>

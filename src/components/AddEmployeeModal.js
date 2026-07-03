@@ -34,6 +34,8 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
     date_expiration_passport: '',
     date_naissance: '',
     poste: '',
+    role: '',
+    grade: '',
     site_dep: t('headquarters'),
     type_contrat: 'CDI',
     date_debut: '',
@@ -128,6 +130,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       matricule: '', nom: '', prenom: '', cin: '', passeport: '',
       date_emission_passport: '', date_expiration_passport: '', date_naissance: '',
       poste: '', site_dep: t('headquarters'), type_contrat: 'CDI',
+      role: '', grade: '',
       date_debut: '', date_fin_contrat: '', salaire_brute: '',
       adresse_mail: '', mail_responsable1: '', mail_responsable2: '',
       tenant_schema: defaultTenantSchema
@@ -161,7 +164,9 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 <input name="nom" value={formData.nom} onChange={handleInputChange} placeholder="Nom" required />
                 <input name="prenom" value={formData.prenom} onChange={handleInputChange} placeholder="Prenom" required />
                 <input name="cin" value={formData.cin} onChange={handleInputChange} placeholder="CIN" required />
-                <input name="poste" value={formData.poste} onChange={handleInputChange} placeholder="Poste" required />
+                <input name="poste" value={formData.poste} onChange={handleInputChange} placeholder="Poste" />
+                <input name="role" value={formData.role} onChange={handleInputChange} placeholder="Rôle" required />
+                <input name="grade" value={formData.grade} onChange={handleInputChange} placeholder="Grade" />
                 <input name="adresse_mail" value={formData.adresse_mail} onChange={handleInputChange} placeholder="Email employe" required />
                 <input name="mail_responsable1" value={formData.mail_responsable1} onChange={handleInputChange} placeholder="Email responsable 1" />
                 <input name="mail_responsable2" value={formData.mail_responsable2} onChange={handleInputChange} placeholder="Email responsable 2" />

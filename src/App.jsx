@@ -14,7 +14,7 @@ import Visa from './pages/Visa';
 import FranceOnboarding from './pages/FranceOnboarding';
 import FranceCareerDevelopment from './pages/FranceCareerDevelopment';
 import FranceOffboarding from './pages/FranceOffboarding';
-import { getCurrentUser } from './services/api';
+import { getCurrentUser, isGlobalHrManager } from './services/api';
 import './styles/App.css';
 
 import Organigramme from './pages/Organigramme';
@@ -49,7 +49,7 @@ const TunisiaOnlyRoute = ({ children }) => {
 
 const NonTunisiaOnlyRoute = ({ children }) => {
   const user = getCurrentUser();
-  return !isTunisiaTenantUser(user) ? children : <Navigate to="/dashboard" replace />;
+  return !isTunisiaTenantUser(user) || isGlobalHrManager(user) ? children : <Navigate to="/dashboard" replace />;
 };
 
 function App() {

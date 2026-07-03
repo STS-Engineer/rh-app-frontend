@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import { employeesAPI, getCurrentUser, isGlobalHrManager } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 import './FranceModules.css';
 
 const IT_TEST_EMAIL = 'rami.mejri@avocarbon.com';
@@ -19,6 +20,51 @@ const licences = [
   { name: 'VPN', category: 'Security' },
   { name: 'Salesforce', category: 'Sales' }
 ];
+
+const localLabels = {
+  ta: {
+    Engineering: 'பொறியியல்',
+    Design: 'வடிவமைப்பு',
+    Product: 'தயாரிப்பு',
+    HR: 'HR',
+    Finance: 'நிதி',
+    Productivity: 'உற்பத்தித்திறன்',
+    Communication: 'தொடர்பு',
+    'Project management': 'திட்ட மேலாண்மை',
+    'Knowledge base': 'அறிவு தளம்',
+    Meetings: 'கூட்டங்கள்',
+    Identity: 'அடையாளம்',
+    Security: 'பாதுகாப்பு',
+    Sales: 'விற்பனை',
+    Resignation: 'ராஜினாமா',
+    'End of contract': 'ஒப்பந்த முடிவு',
+    Retirement: 'ஓய்வு',
+    Redundancy: 'பணியிடம் நீக்கம்',
+    Dismissal: 'பணி நீக்கம்',
+    'Open text': 'திறந்த உரை',
+    'Rating 1-5': '1-5 மதிப்பீடு',
+    'Rating 1–5': '1-5 மதிப்பீடு',
+    'Yes/No': 'ஆம்/இல்லை',
+    'What made you decide to leave?': 'நீங்கள் விலக முடிவு செய்ய காரணம் என்ன?',
+    'How would you rate your overall experience?': 'உங்கள் மொத்த அனுபவத்தை எப்படி மதிப்பிடுவீர்கள்?',
+    'Did you feel supported by your manager?': 'உங்கள் மேலாளரின் ஆதரவு கிடைத்ததாக உணர்ந்தீர்களா?',
+    'What should we improve for future employees?': 'எதிர்கால பணியாளர்களுக்காக எதை மேம்படுத்த வேண்டும்?',
+    'Would you recommend the company as a workplace?': 'இந்த நிறுவனத்தை பணியிடமாக பரிந்துரைப்பீர்களா?',
+    'What would have made your experience better?': 'உங்கள் அனுபவத்தை மேம்படுத்த என்ன உதவியிருக்கும்?',
+    'All plants': 'அனைத்து தளங்களும்',
+    'Email missing': 'மின்னஞ்சல் இல்லை',
+    'No extra access listed.': 'கூடுதல் அணுகல் குறிப்பிடப்படவில்லை.',
+    'No questions configured.': 'கேள்விகள் அமைக்கப்படவில்லை.',
+    'We would love your feedback': 'உங்கள் கருத்தை அறிய விரும்புகிறோம்',
+    'Exit survey': 'விடைபெறும் கணக்கெடுப்பு',
+    'Hello': 'வணக்கம்',
+    'Questions': 'கேள்விகள்',
+    'Thank you.': 'நன்றி.',
+    'Survey intro': 'உங்கள் பங்களிப்புக்கும் எங்களுடன் செலவிட்ட நேரத்திற்கும் நன்றி. இந்த குறுகிய வெளியேறும் கணக்கெடுப்பின் மூலம் உங்கள் கருத்தை அறிய விரும்புகிறோம்.',
+    'Survey footer': 'உங்கள் பதில்கள் எதிர்கால குழு உறுப்பினர்களுக்கான பணியாளர் அனுபவத்தை மேம்படுத்த HR-க்கு உதவும்.',
+    'Offboarding emails prepared': 'விடைபெறும் மின்னஞ்சல்கள் தயாராக உள்ளன'
+  }
+};
 
 const allLicenceNames = licences.map((licence) => licence.name);
 
@@ -47,6 +93,8 @@ const getEmployeeDepartment = (employee) =>
   employee.site_dep || employee.departement || employee.department || departments[0];
 
 const FranceOffboarding = () => {
+  const { t, language } = useLanguage();
+  const lt = (value) => localLabels[language]?.[value] || value;
   const canFilterByPlant = isGlobalHrManager(getCurrentUser());
   const [employees, setEmployees] = useState([]);
   const [employeeSearch, setEmployeeSearch] = useState('');
@@ -66,7 +114,7 @@ const FranceOffboarding = () => {
         const response = await employeesAPI.getAll();
         setEmployees(response.data || []);
       } catch (error) {
-        setLookupError(error?.response?.data?.error || error.message || 'Unable to load employees.');
+        setLookupError(error?.response?.data?.error || error.message || t('errorLoadingEmployees') || 'Unable to load employees.');
       }
     };
 
@@ -187,51 +235,51 @@ const FranceOffboarding = () => {
   const itPreview = useMemo(() => {
     const name = form.fullName || '[employee name]';
     const licenceList = selectedLicences.length
-      ? selectedLicences.map((licenceName) => `- ${licenceName}`).join('\n')
-      : '- No licences selected yet';
+      ? selectedLicences.map((licenceName) => `- ${lt(licenceName)}`).join('\n')
+      : `- ${t('none')}`;
 
     return `To: ${IT_TEST_EMAIL}
-Subject: Offboarding — licence cancellation for ${name}
+Subject: ${t('offboarding')} — ${t('licencesToCancel')} for ${name}
 
-Hello IT team,
+${t('notesToIT')},
 
-Please schedule access and licence cancellation for:
+${t('manageLicenceCancellation')}
 
 Name: ${name}
-Job title: ${form.jobTitle || '[job title]'}
-Department: ${form.department}
-Last working day: ${form.lastWorkingDay || '[last working day]'}
-Reason: ${form.reason}
+${t('position')}: ${form.jobTitle || '[job title]'}
+${t('department')}: ${lt(form.department)}
+${t('lastWorkingDay')}: ${form.lastWorkingDay || '[last working day]'}
+${t('reason')}: ${lt(form.reason)}
 
-Licences/access to cancel:
+${t('licencesToCancel')}:
 ${licenceList}
 
-Extra access to revoke:
-${form.revokeNotes || 'No extra access listed.'}
+${t('extraAccessToRevoke')}:
+${form.revokeNotes || lt('No extra access listed.')}
 
-Please confirm completion once the offboarding actions are done.`;
+${t('sendToIT')}.`;
   }, [form, selectedLicences]);
 
   const surveyPreview = useMemo(() => {
     const name = form.fullName || '[employee name]';
     const questionList = questions.length
-      ? questions.map((question, index) => `${index + 1}. ${question.text} (${question.type})`).join('\n')
-      : 'No questions configured.';
+      ? questions.map((question, index) => `${index + 1}. ${lt(question.text)} (${lt(question.type)})`).join('\n')
+      : lt('No questions configured.');
 
     return `To: ${form.personalEmail || '[personal email]'}
-Subject: We’d love your feedback — exit survey
+Subject: ${lt('We would love your feedback')} - ${lt('Exit survey')}
 
-Hello ${name},
+${lt('Hello')} ${name},
 
-Thank you for your contribution and for the time you spent with us. We would appreciate your feedback through this short exit survey.
+${lt('Survey intro')}
 
-Questions:
+${lt('Questions')}:
 ${questionList}
 
-Your answers help HR improve the employee experience for future team members.
+${lt('Survey footer')}
 
-Thank you.`;
-  }, [form.fullName, form.personalEmail, questions]);
+${lt('Thank you.')}`;
+  }, [form.fullName, form.personalEmail, questions, language]);
 
   return (
     <div className="fr-module-layout">
@@ -240,9 +288,9 @@ Thank you.`;
         <section className="lifecycle-shell">
           <div className="lifecycle-topbar">
             <div>
-              <h1 className="lifecycle-title">Offboarding</h1>
+              <h1 className="lifecycle-title">{t('offboarding')}</h1>
               <p className="lifecycle-subtitle">
-                Manage licence cancellation and exit satisfaction survey.
+                {t('manageLicenceCancellation') || 'Manage licence cancellation and exit satisfaction survey.'}
               </p>
             </div>
           </div>
@@ -250,23 +298,23 @@ Thank you.`;
           <div className="lifecycle-stack">
             {success && (
               <div className="life-alert">
-                Offboarding emails prepared: IT cancellation for {IT_TEST_EMAIL} and employee survey are ready.
+                {lt('Offboarding emails prepared')}: {t('itCancellation')} {IT_TEST_EMAIL} / {t('surveyToEmployee')}.
               </div>
             )}
 
             <section className="lifecycle-card">
-              <h2>Leaving employee details</h2>
+              <h2>{t('leavingEmployeeDetails') || 'Leaving employee details'}</h2>
               {lookupError && <p className="lifecycle-card-note">{lookupError}</p>}
               <div className="lifecycle-grid" style={{ marginBottom: 14 }}>
                 {canFilterByPlant && (
                   <div className="lifecycle-field">
-                    <label>Plant / site</label>
+                    <label>{t('plantSite') || 'Plant / site'}</label>
                     <select
                       className="lifecycle-select"
                       value={plantFilter}
                       onChange={(event) => setPlantFilter(event.target.value)}
                     >
-                      <option value="">All plants</option>
+                      <option value="">{lt('All plants')}</option>
                       {plantOptions.map((plant) => (
                         <option key={plant} value={plant}>
                           {plant}
@@ -276,25 +324,25 @@ Thank you.`;
                   </div>
                 )}
                 <div className="lifecycle-field">
-                  <label>Search employee by name or email</label>
+                  <label>{t('searchEmployeeOrEmail')}</label>
                   <input
                     className="lifecycle-input"
                     value={employeeSearch}
                     onChange={(event) => setEmployeeSearch(event.target.value)}
-                    placeholder="Type a name, matricule, or email..."
+                    placeholder={t('searchEmployeeOrEmailPlaceholder')}
                   />
                 </div>
                 <div className="lifecycle-field">
-                  <label>Select employee</label>
+                  <label>{t('selectEmployee') || 'Select employee'}</label>
                   <select
                     className="lifecycle-select"
                     value={selectedEmployeeKey}
                     onChange={(event) => selectEmployee(event.target.value)}
                   >
-                    <option value="">Select employee...</option>
+                    <option value="">{t('selectEmployee') || 'Select employee...'}</option>
                     {filteredEmployees.map((employee) => (
                       <option key={getEmployeeKey(employee)} value={getEmployeeKey(employee)}>
-                        {getEmployeeName(employee)} — {employee.adresse_mail || 'email missing'}
+                        {getEmployeeName(employee)} — {employee.adresse_mail || lt('Email missing')}
                       </option>
                     ))}
                   </select>
@@ -302,7 +350,7 @@ Thank you.`;
               </div>
               <div className="lifecycle-grid">
                 <div className="lifecycle-field">
-                  <label>Full name</label>
+                  <label>{t('fullName')}</label>
                   <input
                     className="lifecycle-input"
                     value={form.fullName}
@@ -311,16 +359,16 @@ Thank you.`;
                   />
                 </div>
                 <div className="lifecycle-field">
-                  <label>Job title</label>
+                  <label>{t('position')}</label>
                   <input
                     className="lifecycle-input"
                     value={form.jobTitle}
                     onChange={(event) => updateField('jobTitle', event.target.value)}
-                    placeholder="Product Engineer"
+                    placeholder={lt('Product Engineer')}
                   />
                 </div>
                 <div className="lifecycle-field">
-                  <label>Department</label>
+                  <label>{t('department')}</label>
                   <select
                     className="lifecycle-select"
                     value={form.department}
@@ -328,13 +376,13 @@ Thank you.`;
                   >
                     {departmentOptions.map((department) => (
                       <option key={department} value={department}>
-                        {department}
+                        {lt(department)}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div className="lifecycle-field">
-                  <label>Last working day</label>
+                  <label>{t('lastWorkingDay')}</label>
                   <input
                     className="lifecycle-input"
                     type="date"
@@ -343,7 +391,7 @@ Thank you.`;
                   />
                 </div>
                 <div className="lifecycle-field">
-                  <label>Survey email</label>
+                  <label>{t('surveyEmail')}</label>
                   <input
                     className="lifecycle-input"
                     type="email"
@@ -353,7 +401,7 @@ Thank you.`;
                   />
                 </div>
                 <div className="lifecycle-field">
-                  <label>Reason</label>
+                  <label>{t('reason')}</label>
                   <select
                     className="lifecycle-select"
                     value={form.reason}
@@ -361,7 +409,7 @@ Thank you.`;
                   >
                     {reasons.map((reason) => (
                       <option key={reason} value={reason}>
-                        {reason}
+                        {lt(reason)}
                       </option>
                     ))}
                   </select>
@@ -370,7 +418,7 @@ Thank you.`;
             </section>
 
             <section className="lifecycle-card">
-              <h2>Licences to cancel</h2>
+              <h2>{t('licencesToCancel') || 'Licences to cancel'}</h2>
               <div className="tool-grid">
                 {licences.map((licence) => {
                   const checked = selectedLicences.includes(licence.name);
@@ -385,33 +433,33 @@ Thank you.`;
                         onChange={() => toggleLicence(licence.name)}
                       />
                       <span>
-                        <span className="tool-name">{licence.name}</span>
-                        <span className="tool-category">{licence.category}</span>
+                        <span className="tool-name">{lt(licence.name)}</span>
+                        <span className="tool-category">{lt(licence.category)}</span>
                       </span>
                     </label>
                   );
                 })}
               </div>
               <div className="lifecycle-field" style={{ marginTop: 14 }}>
-                <label>Extra access to revoke</label>
+                <label>{t('extraAccessToRevoke') || 'Extra access to revoke'}</label>
                 <textarea
                   className="lifecycle-textarea"
                   value={form.revokeNotes}
                   onChange={(event) => updateField('revokeNotes', event.target.value)}
-                  placeholder="Shared folders, admin groups, building badge, special systems..."
+                  placeholder={t('extraAccessToRevoke')}
                 />
               </div>
             </section>
 
             <section className="lifecycle-card">
-              <h2>Satisfaction survey (HR editable)</h2>
+              <h2>{t('satisfactionSurvey') || 'Satisfaction survey (HR editable)'}</h2>
               <div className="question-list">
                 {questions.map((question, index) => (
                   <div className="question-row" key={question.id}>
                     <span className="question-number">{index + 1}</span>
                     <input
                       className="lifecycle-input"
-                      value={question.text}
+                      value={lt(question.text)}
                       onChange={(event) => updateQuestion(question.id, event.target.value)}
                     />
                     <span className="question-type">{question.type}</span>
@@ -420,7 +468,7 @@ Thank you.`;
                       type="button"
                       onClick={() => deleteQuestion(question.id)}
                     >
-                      Delete
+                      {t('remove')}
                     </button>
                   </div>
                 ))}
@@ -429,7 +477,7 @@ Thank you.`;
               <div className="inline-form">
                 <div className="lifecycle-grid">
                   <div className="lifecycle-field">
-                    <label>Add question</label>
+                    <label>{t('addQuestion')}</label>
                     <input
                       className="lifecycle-input"
                       value={newQuestion.text}
@@ -440,7 +488,7 @@ Thank you.`;
                     />
                   </div>
                   <div className="lifecycle-field">
-                    <label>Question type</label>
+                    <label>{t('questionType')}</label>
                     <select
                       className="lifecycle-select"
                       value={newQuestion.type}
@@ -448,9 +496,9 @@ Thank you.`;
                         setNewQuestion((current) => ({ ...current, type: event.target.value }))
                       }
                     >
-                      <option value="Open text">Open text</option>
-                      <option value="Rating 1–5">Rating 1–5</option>
-                      <option value="Yes/No">Yes/No</option>
+                      <option value="Open text">{lt('Open text')}</option>
+                      <option value="Rating 1–5">{lt('Rating 1–5')}</option>
+                      <option value="Yes/No">{lt('Yes/No')}</option>
                     </select>
                   </div>
                 </div>
@@ -461,37 +509,37 @@ Thank you.`;
                     disabled={!newQuestion.text.trim()}
                     onClick={addQuestion}
                   >
-                    Add question
+                    {t('addQuestion')}
                   </button>
                 </div>
               </div>
             </section>
 
             <section className="lifecycle-card">
-              <h2>Email previews</h2>
+              <h2>{t('emailPreviews')}</h2>
               <div className="preview-tabs">
                 <button
                   className={`preview-tab${previewTab === 'it' ? ' active' : ''}`}
                   type="button"
                   onClick={() => setPreviewTab('it')}
                 >
-                  IT cancellation
+                  {t('itCancellation')}
                 </button>
                 <button
                   className={`preview-tab${previewTab === 'survey' ? ' active' : ''}`}
                   type="button"
                   onClick={() => setPreviewTab('survey')}
                 >
-                  Survey to employee
+                  {t('surveyToEmployee')}
                 </button>
               </div>
               <pre className="email-preview">{previewTab === 'it' ? itPreview : surveyPreview}</pre>
               <div className="lifecycle-actions">
                 <button className="life-btn ghost" type="button" onClick={resetForm}>
-                  Reset
+                  {t('reset')}
                 </button>
                 <button className="life-btn danger" type="button" onClick={() => setSuccess(true)}>
-                  Send both emails
+                  {t('sendBothEmails')}
                 </button>
               </div>
             </section>

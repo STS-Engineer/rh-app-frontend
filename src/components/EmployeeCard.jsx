@@ -1,23 +1,44 @@
 import React from 'react';
 import './EmployeeCard.css';
+import {
+  getEmployeeAvatarFallback,
+  getEmployeeAvatarSrc,
+  getEmployeeDisplayName
+} from '../utils/employeeAvatar';
+import {
+  getEmployeeDepartment,
+  getEmployeeGrade,
+  getEmployeeRole
+} from '../utils/employeeProfile';
 
 const EmployeeCard = ({ employee, onClick }) => {
+  const employeeName = getEmployeeDisplayName(employee);
+  const avatarFallback = getEmployeeAvatarFallback(employee);
+  const employeeRole = getEmployeeRole(employee);
+  const employeeGrade = getEmployeeGrade(employee);
+  const employeeDepartment = getEmployeeDepartment(employee);
+
   return (
     <div className="employee-card" onClick={() => onClick(employee)}>
       <div className="card-header">
         <img 
-          src={employee.photo || '/default-avatar.png'} 
-          alt={`${employee.prenom} ${employee.nom}`}
+          src={getEmployeeAvatarSrc(employee)}
+          alt={employeeName}
           className="employee-photo"
+          onError={(event) => {
+            event.currentTarget.onerror = null;
+            event.currentTarget.src = avatarFallback;
+          }}
         />
         <div className="employee-info">
-          <h3 className="employee-name">{employee.prenom} {employee.nom}</h3>
+          <h3 className="employee-name">{employeeName}</h3>
           
         </div>
       </div>
       <div className="card-body">
-        <p className="employee-poste">{employee.poste}</p>
-        <p className="employee-site">{employee.site_dep}</p>
+        {employeeRole && <p className="employee-role">{employeeRole}</p>}
+        {employeeGrade && <p className="employee-grade">{employeeGrade}</p>}
+        {employeeDepartment && <p className="employee-site">{employeeDepartment}</p>}
       </div>
     </div>
   );

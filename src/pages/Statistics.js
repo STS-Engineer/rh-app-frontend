@@ -34,6 +34,8 @@ const Statistics = () => {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
   const AGE_GROUPS = ['18-25', '26-35', '36-45', '46-55', '56+'];
+  const formatNumber = (value) => Number(value || 0).toLocaleString('fr-FR');
+  const formatFixed = (value, digits = 0) => Number(value || 0).toFixed(digits);
 
   useEffect(() => {
     loadStatistics();
@@ -381,7 +383,7 @@ const Statistics = () => {
             <div className="stat-icon">💰</div>
             <div className="stat-info">
               <h3>{t('totalSalary')}</h3>
-              <p className="stat-number">{stats.totalSalary.toLocaleString('fr-FR')} DT</p>
+              <p className="stat-number">{formatNumber(stats.totalSalary)} DT</p>
               <p className="stat-detail">{t('monthlyGross')}</p>
               <div className="stat-trend">
                 <span className="trend-up">↑ 8%</span> {t('statsVsLastMonth')}
@@ -393,7 +395,7 @@ const Statistics = () => {
             <div className="stat-icon">📈</div>
             <div className="stat-info">
               <h3>{t('averageSalary')}</h3>
-              <p className="stat-number">{stats.averageSalary.toFixed(0)} DT</p>
+              <p className="stat-number">{formatFixed(stats.averageSalary)} DT</p>
               <p className="stat-detail">{t('perEmployee')}</p>
               <div className="stat-trend">
                 <span className="trend-up">↑ 5%</span> {t('statsVsLastQuarter')}
@@ -631,32 +633,32 @@ const Statistics = () => {
             <div className="salary-grid">
               <div className="salary-stat">
                 <span className="salary-label">{t('statsSalaryMin')}</span>
-                <span className="salary-value">{stats.salaryStats.min.toLocaleString('fr-FR')} DT</span>
+                <span className="salary-value">{formatNumber(stats.salaryStats?.min)} DT</span>
                 <div className="salary-bar" style={{ width: '25%' }}></div>
               </div>
               <div className="salary-stat">
                 <span className="salary-label">{t('statsSalaryQ1')}</span>
-                <span className="salary-value">{stats.salaryStats.q1?.toLocaleString('fr-FR') || '0'} DT</span>
+                <span className="salary-value">{formatNumber(stats.salaryStats?.q1)} DT</span>
                 <div className="salary-bar" style={{ width: '50%' }}></div>
               </div>
               <div className="salary-stat">
                 <span className="salary-label">{t('statsSalaryMedian')}</span>
-                <span className="salary-value">{stats.salaryStats.median.toLocaleString('fr-FR')} DT</span>
+                <span className="salary-value">{formatNumber(stats.salaryStats?.median)} DT</span>
                 <div className="salary-bar" style={{ width: '75%' }}></div>
               </div>
               <div className="salary-stat">
                 <span className="salary-label">{t('statsSalaryAverage')}</span>
-                <span className="salary-value">{stats.averageSalary.toFixed(0)} DT</span>
+                <span className="salary-value">{formatFixed(stats.averageSalary)} DT</span>
                 <div className="salary-bar" style={{ width: '80%' }}></div>
               </div>
               <div className="salary-stat">
                 <span className="salary-label">{t('statsSalaryQ3')}</span>
-                <span className="salary-value">{stats.salaryStats.q3?.toLocaleString('fr-FR') || '0'} DT</span>
+                <span className="salary-value">{formatNumber(stats.salaryStats?.q3)} DT</span>
                 <div className="salary-bar" style={{ width: '90%' }}></div>
               </div>
               <div className="salary-stat">
                 <span className="salary-label">{t('statsSalaryMax')}</span>
-                <span className="salary-value">{stats.salaryStats.max.toLocaleString('fr-FR')} DT</span>
+                <span className="salary-value">{formatNumber(stats.salaryStats?.max)} DT</span>
                 <div className="salary-bar" style={{ width: '100%' }}></div>
               </div>
             </div>

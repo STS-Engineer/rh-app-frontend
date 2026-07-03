@@ -65,6 +65,7 @@
 .employee-photo {
   width: 80px;
   height: 80px;
+  display: block;
   border-radius: 18px;
   object-fit: cover;
   margin-right: 25px;
@@ -190,6 +191,7 @@
   padding-top: 25px;
 }
 
+.employee-role,
 .employee-poste {
   margin: 0 0 12px 0;
   color: var(--primary-blue);
@@ -201,10 +203,27 @@
   gap: 10px;
 }
 
+.employee-role::before,
 .employee-poste::before {
   content: '💼';
   font-size: 1.1rem;
   opacity: 0.8;
+}
+
+.employee-grade {
+  margin: 0 0 12px 0;
+  color: var(--warning-color);
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.employee-grade::before {
+  content: '⭐';
+  font-size: 1rem;
+  opacity: 0.85;
 }
 
 .employee-site {
@@ -555,6 +574,7 @@
     font-size: 1.2rem;
   }
   
+  .employee-role,
   .employee-poste {
     font-size: 1.1rem;
   }
@@ -583,6 +603,7 @@
     font-size: 1.1rem;
   }
   
+  .employee-role,
   .employee-poste {
     font-size: 1rem;
   }
@@ -631,8 +652,13 @@
     color: #e2e8f0;
   }
   
+  .employee-role,
   .employee-poste {
     color: #60a5fa;
+  }
+
+  .employee-grade {
+    color: #fbbf24;
   }
   
   .employee-site,

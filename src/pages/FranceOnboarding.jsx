@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import Sidebar from '../components/Sidebar';
+import { useLanguage } from '../contexts/LanguageContext';
 import './FranceModules.css';
 
 const departments = ['Engineering', 'Design', 'Product', 'HR', 'Finance'];
 const IT_TEST_EMAIL = 'rami.mejri@avocarbon.com';
 
-const tools = [
+const softwareTools = [
   { name: 'Microsoft 365', category: 'Productivity' },
   { name: 'Slack', category: 'Communication' },
   { name: 'Jira', category: 'Project management' },
@@ -18,6 +19,73 @@ const tools = [
   { name: 'Salesforce', category: 'Sales' }
 ];
 
+const equipmentOptions = [
+  { name: 'Laptop', category: 'Portable computer' },
+  { name: 'Desktop PC', category: 'Fixed workstation' },
+  { name: 'Second monitor', category: 'Display' },
+  { name: 'Mouse', category: 'Peripherals' },
+  { name: 'Ergonomic mouse pad', category: 'Ergonomics' },
+  { name: 'Drawing table', category: 'Design' },
+  { name: 'Office chair', category: 'Ergonomics' },
+  { name: 'Footrest', category: 'Ergonomics' },
+  { name: 'Specialized equipment', category: 'Custom request' }
+];
+
+const trainingOptions = [
+  { name: 'Onboarding training', category: 'General' },
+  { name: 'Sales training', category: 'Job specific' },
+  { name: 'Purchasing training', category: 'Job specific' },
+  { name: 'Project management training', category: 'Job specific' },
+  { name: 'Management training', category: 'Leadership' },
+  { name: 'Process / tools training', category: 'Operations' }
+];
+
+const localLabels = {
+  ta: {
+    Engineering: 'பொறியியல்',
+    Design: 'வடிவமைப்பு',
+    Product: 'தயாரிப்பு',
+    HR: 'HR',
+    Finance: 'நிதி',
+    Productivity: 'உற்பத்தித்திறன்',
+    Communication: 'தொடர்பு',
+    'Project management': 'திட்ட மேலாண்மை',
+    'Knowledge base': 'அறிவு தளம்',
+    Meetings: 'கூட்டங்கள்',
+    Identity: 'அடையாளம்',
+    Security: 'பாதுகாப்பு',
+    Sales: 'விற்பனை',
+    Laptop: 'மடிக்கணினி',
+    'Desktop PC': 'மேசை கணினி',
+    'Second monitor': 'இரண்டாவது திரை',
+    Mouse: 'மவுஸ்',
+    'Ergonomic mouse pad': 'எர்கோனாமிக் மவுஸ் பேட்',
+    'Drawing table': 'வரைதல் மேசை',
+    'Office chair': 'அலுவலக நாற்காலி',
+    Footrest: 'கால் ஆதாரம்',
+    'Specialized equipment': 'சிறப்பு உபகரணம்',
+    'Portable computer': 'கைக்கணினி',
+    'Fixed workstation': 'நிலையான பணியிடம்',
+    Display: 'திரை',
+    Peripherals: 'சுற்றுப்பொருட்கள்',
+    Ergonomics: 'எர்கோனாமிக்ஸ்',
+    'Custom request': 'சிறப்பு கோரிக்கை',
+    'Onboarding training': 'இணைப்பு பயிற்சி',
+    'Sales training': 'விற்பனை பயிற்சி',
+    'Purchasing training': 'கொள்முதல் பயிற்சி',
+    'Project management training': 'திட்ட மேலாண்மை பயிற்சி',
+    'Management training': 'மேலாண்மை பயிற்சி',
+    'Process / tools training': 'செயல்முறை / கருவிகள் பயிற்சி',
+    General: 'பொது',
+    'Job specific': 'பணி சார்ந்தது',
+    Leadership: 'தலைமை',
+    Operations: 'செயல்பாடுகள்',
+    'Product Engineer': 'தயாரிப்பு பொறியாளர்',
+    'No selection yet': 'இதுவரை தேர்வு இல்லை',
+    'Thank you.': 'நன்றி.'
+  }
+};
+
 const initialForm = {
   fullName: '',
   jobTitle: '',
@@ -28,11 +96,17 @@ const initialForm = {
   notes: ''
 };
 
-const allToolNames = tools.map((tool) => tool.name);
+const allSoftwareNames = softwareTools.map((tool) => tool.name);
+const allEquipmentNames = equipmentOptions.map((item) => item.name);
+const allTrainingNames = trainingOptions.map((item) => item.name);
 
 const FranceOnboarding = () => {
+  const { t, language } = useLanguage();
+  const lt = (value) => localLabels[language]?.[value] || value;
   const [form, setForm] = useState(initialForm);
-  const [selectedTools, setSelectedTools] = useState(allToolNames);
+  const [selectedSoftware, setSelectedSoftware] = useState(allSoftwareNames);
+  const [selectedEquipment, setSelectedEquipment] = useState(allEquipmentNames);
+  const [selectedTraining, setSelectedTraining] = useState(allTrainingNames);
   const [success, setSuccess] = useState(false);
 
   const updateField = (field, value) => {
@@ -40,47 +114,61 @@ const FranceOnboarding = () => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const toggleTool = (toolName) => {
+  const toggleSelection = (setter, toolName) => {
     setSuccess(false);
-    setSelectedTools((current) =>
+    setter((current) =>
       current.includes(toolName) ? current.filter((name) => name !== toolName) : [...current, toolName]
     );
   };
 
   const resetForm = () => {
     setForm(initialForm);
-    setSelectedTools(allToolNames);
+    setSelectedSoftware(allSoftwareNames);
+    setSelectedEquipment(allEquipmentNames);
+    setSelectedTraining(allTrainingNames);
     setSuccess(false);
   };
 
   const emailPreview = useMemo(() => {
     const name = form.fullName || '[new hire name]';
-    const toolList = selectedTools.length
-      ? selectedTools.map((toolName) => `- ${toolName}`).join('\n')
-      : '- No tools selected yet';
+    const softwareList = selectedSoftware.length
+      ? selectedSoftware.map((toolName) => `- ${lt(toolName)}`).join('\n')
+      : `- ${t('none')}`;
+    const equipmentList = selectedEquipment.length
+      ? selectedEquipment.map((itemName) => `- ${lt(itemName)}`).join('\n')
+      : `- ${t('none')}`;
+    const trainingList = selectedTraining.length
+      ? selectedTraining.map((itemName) => `- ${lt(itemName)}`).join('\n')
+      : `- ${t('none')}`;
 
     return `To: ${IT_TEST_EMAIL}
-Subject: New employee setup — ${name}
+Subject: ${t('setupRequestPrepared')} ${name}
 
-Hello IT team,
+${t('notesToIT')},
 
-Please prepare the setup for the following new hire:
+${t('prepareOnboardingRequests')}
 
-Name: ${name}
-Job title: ${form.jobTitle || '[job title]'}
-Department: ${form.department}
-Start date: ${form.startDate || '[start date]'}
-Work email to create: ${form.workEmail || '[work email]'}
-Manager: ${form.managerName || '[manager name]'}
+${t('fullName')}: ${name}
+${t('position')}: ${form.jobTitle || '[job title]'}
+${t('department')}: ${lt(form.department)}
+${t('startDate')}: ${form.startDate || '[start date]'}
+${t('employeeEmail') || 'Work email to create'}: ${form.workEmail || '[work email]'}
+${t('managerName') || 'Manager name'}: ${form.managerName || '[manager name]'}
 
-Tools and licences requested:
-${toolList}
+${t('softwareLicences')}:
+${softwareList}
 
-Additional notes:
-${form.notes || 'No additional notes.'}
+${t('equipmentRequests')}:
+${equipmentList}
 
-Thank you.`;
-  }, [form, selectedTools]);
+${t('trainingRequests')}:
+${trainingList}
+
+${t('notes')}:
+${form.notes || `${t('none')} ${t('notes').toLowerCase()}.`}
+
+${lt('Thank you.')}`;
+  }, [form, selectedSoftware, selectedEquipment, selectedTraining, language]);
 
   return (
     <div className="fr-module-layout">
@@ -89,23 +177,25 @@ Thank you.`;
         <section className="lifecycle-shell">
           <div className="lifecycle-topbar">
             <div>
-              <h1 className="lifecycle-title">Onboarding</h1>
-              <p className="lifecycle-subtitle">Send an IT setup request for a new hire.</p>
+              <h1 className="lifecycle-title">{t('onboarding')}</h1>
+              <p className="lifecycle-subtitle">
+                {t('prepareOnboardingRequests')}
+              </p>
             </div>
           </div>
 
           <div className="lifecycle-stack">
             {success && (
               <div className="life-alert">
-                Setup request prepared. The preview is ready for {IT_TEST_EMAIL}.
+                {t('setupRequestPrepared')} {IT_TEST_EMAIL}.
               </div>
             )}
 
             <section className="lifecycle-card">
-              <h2>New employee details</h2>
+              <h2>{t('newEmployeeDetails')}</h2>
               <div className="lifecycle-grid">
                 <div className="lifecycle-field">
-                  <label>Full name</label>
+                  <label>{t('fullName') || 'Full name'}</label>
                   <input
                     className="lifecycle-input"
                     value={form.fullName}
@@ -114,16 +204,16 @@ Thank you.`;
                   />
                 </div>
                 <div className="lifecycle-field">
-                  <label>Job title</label>
+                  <label>{t('position')}</label>
                   <input
                     className="lifecycle-input"
                     value={form.jobTitle}
                     onChange={(event) => updateField('jobTitle', event.target.value)}
-                    placeholder="Product Engineer"
+                    placeholder={lt('Product Engineer')}
                   />
                 </div>
                 <div className="lifecycle-field">
-                  <label>Department</label>
+                  <label>{t('department')}</label>
                   <select
                     className="lifecycle-select"
                     value={form.department}
@@ -131,13 +221,13 @@ Thank you.`;
                   >
                     {departments.map((department) => (
                       <option key={department} value={department}>
-                        {department}
+                        {lt(department)}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div className="lifecycle-field">
-                  <label>Start date</label>
+                  <label>{t('startDate')}</label>
                   <input
                     className="lifecycle-input"
                     type="date"
@@ -146,7 +236,7 @@ Thank you.`;
                   />
                 </div>
                 <div className="lifecycle-field">
-                  <label>Work email to create</label>
+                  <label>{t('employeeEmail') || 'Work email to create'}</label>
                   <input
                     className="lifecycle-input"
                     type="email"
@@ -156,7 +246,7 @@ Thank you.`;
                   />
                 </div>
                 <div className="lifecycle-field">
-                  <label>Manager name</label>
+                  <label>{t('managerName') || 'Manager name'}</label>
                   <input
                     className="lifecycle-input"
                     value={form.managerName}
@@ -168,48 +258,95 @@ Thank you.`;
             </section>
 
             <section className="lifecycle-card">
-              <h2>Tools & licences to set up</h2>
+              <h2>{t('softwareLicences')}</h2>
               <div className="tool-grid">
-                {tools.map((tool) => {
-                  const checked = selectedTools.includes(tool.name);
+                {softwareTools.map((tool) => {
+                  const checked = selectedSoftware.includes(tool.name);
                   return (
                     <label className={`tool-card${checked ? ' selected' : ''}`} key={tool.name}>
                       <input
                         type="checkbox"
                         checked={checked}
-                        onChange={() => toggleTool(tool.name)}
+                        onChange={() => toggleSelection(setSelectedSoftware, tool.name)}
                       />
                       <span>
-                        <span className="tool-name">{tool.name}</span>
-                        <span className="tool-category">{tool.category}</span>
+                        <span className="tool-name">{lt(tool.name)}</span>
+                        <span className="tool-category">{lt(tool.category)}</span>
                       </span>
                     </label>
                   );
                 })}
               </div>
-              <div className="lifecycle-field" style={{ marginTop: 14 }}>
-                <label>Notes to IT</label>
-                <textarea
-                  className="lifecycle-textarea"
-                  value={form.notes}
-                  onChange={(event) => updateField('notes', event.target.value)}
-                  placeholder="Laptop preferences, security groups, shared folders, or any special setup..."
-                />
+            </section>
+
+            <section className="lifecycle-card">
+              <h2>{t('equipmentRequests')}</h2>
+              <div className="tool-grid">
+                {equipmentOptions.map((item) => {
+                  const checked = selectedEquipment.includes(item.name);
+                  return (
+                    <label className={`tool-card${checked ? ' selected' : ''}`} key={item.name}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleSelection(setSelectedEquipment, item.name)}
+                      />
+                      <span>
+                        <span className="tool-name">{lt(item.name)}</span>
+                        <span className="tool-category">{lt(item.category)}</span>
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             </section>
 
             <section className="lifecycle-card">
-              <h2>Email preview to IT</h2>
+              <h2>{t('trainingRequests')}</h2>
+              <div className="tool-grid">
+                {trainingOptions.map((item) => {
+                  const checked = selectedTraining.includes(item.name);
+                  return (
+                    <label className={`tool-card${checked ? ' selected' : ''}`} key={item.name}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleSelection(setSelectedTraining, item.name)}
+                      />
+                      <span>
+                        <span className="tool-name">{lt(item.name)}</span>
+                        <span className="tool-category">{lt(item.category)}</span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="lifecycle-card">
+              <h2>{t('notesToIT')}</h2>
+              <div className="lifecycle-field" style={{ marginTop: 0 }}>
+                <textarea
+                  className="lifecycle-textarea"
+                  value={form.notes}
+                  onChange={(event) => updateField('notes', event.target.value)}
+                placeholder={t('notesToIT')}
+              />
+              </div>
+            </section>
+
+            <section className="lifecycle-card">
+              <h2>{t('emailPreviewIT')}</h2>
               <pre className="email-preview">{emailPreview}</pre>
               <p className="lifecycle-card-note">
-                This preview is local for now. IT test recipient: {IT_TEST_EMAIL}.
+                {t('localPreviewNote')} {IT_TEST_EMAIL}.
               </p>
               <div className="lifecycle-actions">
                 <button className="life-btn ghost" type="button" onClick={resetForm}>
-                  Reset
+                  {t('reset')}
                 </button>
                 <button className="life-btn" type="button" onClick={() => setSuccess(true)}>
-                  Send to IT
+                  {t('sendToIT')}
                 </button>
               </div>
             </section>
