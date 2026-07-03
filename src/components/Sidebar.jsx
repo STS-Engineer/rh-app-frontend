@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Sidebar.css';
-import logo from './logo_sts.png';
+import logo from './logo-avocarbon-1.png';
 import { getCurrentUser, isGlobalHrManager } from '../services/api';
 
 const Sidebar = () => {

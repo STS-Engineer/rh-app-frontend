@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { authAPI } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Login.css';
-import logoo from './logo_sts.png';
+import logoo from './logo-avocarbon-1.png';
 
 const Login = () => {
   const [email, setEmail] = useState('');
