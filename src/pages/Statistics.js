@@ -7,7 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import './Statistics.css';
 
 const Statistics = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [stats, setStats] = useState({
     totalEmployees: 0,
     byDepartment: {},
@@ -34,7 +34,17 @@ const Statistics = () => {
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
   const AGE_GROUPS = ['18-25', '26-35', '36-45', '46-55', '56+'];
-  const formatNumber = (value) => Number(value || 0).toLocaleString('fr-FR');
+  const locale = {
+    fr: 'fr-FR',
+    en: 'en-GB',
+    es: 'es-ES',
+    de: 'de-DE',
+    ko: 'ko-KR',
+    zh: 'zh-CN',
+    hi: 'hi-IN',
+    ta: 'ta-IN'
+  }[language] || 'en-GB';
+  const formatNumber = (value) => Number(value || 0).toLocaleString(locale);
   const formatFixed = (value, digits = 0) => Number(value || 0).toFixed(digits);
 
   useEffect(() => {
@@ -332,7 +342,7 @@ const Statistics = () => {
               </button>
             </div>
           </div>
-          <p>{t('hrAnalysis')} - {new Date().toLocaleDateString('fr-FR', { 
+          <p>{t('hrAnalysis')} - {new Date().toLocaleDateString(locale, {
             weekday: 'long', 
             year: 'numeric', 
             month: 'long', 
@@ -420,7 +430,7 @@ const Statistics = () => {
           {isFranceTenant && (
             <div className="charts-row">
               <div className="chart-container medium">
-                <h3>Homme / Femme</h3>
+                <h3>{t('statsGenderSplit')}</h3>
                 <div className="chart-wrapper">
                   <ResponsiveContainer width="100%" height={300}>
                     <PieChart>
@@ -436,7 +446,7 @@ const Statistics = () => {
                 </div>
               </div>
               <div className="chart-container medium">
-                <h3>Evolution des effectifs</h3>
+                <h3>{t('statsWorkforceTrend')}</h3>
                 <div className="chart-wrapper">
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={stats.chartData?.evolutionData || []}>
@@ -445,8 +455,8 @@ const Statistics = () => {
                       <YAxis />
                       <Tooltip />
                       <Legend />
-                      <Line type="monotone" dataKey="hires" name="Nouveaux" stroke="#2563eb" />
-                      <Line type="monotone" dataKey="cumulative" name="Cumul" stroke="#16a34a" />
+                      <Line type="monotone" dataKey="hires" name={t('statsNewHiresSeries')} stroke="#2563eb" />
+                      <Line type="monotone" dataKey="cumulative" name={t('statsCumulativeSeries')} stroke="#16a34a" />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -704,10 +714,10 @@ const Statistics = () => {
                           </span>
                         </td>
                         <td className="salary-cell">
-                          {parseFloat(emp.salaire_brute || 0).toLocaleString('fr-FR')} DT
+                          {parseFloat(emp.salaire_brute || 0).toLocaleString(locale)} DT
                         </td>
                         <td className="date-cell">
-                          {new Date(emp.date_debut).toLocaleDateString('fr-FR')}
+                          {new Date(emp.date_debut).toLocaleDateString(locale)}
                         </td>
                       </tr>
                     ))}

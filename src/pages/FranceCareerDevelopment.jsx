@@ -14,6 +14,126 @@ const emptySalaryForm = { date: '', amount: '', details: '' };
 const emptyTalentForm = { date: '', title: '', details: '', rating: '3' };
 
 const localLabels = {
+  ko: {
+    'Role not specified': '직무 미지정',
+    Unassigned: '미지정',
+    'Date pending': '날짜 미정',
+    'Loading timeline...': '타임라인 불러오는 중...',
+    Current: '현재',
+    present: '현재',
+    Logistique: '물류',
+    Digitale: '디지털',
+    'Ingénieur IA': 'AI 엔지니어',
+    'ingénieur de développement produit': '제품 개발 엔지니어',
+    'Current role from employee profile': '직원 프로필 기준 현재 직무',
+    'Initial role before recorded career changes': '기록된 경력 변경 전 초기 직무',
+    'Operations Manager': '운영 관리자',
+    'Defaults to start date': '입력하지 않으면 시작일을 사용',
+    'Role changed to': '직무 변경',
+    'Previous role ended': '이전 직무 종료',
+    'Annual review 2026': '2026 연간 평가',
+    'Strengths, improvement points, next objectives...': '강점, 개선점, 다음 목표...',
+    Rating: '평점',
+    'No details provided.': '세부 정보가 없습니다.',
+    'Salary change': '급여 변경',
+    'Salary evolution': '급여 변동',
+    'Annual increase': '연간 인상',
+    'Talent review 2026': '2026 인재 리뷰',
+    'Potential paths, mobility, leadership readiness...': '가능한 경로, 이동성, 리더십 준비도...',
+    'Unable to load employees.': '직원을 불러올 수 없습니다.',
+    'Unable to load career events.': '경력 이벤트를 불러올 수 없습니다.',
+    'Unable to save career data.': '경력 데이터를 저장할 수 없습니다.'
+  },
+  de: {
+    'Role not specified': 'Rolle nicht angegeben',
+    Unassigned: 'Nicht zugewiesen',
+    'Date pending': 'Datum ausstehend',
+    'Loading timeline...': 'Zeitachse wird geladen...',
+    Current: 'Aktuell',
+    present: 'heute',
+    Logistique: 'Logistik',
+    Digitale: 'Digital',
+    'Ingénieur IA': 'KI-Ingenieur',
+    'ingénieur de développement produit': 'Produktentwicklungsingenieur',
+    'Current role from employee profile': 'Aktuelle Rolle laut Mitarbeiterprofil',
+    'Initial role before recorded career changes': 'Ausgangsrolle vor erfassten Karriereänderungen',
+    'Operations Manager': 'Betriebsleiter',
+    'Defaults to start date': 'Standard ist das Startdatum',
+    'Role changed to': 'Rolle geändert zu',
+    'Previous role ended': 'Vorherige Rolle beendet',
+    'Annual review 2026': 'Jahresgespräch 2026',
+    'Strengths, improvement points, next objectives...': 'Stärken, Verbesserungen, nächste Ziele...',
+    Rating: 'Bewertung',
+    'No details provided.': 'Keine Details angegeben.',
+    'Salary change': 'Gehaltsänderung',
+    'Salary evolution': 'Gehaltsentwicklung',
+    'Annual increase': 'Jährliche Erhöhung',
+    'Talent review 2026': 'Talentbewertung 2026',
+    'Potential paths, mobility, leadership readiness...': 'Mögliche Wege, Mobilität, Führungsreife...',
+    'Unable to load employees.': 'Mitarbeitende konnten nicht geladen werden.',
+    'Unable to load career events.': 'Karriereereignisse konnten nicht geladen werden.',
+    'Unable to save career data.': 'Karrieredaten konnten nicht gespeichert werden.'
+  },
+  es: {
+    'Role not specified': 'Puesto no especificado',
+    Unassigned: 'Sin asignar',
+    'Date pending': 'Fecha pendiente',
+    'Loading timeline...': 'Cargando cronología...',
+    Current: 'Actual',
+    present: 'actualidad',
+    Logistique: 'Logística',
+    Digitale: 'Digital',
+    'Ingénieur IA': 'Ingeniero de IA',
+    'ingénieur de développement produit': 'Ingeniero de desarrollo de producto',
+    'Current role from employee profile': 'Puesto actual según el perfil del empleado',
+    'Initial role before recorded career changes': 'Puesto inicial antes de los cambios de carrera registrados',
+    'Operations Manager': 'Gerente de operaciones',
+    'Defaults to start date': 'Por defecto, la fecha de inicio',
+    'Role changed to': 'Puesto cambiado a',
+    'Previous role ended': 'Puesto anterior finalizado',
+    'Annual review 2026': 'Evaluación anual 2026',
+    'Strengths, improvement points, next objectives...': 'Fortalezas, puntos de mejora, próximos objetivos...',
+    Rating: 'Calificación',
+    'No details provided.': 'No se proporcionaron detalles.',
+    'Salary change': 'Cambio salarial',
+    'Salary evolution': 'Evolución salarial',
+    'Annual increase': 'Aumento anual',
+    'Talent review 2026': 'Revisión de talento 2026',
+    'Potential paths, mobility, leadership readiness...': 'Posibles trayectorias, movilidad, preparación para liderazgo...',
+    'Unable to load employees.': 'No se pudieron cargar los empleados.',
+    'Unable to load career events.': 'No se pudieron cargar los eventos de carrera.',
+    'Unable to save career data.': 'No se pudieron guardar los datos de carrera.'
+  },
+  zh: {
+    'Role not specified': '未指定职位',
+    Unassigned: '未分配',
+    'Date pending': '日期待定',
+    'Loading timeline...': '正在加载时间线...',
+    Current: '当前',
+    present: '现在',
+    Logistique: '物流',
+    Digitale: '数字化',
+    'Ingénieur IA': '人工智能工程师',
+    'ingénieur de développement produit': '产品开发工程师',
+    'Current role from employee profile': '来自员工档案的当前职位',
+    'Initial role before recorded career changes': '记录职业变动前的初始职位',
+    'Operations Manager': '运营经理',
+    'Defaults to start date': '默认为开始日期',
+    'Role changed to': '职位变更为',
+    'Previous role ended': '上一职位结束',
+    'Annual review 2026': '2026 年度评估',
+    'Strengths, improvement points, next objectives...': '优势、改进点、下一步目标...',
+    Rating: '评分',
+    'No details provided.': '未提供详细信息。',
+    'Salary change': '薪资变更',
+    'Salary evolution': '薪资变化',
+    'Annual increase': '年度加薪',
+    'Talent review 2026': '2026 人才评审',
+    'Potential paths, mobility, leadership readiness...': '潜在路径、流动性、领导力准备情况...',
+    'Unable to load employees.': '无法加载员工。',
+    'Unable to load career events.': '无法加载职业事件。',
+    'Unable to save career data.': '无法保存职业数据。'
+  },
   ta: {
     'Role not specified': 'பங்கு குறிப்பிடப்படவில்லை',
     Unassigned: 'ஒதுக்கப்படவில்லை',
@@ -37,6 +157,69 @@ const localLabels = {
     'Unable to load employees.': 'பணியாளர்களை ஏற்ற முடியவில்லை.',
     'Unable to load career events.': 'தொழில் நிகழ்வுகளை ஏற்ற முடியவில்லை.',
     'Unable to save career data.': 'தொழில் தரவைச் சேமிக்க முடியவில்லை.'
+  }
+};
+
+const pageText = {
+  ko: {
+    careerDevelopment: '경력 개발',
+    searchEmployeeDepartmentEmail: '직원, 부서 또는 이메일로 검색...',
+    careerTabCareer: '경력',
+    careerTabReviews: '연간 평가',
+    careerTabSalary: '급여 이력',
+    careerTabTalent: '인재 리뷰',
+    loadingEmployees: '직원 불러오는 중...',
+    noEmployeeMatches: '검색과 일치하는 직원이 없습니다.',
+    addNewRole: '새 직무 추가',
+    saveRole: '직무 저장',
+    saveReview: '평가 저장',
+    saveSalaryChange: '급여 변경 저장',
+    saveTalentReview: '인재 리뷰 저장'
+  },
+  de: {
+    careerDevelopment: 'Karriereentwicklung',
+    searchEmployeeDepartmentEmail: 'Nach Mitarbeiter, Abteilung oder E-Mail suchen...',
+    careerTabCareer: 'Karriere',
+    careerTabReviews: 'Jahresgespräche',
+    careerTabSalary: 'Gehaltsverlauf',
+    careerTabTalent: 'Talentbewertung',
+    loadingEmployees: 'Mitarbeitende werden geladen...',
+    noEmployeeMatches: 'Kein Mitarbeiter passt zu dieser Suche.',
+    addNewRole: 'Neue Rolle hinzufügen',
+    saveRole: 'Rolle speichern',
+    saveReview: 'Bewertung speichern',
+    saveSalaryChange: 'Gehaltsänderung speichern',
+    saveTalentReview: 'Talentbewertung speichern'
+  },
+  es: {
+    careerDevelopment: 'Desarrollo de carrera',
+    searchEmployeeDepartmentEmail: 'Buscar por empleado, departamento o correo...',
+    careerTabCareer: 'Carrera',
+    careerTabReviews: 'Evaluaciones anuales',
+    careerTabSalary: 'Historial salarial',
+    careerTabTalent: 'Revisión de talento',
+    loadingEmployees: 'Cargando empleados...',
+    noEmployeeMatches: 'Ningún empleado coincide con esta búsqueda.',
+    addNewRole: 'Añadir nuevo puesto',
+    saveRole: 'Guardar puesto',
+    saveReview: 'Guardar evaluación',
+    saveSalaryChange: 'Guardar cambio salarial',
+    saveTalentReview: 'Guardar revisión de talento'
+  },
+  zh: {
+    careerDevelopment: '职业发展',
+    searchEmployeeDepartmentEmail: '按员工、部门或邮箱搜索...',
+    careerTabCareer: '职业路径',
+    careerTabReviews: '年度评估',
+    careerTabSalary: '薪资历史',
+    careerTabTalent: '人才评审',
+    loadingEmployees: '正在加载员工...',
+    noEmployeeMatches: '没有员工符合该搜索。',
+    addNewRole: '添加新职位',
+    saveRole: '保存职位',
+    saveReview: '保存评估',
+    saveSalaryChange: '保存薪资变更',
+    saveTalentReview: '保存人才评审'
   }
 };
 
@@ -113,6 +296,7 @@ const buildTimeline = (employee, events) => {
 const FranceCareerDevelopment = () => {
   const { t, language } = useLanguage();
   const lt = (value) => localLabels[language]?.[value] || value;
+  const tt = (key) => pageText[language]?.[key] || t(key);
   const canFilterByPlant = isGlobalHrManager(getCurrentUser());
   const [employees, setEmployees] = useState([]);
   const [eventsByEmployee, setEventsByEmployee] = useState({});
@@ -242,9 +426,9 @@ const FranceCareerDevelopment = () => {
         <section className="lifecycle-shell">
           <div className="lifecycle-topbar">
             <div>
-              <h1 className="lifecycle-title">{t('careerDevelopment')}</h1>
+              <h1 className="lifecycle-title">{tt('careerDevelopment')}</h1>
                 <p className="lifecycle-subtitle">
-                {t('careerDevelopment')} — {t('overview')}
+                {tt('careerDevelopment')} — {t('overview')}
               </p>
             </div>
             <div className="lifecycle-topbar-actions">
@@ -257,7 +441,7 @@ const FranceCareerDevelopment = () => {
               <input
                 className="lifecycle-input lifecycle-search"
                 type="search"
-                placeholder={t('searchEmployeeDepartmentEmail')}
+                placeholder={tt('searchEmployeeDepartmentEmail')}
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
@@ -267,7 +451,7 @@ const FranceCareerDevelopment = () => {
           {error && <div className="life-alert">{error}</div>}
 
           {loading ? (
-            <div className="lifecycle-card">{t('loadingEmployees')}</div>
+            <div className="lifecycle-card">{tt('loadingEmployees')}</div>
           ) : (
             <div className="career-list">
               {filteredEmployees.map((employee) => {
@@ -313,10 +497,10 @@ const FranceCareerDevelopment = () => {
                               className={`career-tab${tab === item ? ' active' : ''}`}
                               onClick={() => setActiveTabByEmployee((current) => ({ ...current, [key]: item }))}
                             >
-                              {item === 'career' && t('careerTabCareer')}
-                              {item === 'reviews' && t('careerTabReviews')}
-                              {item === 'salary' && t('careerTabSalary')}
-                              {item === 'talent' && t('careerTabTalent')}
+                              {item === 'career' && tt('careerTabCareer')}
+                              {item === 'reviews' && tt('careerTabReviews')}
+                              {item === 'salary' && tt('careerTabSalary')}
+                              {item === 'talent' && tt('careerTabTalent')}
                             </button>
                           ))}
                         </div>
@@ -347,7 +531,7 @@ const FranceCareerDevelopment = () => {
                             </div>
 
                             <button className="life-btn ghost" type="button" onClick={() => startAddingRole(employee)}>
-                              + {t('addNewRole')}
+                              + {tt('addNewRole')}
                             </button>
 
                             {addingForKey === key && (
@@ -387,7 +571,7 @@ const FranceCareerDevelopment = () => {
                                       )
                                     }
                                   >
-                                    {savingKey === key ? t('saving') : t('saveRole')}
+                                    {savingKey === key ? t('saving') : tt('saveRole')}
                                   </button>
                                 </div>
                               </div>
@@ -398,7 +582,7 @@ const FranceCareerDevelopment = () => {
                         {tab === 'reviews' && (
                           <div className="career-section">
                             <div className="mini-stats">
-                              <div className="mini-stat"><span>{t('careerTabReviews')}</span><strong>{annualReviews.length}</strong></div>
+                              <div className="mini-stat"><span>{tt('careerTabReviews')}</span><strong>{annualReviews.length}</strong></div>
                               <div className="mini-stat"><span>{t('last')}</span><strong>{annualReviews[0]?.event_date ? formatMonthYear(annualReviews[0].event_date) : '—'}</strong></div>
                               <div className="mini-stat"><span>{t('averageRating')}</span><strong>{annualReviews.length ? (annualReviews.reduce((sum, item) => sum + Number(item.rating || 0), 0) / annualReviews.length).toFixed(1) : '—'}</strong></div>
                             </div>
@@ -437,7 +621,7 @@ const FranceCareerDevelopment = () => {
                                     })
                                   }
                                 >
-                                  {savingKey === key ? t('saving') : t('saveReview')}
+                                  {savingKey === key ? t('saving') : tt('saveReview')}
                                 </button>
                               </div>
                             </div>
@@ -445,7 +629,7 @@ const FranceCareerDevelopment = () => {
                               {annualReviews.map((event) => (
                                 <div className="career-note" key={event.id}>
                                   <div>
-                                    <strong>{event.title || t('careerTabReviews')}</strong>
+                                    <strong>{event.title || tt('careerTabReviews')}</strong>
                                     <div className="lifecycle-card-note">{formatMonthYear(event.event_date)} • {lt('Rating')} {event.rating || '—'}/5</div>
                                   </div>
                                   <p>{event.details || lt('No details provided.')}</p>
@@ -498,7 +682,7 @@ const FranceCareerDevelopment = () => {
                                     )
                                   }
                                 >
-                                  {savingKey === key ? t('saving') : t('saveSalaryChange')}
+                                  {savingKey === key ? t('saving') : tt('saveSalaryChange')}
                                 </button>
                               </div>
                             </div>
@@ -559,7 +743,7 @@ const FranceCareerDevelopment = () => {
                                     })
                                   }
                                 >
-                                  {savingKey === key ? t('saving') : t('saveTalentReview')}
+                                  {savingKey === key ? t('saving') : tt('saveTalentReview')}
                                 </button>
                               </div>
                             </div>
@@ -567,7 +751,7 @@ const FranceCareerDevelopment = () => {
                               {talentNotes.map((event) => (
                                 <div className="career-note" key={event.id}>
                                   <div>
-                                    <strong>{event.title || t('careerTabTalent')}</strong>
+                                    <strong>{event.title || tt('careerTabTalent')}</strong>
                                     <div className="lifecycle-card-note">{formatMonthYear(event.event_date)} • {lt('Rating')} {event.rating || '—'}/5</div>
                                   </div>
                                   <p>{event.details || lt('No details provided.')}</p>
@@ -584,7 +768,7 @@ const FranceCareerDevelopment = () => {
             </div>
           )}
 
-          {!loading && filteredEmployees.length === 0 && <div className="empty-state">{t('noEmployeeMatches')}</div>}
+          {!loading && filteredEmployees.length === 0 && <div className="empty-state">{tt('noEmployeeMatches')}</div>}
         </section>
       </main>
     </div>

@@ -32,6 +32,16 @@ const GLOBAL_HR_ROLES = new Set([
 export const isGlobalHrManager = (user = getCurrentUser()) =>
   GLOBAL_HR_ROLES.has(String(user?.role || '').trim().toLowerCase());
 
+const HIDDEN_HR_MODULE_ROLES = new Set([
+  'group_hr',
+  'hr_group',
+  'hr_manager_group',
+  'global_hr'
+]);
+
+export const shouldHideHrGroupModules = (user = getCurrentUser()) =>
+  HIDDEN_HR_MODULE_ROLES.has(String(user?.role || '').trim().toLowerCase());
+
 // Création d'une instance axios
 const api = axios.create({
   baseURL: API_BASE_URL,

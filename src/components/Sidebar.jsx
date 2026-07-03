@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Sidebar.css';
 import logo from './logo-avocarbon-1.png';
-import { getCurrentUser, isGlobalHrManager } from '../services/api';
+import { getCurrentUser, isGlobalHrManager, shouldHideHrGroupModules } from '../services/api';
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -25,6 +25,7 @@ const Sidebar = () => {
     tenantText.includes('sceet') ||
     tenantText.includes('same service') ||
     tenantText.includes('same-service');
+  const hideHrGroupModules = shouldHideHrGroupModules(user);
   const showSharedTenantModules = Boolean(user) && (!isTunisiaTenant || isGlobalHrManager(user));
 
   useEffect(() => {
@@ -55,12 +56,12 @@ const Sidebar = () => {
     { path: '/dashboard', label: t('dashboard'), icon: '📊' },
     { path: '/team', label: t('team'), icon: '👥' },
     { path: '/organigramme', label: t('orgTitle'), icon: '🏢' },
-    { path: '/demandes-rh', label: t('demands'), icon: '📋' },
+    ...(!hideHrGroupModules ? [{ path: '/demandes-rh', label: t('demands'), icon: '📋' }] : []),
     { path: '/fiche-de-paie', label: t('payslip'), icon: '💰' },
     { path: '/archives', label: t('archives'), icon: '📁' },
     { path: '/statistics', label: t('statistics'), icon: '📈' },
     { path: '/etat-des-lieux', label: t('edlPresenceTracker'), icon: '📅' },
-    ...(isTunisiaTenant
+    ...(isTunisiaTenant && !hideHrGroupModules
       ? [
           { path: '/visa', label: t('visa'), icon: '✈️' }
         ]
@@ -73,7 +74,7 @@ const Sidebar = () => {
         ]
       : []),
     { path: '/settings', label: `${t('settings')} / ${t('language')}`, icon: '⚙️' },
-    ...(isTunisiaTenant
+    ...(isTunisiaTenant && !hideHrGroupModules
       ? [
           {
             path: 'https://pointeuse-sts.azurewebsites.net/',

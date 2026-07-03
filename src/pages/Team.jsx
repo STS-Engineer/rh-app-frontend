@@ -6,6 +6,7 @@ import EmployeeModal from "../components/EmployeeModal";
 import AddEmployeeModal from "../components/AddEmployeeModal";
 import { employeesAPI, getCurrentUser, isGlobalHrManager } from "../services/api";
 import {
+  getEmployeeSite,
   getEmployeeDepartment,
   getEmployeeGrade,
   getEmployeeRole
@@ -18,6 +19,7 @@ const Team = () => {
   const location = useLocation(); // ✅ ADDED
   const navigate = useNavigate(); // ✅ ADDED
   const canFilterByPlant = isGlobalHrManager(getCurrentUser());
+  const siteLabel = (t("plantSite") || "Site").split("/").pop().trim() || "Site";
 
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
@@ -34,7 +36,8 @@ const Team = () => {
 
   // ✅ Filtres
   const [filters, setFilters] = useState({
-    site_dep: "",
+    site: "",
+    department: "",
     role: "",
     grade: "",
     type_contrat: "",
@@ -143,6 +146,7 @@ const Team = () => {
       );
 
     return {
+      sites: uniq(employees.map((e) => getEmployeeSite(e))),
       departments: uniq(employees.map((e) => getEmployeeDepartment(e))),
       roles: uniq(employees.map((e) => getEmployeeRole(e))),
       grades: uniq(employees.map((e) => getEmployeeGrade(e))),
@@ -179,12 +183,14 @@ const Team = () => {
         : (emp.nom || "").toLowerCase().includes(term) ||
           (emp.prenom || "").toLowerCase().includes(term) ||
           (emp.matricule || "").toLowerCase().includes(term) ||
+          getEmployeeSite(emp).toLowerCase().includes(term) ||
           getEmployeeDepartment(emp).toLowerCase().includes(term);
 
       if (!matchesSearch) return false;
 
       // Filtres texte
-      if (canFilterByPlant && filters.site_dep && getEmployeeDepartment(emp) !== filters.site_dep) return false;
+      if (canFilterByPlant && filters.site && getEmployeeSite(emp) !== filters.site) return false;
+      if (filters.department && getEmployeeDepartment(emp) !== filters.department) return false;
       if (filters.role && getEmployeeRole(emp) !== filters.role) return false;
       if (filters.grade && getEmployeeGrade(emp) !== filters.grade) return false;
       if (filters.type_contrat && emp.type_contrat !== filters.type_contrat)
@@ -237,7 +243,8 @@ const Team = () => {
   const clearFilters = () => {
     setDashboardFilter(null); // ✅ ADDED: also clear the banner
     setFilters({
-      site_dep: "",
+      site: "",
+      department: "",
       role: "",
       grade: "",
       type_contrat: "",
@@ -320,16 +327,34 @@ const Team = () => {
             </div>
           </div>
 
-          {/* Département */}
+          {/* Site */}
           {canFilterByPlant && (
             <div className="toolbar-field">
-              <label className="toolbar-label">{t("department") || t("teamFilterDepartment")}</label>
+              <label className="toolbar-label">{siteLabel}</label>
               <select
-                value={filters.site_dep}
-                onChange={(e) => updateFilter("site_dep", e.target.value)}
+                value={filters.site}
+                onChange={(e) => updateFilter("site", e.target.value)}
                 className="toolbar-control"
               >
                 <option value="">{t("teamFilterAll")}</option>
+                {filterOptions.sites.map((site) => (
+                  <option key={site} value={site}>
+                    {site}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Département */}
+          <div className="toolbar-field">
+            <label className="toolbar-label">{t("teamFilterDepartment")}</label>
+            <select
+              value={filters.department}
+              onChange={(e) => updateFilter("department", e.target.value)}
+              className="toolbar-control"
+            >
+              <option value="">{t("teamFilterAll")}</option>
                 {filterOptions.departments.map((dep) => (
                   <option key={dep} value={dep}>
                     {dep}
@@ -337,7 +362,6 @@ const Team = () => {
                 ))}
               </select>
             </div>
-          )}
 
           {/* Role */}
           <div className="toolbar-field">
@@ -513,5 +537,6 @@ const Team = () => {
 };
 
 export default Team;
+
 
 

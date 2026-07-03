@@ -22,6 +22,182 @@ const licences = [
 ];
 
 const localLabels = {
+  ko: {
+    Engineering: '엔지니어링',
+    Design: '디자인',
+    Product: '제품',
+    HR: '인사',
+    Finance: '재무',
+    Productivity: '생산성',
+    Communication: '커뮤니케이션',
+    'Project management': '프로젝트 관리',
+    'Knowledge base': '지식 베이스',
+    Meetings: '회의',
+    Identity: '계정',
+    Security: '보안',
+    Sales: '영업',
+    Resignation: '사직',
+    'End of contract': '계약 종료',
+    Retirement: '퇴직',
+    Redundancy: '감원',
+    Dismissal: '해고',
+    'Open text': '서술형',
+    'Rating 1-5': '평점 1-5',
+    'Rating 1–5': '평점 1-5',
+    'Rating 1â€“5': '평점 1-5',
+    'Yes/No': '예/아니오',
+    'What made you decide to leave?': '퇴사를 결정한 이유는 무엇인가요?',
+    'How would you rate your overall experience?': '전반적인 경험을 어떻게 평가하시겠습니까?',
+    'Did you feel supported by your manager?': '관리자의 지원을 충분히 받았다고 느끼셨나요?',
+    'What should we improve for future employees?': '향후 직원을 위해 무엇을 개선해야 할까요?',
+    'Would you recommend the company as a workplace?': '이 회사를 일하기 좋은 곳으로 추천하시겠습니까?',
+    'What would have made your experience better?': '어떤 점이 있었다면 더 나은 경험이 되었을까요?',
+    'All plants': '모든 사이트',
+    'Email missing': '이메일 없음',
+    'No extra access listed.': '추가 회수 권한이 없습니다.',
+    'No questions configured.': '설정된 질문이 없습니다.',
+    'We would love your feedback': '귀하의 의견을 듣고 싶습니다',
+    'Exit survey': '퇴사 설문',
+    'Hello': '안녕하세요',
+    'Questions': '질문',
+    'Thank you.': '감사합니다.',
+    'Survey intro': '함께해 주셔서 감사합니다. 짧은 퇴사 설문을 통해 의견을 들려주세요.',
+    'Survey footer': '귀하의 답변은 앞으로 직원 경험을 개선하는 데 도움이 됩니다.',
+    'Offboarding emails prepared': '오프보딩 이메일이 준비되었습니다',
+    'Product Engineer': '제품 엔지니어'
+  },
+  de: {
+    Engineering: 'Technik',
+    Design: 'Design',
+    Product: 'Produkt',
+    HR: 'Personal',
+    Finance: 'Finanzen',
+    Productivity: 'Produktivität',
+    Communication: 'Kommunikation',
+    'Project management': 'Projektmanagement',
+    'Knowledge base': 'Wissensdatenbank',
+    Meetings: 'Meetings',
+    Identity: 'Identität',
+    Security: 'Sicherheit',
+    Sales: 'Vertrieb',
+    Resignation: 'Kündigung',
+    'End of contract': 'Vertragsende',
+    Retirement: 'Ruhestand',
+    Redundancy: 'Stellenabbau',
+    Dismissal: 'Entlassung',
+    'Open text': 'Freitext',
+    'Rating 1-5': 'Bewertung 1-5',
+    'Rating 1–5': 'Bewertung 1-5',
+    'Rating 1â€“5': 'Bewertung 1-5',
+    'Yes/No': 'Ja/Nein',
+    'What made you decide to leave?': 'Warum haben Sie sich entschieden zu gehen?',
+    'How would you rate your overall experience?': 'Wie bewerten Sie Ihre Gesamterfahrung?',
+    'Did you feel supported by your manager?': 'Haben Sie sich von Ihrer Führungskraft unterstützt gefühlt?',
+    'What should we improve for future employees?': 'Was sollten wir für zukünftige Mitarbeitende verbessern?',
+    'Would you recommend the company as a workplace?': 'Würden Sie das Unternehmen als Arbeitsplatz empfehlen?',
+    'What would have made your experience better?': 'Was hätte Ihre Erfahrung verbessern können?',
+    'All plants': 'Alle Standorte',
+    'Email missing': 'E-Mail fehlt',
+    'No extra access listed.': 'Kein zusätzlicher Zugriff aufgeführt.',
+    'No questions configured.': 'Keine Fragen konfiguriert.',
+    'We would love your feedback': 'Wir würden uns über Ihr Feedback freuen',
+    'Exit survey': 'Austrittsumfrage',
+    'Hello': 'Hallo',
+    'Questions': 'Fragen',
+    'Thank you.': 'Danke.',
+    'Survey intro': 'Vielen Dank für Ihre Zeit bei uns. Bitte teilen Sie uns Ihr Feedback in dieser kurzen Austrittsumfrage mit.',
+    'Survey footer': 'Ihre Antworten helfen HR, die Mitarbeitererfahrung für zukünftige Teammitglieder zu verbessern.',
+    'Offboarding emails prepared': 'Offboarding-E-Mails vorbereitet',
+    'Product Engineer': 'Produktingenieur'
+  },
+  es: {
+    Engineering: 'Ingeniería',
+    Design: 'Diseño',
+    Product: 'Producto',
+    HR: 'RR. HH.',
+    Finance: 'Finanzas',
+    Productivity: 'Productividad',
+    Communication: 'Comunicación',
+    'Project management': 'Gestión de proyectos',
+    'Knowledge base': 'Base de conocimiento',
+    Meetings: 'Reuniones',
+    Identity: 'Identidad',
+    Security: 'Seguridad',
+    Sales: 'Ventas',
+    Resignation: 'Renuncia',
+    'End of contract': 'Fin de contrato',
+    Retirement: 'Jubilación',
+    Redundancy: 'Redundancia',
+    Dismissal: 'Despido',
+    'Open text': 'Texto libre',
+    'Rating 1-5': 'Puntuación 1-5',
+    'Rating 1–5': 'Puntuación 1-5',
+    'Rating 1â€“5': 'Puntuación 1-5',
+    'Yes/No': 'Sí/No',
+    'What made you decide to leave?': '¿Qué le hizo decidirse a irse?',
+    'How would you rate your overall experience?': '¿Cómo calificaría su experiencia general?',
+    'Did you feel supported by your manager?': '¿Se sintió apoyado por su gerente?',
+    'What should we improve for future employees?': '¿Qué deberíamos mejorar para futuros empleados?',
+    'Would you recommend the company as a workplace?': '¿Recomendaría la empresa como lugar de trabajo?',
+    'What would have made your experience better?': '¿Qué habría hecho mejor su experiencia?',
+    'All plants': 'Todos los centros',
+    'Email missing': 'Correo faltante',
+    'No extra access listed.': 'No hay accesos adicionales indicados.',
+    'No questions configured.': 'No hay preguntas configuradas.',
+    'We would love your feedback': 'Nos encantaría conocer su opinión',
+    'Exit survey': 'Encuesta de salida',
+    'Hello': 'Hola',
+    'Questions': 'Preguntas',
+    'Thank you.': 'Gracias.',
+    'Survey intro': 'Gracias por el tiempo compartido con nosotros. Queremos conocer su opinión en esta breve encuesta de salida.',
+    'Survey footer': 'Sus respuestas ayudarán a RR. HH. a mejorar la experiencia de futuros colaboradores.',
+    'Offboarding emails prepared': 'Correos de salida preparados',
+    'Product Engineer': 'Ingeniero de producto'
+  },
+  zh: {
+    Engineering: '工程',
+    Design: '设计',
+    Product: '产品',
+    HR: '人力资源',
+    Finance: '财务',
+    Productivity: '生产力',
+    Communication: '沟通',
+    'Project management': '项目管理',
+    'Knowledge base': '知识库',
+    Meetings: '会议',
+    Identity: '身份',
+    Security: '安全',
+    Sales: '销售',
+    Resignation: '辞职',
+    'End of contract': '合同结束',
+    Retirement: '退休',
+    Redundancy: '裁员',
+    Dismissal: '解雇',
+    'Open text': '开放文本',
+    'Rating 1-5': '评分 1-5',
+    'Rating 1–5': '评分 1-5',
+    'Rating 1â€“5': '评分 1-5',
+    'Yes/No': '是/否',
+    'What made you decide to leave?': '是什么让您决定离开？',
+    'How would you rate your overall experience?': '您如何评价整体体验？',
+    'Did you feel supported by your manager?': '您觉得得到了经理的支持吗？',
+    'What should we improve for future employees?': '我们应为未来员工改进什么？',
+    'Would you recommend the company as a workplace?': '您会推荐这家公司作为工作场所吗？',
+    'What would have made your experience better?': '什么能让您的体验更好？',
+    'All plants': '所有站点',
+    'Email missing': '缺少邮箱',
+    'No extra access listed.': '未列出额外访问权限。',
+    'No questions configured.': '未配置问题。',
+    'We would love your feedback': '我们很希望听到您的反馈',
+    'Exit survey': '离职调查',
+    'Hello': '您好',
+    'Questions': '问题',
+    'Thank you.': '谢谢。',
+    'Survey intro': '感谢您与我们共事。希望您通过这份简短的离职调查分享反馈。',
+    'Survey footer': '您的回答将帮助人力资源改进未来员工的体验。',
+    'Offboarding emails prepared': '离职邮件已准备好',
+    'Product Engineer': '产品工程师'
+  },
   ta: {
     Engineering: 'பொறியியல்',
     Design: 'வடிவமைப்பு',
@@ -66,6 +242,93 @@ const localLabels = {
   }
 };
 
+const pageText = {
+  ko: {
+    offboarding: '오프보딩',
+    manageLicenceCancellation: '라이선스 해지와 퇴사 만족도 설문을 관리합니다.',
+    leavingEmployeeDetails: '퇴사 예정 직원 정보',
+    plantSite: '사이트 / 공장',
+    selectEmployee: '직원 선택',
+    searchEmployeeOrEmail: '이름 또는 이메일로 직원 검색',
+    searchEmployeeOrEmailPlaceholder: '이름, 사번 또는 이메일을 입력하세요...',
+    lastWorkingDay: '마지막 근무일',
+    surveyEmail: '설문 이메일',
+    reason: '사유',
+    licencesToCancel: '해지할 라이선스',
+    extraAccessToRevoke: '회수할 추가 접근 권한',
+    satisfactionSurvey: '만족도 설문 (HR 수정 가능)',
+    addQuestion: '질문 추가',
+    questionType: '질문 유형',
+    emailPreviews: '이메일 미리보기',
+    itCancellation: 'IT 해지',
+    surveyToEmployee: '직원 설문',
+    sendBothEmails: '두 이메일 보내기'
+  },
+  de: {
+    offboarding: 'Austritt',
+    manageLicenceCancellation: 'Lizenzkündigungen und Austrittszufriedenheitsumfrage verwalten.',
+    leavingEmployeeDetails: 'Details des austretenden Mitarbeiters',
+    plantSite: 'Standort / Werk',
+    selectEmployee: 'Mitarbeiter auswählen',
+    searchEmployeeOrEmail: 'Mitarbeiter nach Name oder E-Mail suchen',
+    searchEmployeeOrEmailPlaceholder: 'Name, Personalnummer oder E-Mail eingeben...',
+    lastWorkingDay: 'Letzter Arbeitstag',
+    surveyEmail: 'Umfrage-E-Mail',
+    reason: 'Grund',
+    licencesToCancel: 'Zu kündigende Lizenzen',
+    extraAccessToRevoke: 'Zusätzliche Zugriffe widerrufen',
+    satisfactionSurvey: 'Zufriedenheitsumfrage (von HR bearbeitbar)',
+    addQuestion: 'Frage hinzufügen',
+    questionType: 'Fragetyp',
+    emailPreviews: 'E-Mail-Vorschauen',
+    itCancellation: 'IT-Kündigung',
+    surveyToEmployee: 'Umfrage an Mitarbeiter',
+    sendBothEmails: 'Beide E-Mails senden'
+  },
+  es: {
+    offboarding: 'Salida de empleado',
+    manageLicenceCancellation: 'Gestionar la cancelación de licencias y la encuesta de salida.',
+    leavingEmployeeDetails: 'Detalles del empleado saliente',
+    plantSite: 'Centro / planta',
+    selectEmployee: 'Seleccionar empleado',
+    searchEmployeeOrEmail: 'Buscar empleado por nombre o correo',
+    searchEmployeeOrEmailPlaceholder: 'Escriba un nombre, matrícula o correo...',
+    lastWorkingDay: 'Último día laborable',
+    surveyEmail: 'Correo de la encuesta',
+    reason: 'Motivo',
+    licencesToCancel: 'Licencias por cancelar',
+    extraAccessToRevoke: 'Accesos adicionales por revocar',
+    satisfactionSurvey: 'Encuesta de satisfacción (editable por RR. HH.)',
+    addQuestion: 'Añadir pregunta',
+    questionType: 'Tipo de pregunta',
+    emailPreviews: 'Vistas previas del correo',
+    itCancellation: 'Cancelación IT',
+    surveyToEmployee: 'Encuesta al empleado',
+    sendBothEmails: 'Enviar ambos correos'
+  },
+  zh: {
+    offboarding: '离职',
+    manageLicenceCancellation: '管理许可证取消和离职满意度调查。',
+    leavingEmployeeDetails: '离职员工详情',
+    plantSite: '站点 / 工厂',
+    selectEmployee: '选择员工',
+    searchEmployeeOrEmail: '按姓名或邮箱搜索员工',
+    searchEmployeeOrEmailPlaceholder: '输入姓名、工号或邮箱...',
+    lastWorkingDay: '最后工作日',
+    surveyEmail: '调查邮箱',
+    reason: '原因',
+    licencesToCancel: '需取消的许可证',
+    extraAccessToRevoke: '需撤销的额外访问权限',
+    satisfactionSurvey: '满意度调查（HR 可编辑）',
+    addQuestion: '添加问题',
+    questionType: '问题类型',
+    emailPreviews: '邮件预览',
+    itCancellation: 'IT 取消',
+    surveyToEmployee: '发送给员工的调查',
+    sendBothEmails: '发送两封邮件'
+  }
+};
+
 const allLicenceNames = licences.map((licence) => licence.name);
 
 const initialForm = {
@@ -95,6 +358,7 @@ const getEmployeeDepartment = (employee) =>
 const FranceOffboarding = () => {
   const { t, language } = useLanguage();
   const lt = (value) => localLabels[language]?.[value] || value;
+  const tt = (key) => pageText[language]?.[key] || t(key);
   const canFilterByPlant = isGlobalHrManager(getCurrentUser());
   const [employees, setEmployees] = useState([]);
   const [employeeSearch, setEmployeeSearch] = useState('');
@@ -239,22 +503,22 @@ const FranceOffboarding = () => {
       : `- ${t('none')}`;
 
     return `To: ${IT_TEST_EMAIL}
-Subject: ${t('offboarding')} — ${t('licencesToCancel')} for ${name}
+Subject: ${tt('offboarding')} — ${tt('licencesToCancel')} for ${name}
 
 ${t('notesToIT')},
 
-${t('manageLicenceCancellation')}
+${tt('manageLicenceCancellation')}
 
 Name: ${name}
 ${t('position')}: ${form.jobTitle || '[job title]'}
 ${t('department')}: ${lt(form.department)}
-${t('lastWorkingDay')}: ${form.lastWorkingDay || '[last working day]'}
-${t('reason')}: ${lt(form.reason)}
+${tt('lastWorkingDay')}: ${form.lastWorkingDay || '[last working day]'}
+${tt('reason')}: ${lt(form.reason)}
 
-${t('licencesToCancel')}:
+${tt('licencesToCancel')}:
 ${licenceList}
 
-${t('extraAccessToRevoke')}:
+${tt('extraAccessToRevoke')}:
 ${form.revokeNotes || lt('No extra access listed.')}
 
 ${t('sendToIT')}.`;
@@ -288,9 +552,9 @@ ${lt('Thank you.')}`;
         <section className="lifecycle-shell">
           <div className="lifecycle-topbar">
             <div>
-              <h1 className="lifecycle-title">{t('offboarding')}</h1>
+              <h1 className="lifecycle-title">{tt('offboarding')}</h1>
               <p className="lifecycle-subtitle">
-                {t('manageLicenceCancellation') || 'Manage licence cancellation and exit satisfaction survey.'}
+                {tt('manageLicenceCancellation')}
               </p>
             </div>
           </div>
@@ -298,17 +562,17 @@ ${lt('Thank you.')}`;
           <div className="lifecycle-stack">
             {success && (
               <div className="life-alert">
-                {lt('Offboarding emails prepared')}: {t('itCancellation')} {IT_TEST_EMAIL} / {t('surveyToEmployee')}.
+                {lt('Offboarding emails prepared')}: {tt('itCancellation')} {IT_TEST_EMAIL} / {tt('surveyToEmployee')}.
               </div>
             )}
 
             <section className="lifecycle-card">
-              <h2>{t('leavingEmployeeDetails') || 'Leaving employee details'}</h2>
+              <h2>{tt('leavingEmployeeDetails')}</h2>
               {lookupError && <p className="lifecycle-card-note">{lookupError}</p>}
               <div className="lifecycle-grid" style={{ marginBottom: 14 }}>
                 {canFilterByPlant && (
                   <div className="lifecycle-field">
-                    <label>{t('plantSite') || 'Plant / site'}</label>
+                    <label>{tt('plantSite')}</label>
                     <select
                       className="lifecycle-select"
                       value={plantFilter}
@@ -324,22 +588,22 @@ ${lt('Thank you.')}`;
                   </div>
                 )}
                 <div className="lifecycle-field">
-                  <label>{t('searchEmployeeOrEmail')}</label>
+                  <label>{tt('searchEmployeeOrEmail')}</label>
                   <input
                     className="lifecycle-input"
                     value={employeeSearch}
                     onChange={(event) => setEmployeeSearch(event.target.value)}
-                    placeholder={t('searchEmployeeOrEmailPlaceholder')}
+                    placeholder={tt('searchEmployeeOrEmailPlaceholder')}
                   />
                 </div>
                 <div className="lifecycle-field">
-                  <label>{t('selectEmployee') || 'Select employee'}</label>
+                  <label>{tt('selectEmployee')}</label>
                   <select
                     className="lifecycle-select"
                     value={selectedEmployeeKey}
                     onChange={(event) => selectEmployee(event.target.value)}
                   >
-                    <option value="">{t('selectEmployee') || 'Select employee...'}</option>
+                    <option value="">{tt('selectEmployee')}</option>
                     {filteredEmployees.map((employee) => (
                       <option key={getEmployeeKey(employee)} value={getEmployeeKey(employee)}>
                         {getEmployeeName(employee)} — {employee.adresse_mail || lt('Email missing')}
@@ -382,7 +646,7 @@ ${lt('Thank you.')}`;
                   </select>
                 </div>
                 <div className="lifecycle-field">
-                  <label>{t('lastWorkingDay')}</label>
+                  <label>{tt('lastWorkingDay')}</label>
                   <input
                     className="lifecycle-input"
                     type="date"
@@ -391,7 +655,7 @@ ${lt('Thank you.')}`;
                   />
                 </div>
                 <div className="lifecycle-field">
-                  <label>{t('surveyEmail')}</label>
+                  <label>{tt('surveyEmail')}</label>
                   <input
                     className="lifecycle-input"
                     type="email"
@@ -401,7 +665,7 @@ ${lt('Thank you.')}`;
                   />
                 </div>
                 <div className="lifecycle-field">
-                  <label>{t('reason')}</label>
+                  <label>{tt('reason')}</label>
                   <select
                     className="lifecycle-select"
                     value={form.reason}
@@ -418,7 +682,7 @@ ${lt('Thank you.')}`;
             </section>
 
             <section className="lifecycle-card">
-              <h2>{t('licencesToCancel') || 'Licences to cancel'}</h2>
+              <h2>{tt('licencesToCancel')}</h2>
               <div className="tool-grid">
                 {licences.map((licence) => {
                   const checked = selectedLicences.includes(licence.name);
@@ -441,18 +705,18 @@ ${lt('Thank you.')}`;
                 })}
               </div>
               <div className="lifecycle-field" style={{ marginTop: 14 }}>
-                <label>{t('extraAccessToRevoke') || 'Extra access to revoke'}</label>
+                <label>{tt('extraAccessToRevoke')}</label>
                 <textarea
                   className="lifecycle-textarea"
                   value={form.revokeNotes}
                   onChange={(event) => updateField('revokeNotes', event.target.value)}
-                  placeholder={t('extraAccessToRevoke')}
+                  placeholder={tt('extraAccessToRevoke')}
                 />
               </div>
             </section>
 
             <section className="lifecycle-card">
-              <h2>{t('satisfactionSurvey') || 'Satisfaction survey (HR editable)'}</h2>
+              <h2>{tt('satisfactionSurvey')}</h2>
               <div className="question-list">
                 {questions.map((question, index) => (
                   <div className="question-row" key={question.id}>
@@ -477,7 +741,7 @@ ${lt('Thank you.')}`;
               <div className="inline-form">
                 <div className="lifecycle-grid">
                   <div className="lifecycle-field">
-                    <label>{t('addQuestion')}</label>
+                    <label>{tt('addQuestion')}</label>
                     <input
                       className="lifecycle-input"
                       value={newQuestion.text}
@@ -488,7 +752,7 @@ ${lt('Thank you.')}`;
                     />
                   </div>
                   <div className="lifecycle-field">
-                    <label>{t('questionType')}</label>
+                    <label>{tt('questionType')}</label>
                     <select
                       className="lifecycle-select"
                       value={newQuestion.type}
@@ -509,28 +773,28 @@ ${lt('Thank you.')}`;
                     disabled={!newQuestion.text.trim()}
                     onClick={addQuestion}
                   >
-                    {t('addQuestion')}
+                    {tt('addQuestion')}
                   </button>
                 </div>
               </div>
             </section>
 
             <section className="lifecycle-card">
-              <h2>{t('emailPreviews')}</h2>
+              <h2>{tt('emailPreviews')}</h2>
               <div className="preview-tabs">
                 <button
                   className={`preview-tab${previewTab === 'it' ? ' active' : ''}`}
                   type="button"
                   onClick={() => setPreviewTab('it')}
                 >
-                  {t('itCancellation')}
+                  {tt('itCancellation')}
                 </button>
                 <button
                   className={`preview-tab${previewTab === 'survey' ? ' active' : ''}`}
                   type="button"
                   onClick={() => setPreviewTab('survey')}
                 >
-                  {t('surveyToEmployee')}
+                  {tt('surveyToEmployee')}
                 </button>
               </div>
               <pre className="email-preview">{previewTab === 'it' ? itPreview : surveyPreview}</pre>
@@ -539,7 +803,7 @@ ${lt('Thank you.')}`;
                   {t('reset')}
                 </button>
                 <button className="life-btn danger" type="button" onClick={() => setSuccess(true)}>
-                  {t('sendBothEmails')}
+                  {tt('sendBothEmails')}
                 </button>
               </div>
             </section>

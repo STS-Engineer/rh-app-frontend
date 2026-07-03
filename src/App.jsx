@@ -14,7 +14,7 @@ import Visa from './pages/Visa';
 import FranceOnboarding from './pages/FranceOnboarding';
 import FranceCareerDevelopment from './pages/FranceCareerDevelopment';
 import FranceOffboarding from './pages/FranceOffboarding';
-import { getCurrentUser, isGlobalHrManager } from './services/api';
+import { getCurrentUser, isGlobalHrManager, shouldHideHrGroupModules } from './services/api';
 import './styles/App.css';
 
 import Organigramme from './pages/Organigramme';
@@ -50,6 +50,11 @@ const TunisiaOnlyRoute = ({ children }) => {
 const NonTunisiaOnlyRoute = ({ children }) => {
   const user = getCurrentUser();
   return !isTunisiaTenantUser(user) || isGlobalHrManager(user) ? children : <Navigate to="/dashboard" replace />;
+};
+
+const HiddenForHrGroupRoute = ({ children }) => {
+  const user = getCurrentUser();
+  return shouldHideHrGroupModules(user) ? <Navigate to="/dashboard" replace /> : children;
 };
 
 function App() {
@@ -99,7 +104,9 @@ function App() {
                 path="/demandes-rh"
                 element={
                   <PrivateRoute>
-                    <DemandesRH />
+                    <HiddenForHrGroupRoute>
+                      <DemandesRH />
+                    </HiddenForHrGroupRoute>
                   </PrivateRoute>
                 } 
               />
@@ -140,9 +147,11 @@ function App() {
                 path="/visa" 
                 element={
                   <PrivateRoute>
-                    <TunisiaOnlyRoute>
-                      <Visa />
-                    </TunisiaOnlyRoute>
+                    <HiddenForHrGroupRoute>
+                      <TunisiaOnlyRoute>
+                        <Visa />
+                      </TunisiaOnlyRoute>
+                    </HiddenForHrGroupRoute>
                   </PrivateRoute>
                 } 
               />
