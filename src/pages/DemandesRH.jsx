@@ -791,10 +791,9 @@ const DemandesRH = () => {
     setChangeStatusMode(null);
     setChangeStatusComment('');
   };
-
   const handleExportExcel = () => {
-   if (!demandes || demandes.length === 0) {
-     alert(t('noRequestsToExport'));
+  if (!demandes || demandes.length === 0) {
+    alert(t('noRequestsToExport'));
     return;
   }
 

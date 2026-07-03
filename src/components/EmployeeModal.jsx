@@ -149,7 +149,7 @@ const DeleteConfirmationModal = memo(function DeleteConfirmationModal({
    ========================= */
 
 const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refreshParent }) => {
-  const { t, language } = useLanguage(); // AJOUT: Récupérer language
+  const { t, language } = useLanguage();
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
@@ -163,6 +163,10 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
   const [emergencyContact, setEmergencyContact] = useState({ nom: '', prenom: '', relation: '', telephone: '', email: '' });
   const user = getCurrentUser();
   const isFranceTenant = (user?.plant || '').toLowerCase().includes('france');
+  
+  // CHANGE 8: Tunisia check
+  const isTunisiaTenant = (user?.tenant_schema || '').toLowerCase() === 'public' ||
+    (user?.country || '').toLowerCase().includes('tunisia');
 
   /* ✅ Sync formData */
   useEffect(() => {
@@ -247,7 +251,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
       const date = new Date(dateString);
       if (Number.isNaN(date.getTime())) return t('notSpecified');
       
-      // Utiliser la locale basée sur la langue actuelle
       const localeMap = {
         'fr': 'fr-FR',
         'en': 'en-US',
@@ -256,7 +259,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
       
       return date.toLocaleDateString(localeMap[language] || 'fr-FR');
     },
-    [t, language]  // MODIFICATION: Ajouter language
+    [t, language]
   );
 
   const getDefaultAvatar = useCallback(() => {
@@ -333,7 +336,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
     [t, isPdfUrl]
   );
 
-  // Fonction pour vérifier si le contrat se termine bientôt
   const isContractEndingSoon = useCallback(() => {
     if (!formData.date_fin_contrat) return false;
     
@@ -345,7 +347,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
     return endDate >= today && endDate <= thirtyDaysLater;
   }, [formData.date_fin_contrat]);
 
-  // Fonction pour calculer les jours restants
   const getDaysRemaining = useCallback(() => {
     if (!formData.date_fin_contrat) return null;
     
@@ -360,9 +361,13 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
   const handleSave = useCallback(async () => {
     if (saving) return;
 
-    // Validation emails
-    if (!formData.adresse_mail || !isValidEmail(formData.adresse_mail)) {
+    // CHANGE 8: Fixed email validation
+    if (formData.adresse_mail && !isValidEmail(formData.adresse_mail)) {
       alert('❌ ' + t('validEmployeeEmail'));
+      return;
+    }
+    if (isTunisiaTenant && formData.mail_responsable_fonctionnel && !isValidEmail(formData.mail_responsable_fonctionnel)) {
+      alert('❌ Email responsable fonctionnel invalide');
       return;
     }
     if (formData.mail_responsable1 && !isValidEmail(formData.mail_responsable1)) {
@@ -379,10 +384,8 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
       let updatedData = { ...formData };
       updatedData.tenant_schema = employee?.tenant_schema || formData.tenant_schema || null;
 
-      // Debug: afficher les données envoyées
       console.log('📤 Données envoyées au backend:', JSON.stringify(updatedData, null, 2));
 
-      // upload photo si sélectionnée
       if (selectedFile) {
         try {
           const uploadResult = await photoService.uploadEmployeePhoto(selectedFile);
@@ -398,28 +401,23 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
         await tenantV2API.saveFranceEmergencyContact(employee.id, emergencyContact);
       }
       
-      // Mettre à jour les données locales
       const updatedEmployee = response.data || response;
       setFormData(updatedEmployee);
 
-      // Fermer le mode édition
       setIsEditing(false);
       setSelectedFile(null);
       setPhotoPreview('');
 
-      // 🔄 Rafraîchir les données dans le composant parent
       if (onUpdate) {
         onUpdate(updatedEmployee);
       }
 
-      // 🔄 Rafraîchir le parent si une fonction est fournie
       if (refreshParent) {
         setTimeout(() => {
           refreshParent();
         }, 100);
       }
 
-      // 🔄 Déclencher un événement global pour informer d'autres composants
       window.dispatchEvent(new CustomEvent('employeeUpdated', {
         detail: { employeeId: employee.id, updatedEmployee }
       }));
@@ -440,7 +438,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
     } finally {
       setSaving(false);
     }
-  }, [saving, formData, isValidEmail, t, selectedFile, employee?.id, onUpdate, refreshParent, isFranceTenant, emergencyContact]);
+  }, [saving, formData, isValidEmail, t, selectedFile, employee?.id, onUpdate, refreshParent, isFranceTenant, emergencyContact, isTunisiaTenant]);
 
   const handleDeleteDossier = useCallback(async () => {
     if (!employee?.id) return;
@@ -450,15 +448,12 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
       
       const response = await deleteDossierRH(employee.id, employee?.tenant_schema || formData.tenant_schema || null);
       
-      // Mettre à jour les données locales
       setFormData(prev => ({ ...prev, dossier_rh: null }));
       
-      // Informer le parent du changement
       if (onUpdate) {
         onUpdate(response.employee);
       }
 
-      // 🔄 Rafraîchir le parent
       if (refreshParent) {
         refreshParent();
       }
@@ -544,7 +539,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
           onArchive(data.employee || { id: employee.id, statut: 'archive' });
         }
 
-        // 🔄 Rafraîchir le parent après archivage
         if (refreshParent) {
           refreshParent();
         }
@@ -582,12 +576,10 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
     onClose();
   }, [employee, onClose]);
 
-  // Écouter les événements de mise à jour d'employé
   useEffect(() => {
     const handleEmployeeUpdated = (event) => {
       if (event.detail?.employeeId === employee?.id) {
         console.log('📢 EmployeeModal: Employé mis à jour depuis un autre composant');
-        // Vous pourriez rafraîchir les données ici si nécessaire
       }
     };
 
@@ -618,7 +610,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
           </div>
 
           <div className="employee-modal-body">
-            {/* En-tête */}
             <div className="employee-header">
               <img
                 src={currentPhotoUrl}
@@ -642,7 +633,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                 <p className="employee-contrat">{formData.type_contrat}</p>
                 <p className="employee-email">📧 {formData.adresse_mail || t('emailNotSpecified')}</p>
 
-                {/* Badge alerte fin de contrat */}
                 {contractEndingSoon && (
                   <div className="contract-alert-badge">
                     <span className="badge-icon">⚠️</span>
@@ -654,7 +644,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                   </div>
                 )}
 
-                {/* Indicateur d'archivage */}
                 {formData.statut === 'archive' && (
                   <div className="archive-badge">
                     <span className="badge-icon">📁</span>
@@ -667,7 +656,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                   </div>
                 )}
 
-                {/* Changer photo en mode édition */}
                 {isEditing && (
                   <div className="photo-change-section">
                     <input
@@ -724,7 +712,15 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                   <DetailRow label={t('employeeEmail')} value={formData.adresse_mail || t('notSpecified')} />
                   <DetailRow label={t('supervisor1Email')} value={formData.mail_responsable1 || t('notSpecified')} />
                   <DetailRow label={t('supervisor2Email')} value={formData.mail_responsable2 || t('notSpecified')} />
+                  {/* CHANGE 8: Tunisia functional manager field in view mode */}
+                  {isTunisiaTenant && (
+                    <DetailRow
+                      label="Responsable fonctionnel"
+                      value={formData.mail_responsable_fonctionnel || t('notSpecified')}
+                    />
+                  )}
                 </div>
+
                 {isFranceTenant && (
                   <div className="detail-section">
                     <h4>🚨 Contact d'urgence (France)</h4>
@@ -888,7 +884,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                       required
                     />
 
-                    {/* NOUVEAU CHAMP - Date fin de contrat */}
                     <FormInput
                       label={t('contractEndDate')}
                       name="date_fin_contrat"
@@ -938,8 +933,20 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                       onChange={handleInputChange}
                       placeholder="responsable2@entreprise.com"
                     />
+                    {/* CHANGE 8: Tunisia functional manager field in edit mode */}
+                    {isTunisiaTenant && (
+                      <FormInput
+                        label="Responsable fonctionnel (notification uniquement)"
+                        name="mail_responsable_fonctionnel"
+                        type="email"
+                        value={formData.mail_responsable_fonctionnel}
+                        onChange={handleInputChange}
+                        placeholder="fonctionnel@entreprise.com"
+                      />
+                    )}
                   </div>
                 </div>
+
                 {isFranceTenant && (
                   <div className="form-section">
                     <h4>🚨 Contact d'urgence (France)</h4>
@@ -953,7 +960,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                   </div>
                 )}
 
-                {/* Date départ + bouton archiver */}
                 <div className="archive-section">
                   <div className="form-grid">
                     <FormInput
@@ -1015,7 +1021,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
         </div>
       </div>
 
-      {/* Modal archivage */}
       <ArchiveModal
         employee={employee}
         isOpen={showArchiveModal}
@@ -1024,7 +1029,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
         departureDate={formData.date_depart}
       />
 
-      {/* Modal dossier RH */}
       <DossierRHModal
         employee={employee}
         isOpen={showDossierModal}
@@ -1040,7 +1044,6 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
         }}
       />
 
-      {/* Modal de confirmation de suppression */}
       <DeleteConfirmationModal
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
