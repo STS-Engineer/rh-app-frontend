@@ -80,7 +80,9 @@ function App() {
                 path="/fiche-de-paie" 
                 element={
                   <PrivateRoute>
-                    <FicheDePaie />
+                    <HiddenForHrGroupRoute>
+                      <FicheDePaie />
+                    </HiddenForHrGroupRoute>
                   </PrivateRoute>
                 } 
               />
@@ -104,9 +106,7 @@ function App() {
                 path="/demandes-rh"
                 element={
                   <PrivateRoute>
-                    <HiddenForHrGroupRoute>
-                      <DemandesRH />
-                    </HiddenForHrGroupRoute>
+                    <DemandesRH />
                   </PrivateRoute>
                 } 
               />

@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getBackendBaseUrl } from '../utils/backendUrl';
+import { getCurrentUser, shouldHideHrGroupModules } from '../services/api';
 
 // ─── Modal moved OUTSIDE DemandesRH so it never gets redefined on re-render
 const Modal = ({
@@ -30,11 +31,12 @@ const Modal = ({
   getResponsableStatusClass,
   formatDate,
   formatDateTime,
+  readOnly,
 }) => {
   if (!demande) return null;
-  const canAct = demande.statut === 'en_attente';
-  const canChangeToRefused = demande.statut === 'approuve';
-  const canChangeToApproved = demande.statut === 'refuse';
+  const canAct = !readOnly && demande.statut === 'en_attente';
+  const canChangeToRefused = !readOnly && demande.statut === 'approuve';
+  const canChangeToApproved = !readOnly && demande.statut === 'refuse';
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -287,6 +289,7 @@ const DemandesRH = () => {
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
+  const isReadOnlyHrGroup = shouldHideHrGroupModules(getCurrentUser());
 
   const [demandes, setDemandes] = useState([]);
   const [allDemandes, setAllDemandes] = useState([]);
@@ -1187,7 +1190,7 @@ const DemandesRH = () => {
                         👁️ {t('viewDetails')}
                       </button>
 
-                      {demande.statut === 'en_attente' && (
+                      {!isReadOnlyHrGroup && demande.statut === 'en_attente' && (
                         <>
                           <button
                             className="btn-action btn-approve"
@@ -1249,7 +1252,7 @@ const DemandesRH = () => {
                         </>
                       )}
 
-                      {demande.statut === 'approuve' && (
+                      {!isReadOnlyHrGroup && demande.statut === 'approuve' && (
                         <>
                           <button
                             className="btn-action btn-refuse"
@@ -1303,7 +1306,7 @@ const DemandesRH = () => {
                         </>
                       )}
 
-                      {demande.statut === 'refuse' && (
+                      {!isReadOnlyHrGroup && demande.statut === 'refuse' && (
                         <button
                           className="btn-action btn-approve"
                           disabled={actionLoading}
@@ -1347,6 +1350,7 @@ const DemandesRH = () => {
           getResponsableStatusClass={getResponsableStatusClass}
           formatDate={formatDate}
           formatDateTime={formatDateTime}
+          readOnly={isReadOnlyHrGroup}
         />
       )}
     </div>
