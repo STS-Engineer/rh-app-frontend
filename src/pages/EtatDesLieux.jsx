@@ -17,6 +17,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { employeesAPI, demandesAPI } from '../services/api';
 import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
+import { getEmployeeSite, getEmployeeDepartment } from '../utils/employeeProfile';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import './EtatDesLieux.css';
@@ -81,46 +82,6 @@ const dayKeyLocal = (value) => {
   const d = parseApiDate(value);
   if (!d) return null;
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-};
-
-/**
- * Best-effort resolver for department/site/service across possible backend shapes.
- */
-const getEmployeeDepartment = (emp) => {
-  if (!emp || typeof emp !== 'object') return '';
-
-  const candidates = [
-    emp.departement,
-    emp.department,
-    emp.site,
-    emp.site_dep,
-    emp.service,
-    emp.departement_nom,
-    emp.nom_departement,
-    emp.department_name,
-    emp.site_name,
-    emp.unite,
-    emp.team,
-    emp.equipe,
-    emp.direction,
-    emp.division,
-    emp.business_unit,
-    emp.departmentLabel,
-    emp.departementLabel,
-    emp.profile?.departement,
-    emp.profile?.department,
-    emp.profile?.site,
-    emp.profile?.service,
-    emp.departement?.nom,
-    emp.department?.name,
-    emp.site?.nom,
-    emp.site?.name,
-    emp.service?.nom,
-    emp.service?.name
-  ];
-
-  const value = candidates.find(v => typeof v === 'string' && v.trim() !== '');
-  return value ? value.trim() : '';
 };
 
 const EtatDesLieux = () => {
@@ -220,6 +181,7 @@ const EtatDesLieux = () => {
   const [filterType, setFilterType] = useState('week');
   const [selectedEmployee, setSelectedEmployee] = useState('all');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [selectedSite, setSelectedSite] = useState('all');
   const [nameSearch, setNameSearch] = useState('');   // ← NEW: name search state
   const [viewMode, setViewMode] = useState('week');
   const [showDetailsPanel, setShowDetailsPanel] = useState(false);
@@ -347,6 +309,10 @@ const EtatDesLieux = () => {
       filtered = filtered.filter(emp => getEmployeeDepartment(emp) === selectedDepartment);
     }
 
+    if (selectedSite !== 'all') {
+      filtered = filtered.filter(emp => getEmployeeSite(emp) === selectedSite);
+    }
+
     if (selectedEmployee !== 'all') {
       filtered = filtered.filter(emp => emp.id.toString() === selectedEmployee);
     }
@@ -360,7 +326,7 @@ const EtatDesLieux = () => {
     }
 
     return filtered;
-  }, [employees, selectedDepartment, selectedEmployee, nameSearch]);
+  }, [employees, selectedDepartment, selectedSite, selectedEmployee, nameSearch]);
 
   const getEmployeeStatusOnDate = (employeeId, date) => {
     const currentDay = dayKeyLocal(date);
@@ -457,6 +423,15 @@ const EtatDesLieux = () => {
         .filter(Boolean)
     );
     return ['all', ...Array.from(departments)];
+  };
+
+  const getSites = () => {
+    const sites = new Set(
+      employees
+        .map(emp => getEmployeeSite(emp))
+        .filter(Boolean)
+    );
+    return ['all', ...Array.from(sites)];
   };
 
   const exportToExcel = () => { console.log(t('exportingData')); };
@@ -608,6 +583,20 @@ const EtatDesLieux = () => {
                 <option value="all">{label('all_departments')}</option>
                 {getDepartments().slice(1).map(dept => (
                   <option key={dept} value={dept}>{dept}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="filter-group">
+              <label className="filter-label">{ICONS.LOCATION} {t('plantSite')}</label>
+              <select
+                value={selectedSite}
+                onChange={(e) => setSelectedSite(e.target.value)}
+                className="department-select"
+              >
+                <option value="all">{t('allSites')}</option>
+                {getSites().slice(1).map(site => (
+                  <option key={site} value={site}>{site}</option>
                 ))}
               </select>
             </div>

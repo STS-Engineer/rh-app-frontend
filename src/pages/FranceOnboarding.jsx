@@ -552,7 +552,7 @@ ${lt('Thank you.')}`;
                 <span className="accordion-caret">{openSections.software ? '−' : '+'}</span>
               </button>
               {openSections.software && (
-                <div className="tool-grid collapsible-content">
+                <div className="tool-grid tool-list collapsible-content">
                   {softwareTools.map((tool) => {
                     const checked = selectedSoftware.includes(tool.name);
                     return (
@@ -579,7 +579,7 @@ ${lt('Thank you.')}`;
                 <span className="accordion-caret">{openSections.equipment ? '−' : '+'}</span>
               </button>
               {openSections.equipment && (
-                <div className="tool-grid collapsible-content">
+                <div className="tool-grid tool-list collapsible-content">
                   {equipmentOptions.map((item) => {
                     const checked = selectedEquipment.includes(item.name);
                     return (
@@ -606,7 +606,7 @@ ${lt('Thank you.')}`;
                 <span className="accordion-caret">{openSections.training ? '−' : '+'}</span>
               </button>
               {openSections.training && (
-                <div className="tool-grid collapsible-content">
+                <div className="tool-grid tool-list collapsible-content">
                   {trainingOptions.map((item) => {
                     const checked = selectedTraining.includes(item.name);
                     return (

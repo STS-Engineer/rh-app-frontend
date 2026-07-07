@@ -240,6 +240,10 @@
   gap: 10px;
 }
 
+.tool-list {
+  grid-template-columns: 1fr;
+}
+
 .tool-card {
   display: flex;
   align-items: flex-start;
