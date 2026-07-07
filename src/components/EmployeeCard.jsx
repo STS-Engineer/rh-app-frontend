@@ -30,8 +30,22 @@ const EmployeeCard = ({ employee, onClick }) => {
             event.currentTarget.src = avatarFallback;
           }}
         />
-        <div className="employee-info">
-          <h3 className="employee-name">{employeeName}</h3>
+        <div className="employee-info" style={{ flex: "1 1 auto", minWidth: 0 }}>
+          <h3
+            className="employee-name"
+            style={{
+              display: "block",
+              width: "100%",
+              maxWidth: "100%",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              overflowWrap: "normal",
+              wordBreak: "normal"
+            }}
+          >
+            {employeeName}
+          </h3>
           
         </div>
       </div>
