@@ -136,8 +136,8 @@
   min-width: 0;
 }
 
-.employee-info h3,
-.employee-name {
+.employee-card .employee-info h3,
+.employee-card .employee-name {
   margin: 0 0 10px 0;
   color: var(--primary-blue-dark);
   font-size: 1.4rem;
@@ -148,10 +148,10 @@
   display: block;
   width: 100%;
   max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  overflow-wrap: normal;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: break-word;
   word-break: normal;
 }
 
