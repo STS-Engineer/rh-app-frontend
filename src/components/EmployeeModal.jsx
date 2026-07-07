@@ -5,6 +5,7 @@ import ArchiveModal from './ArchiveModal';
 import DossierRHModal from './DossierRHModal';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getBackendBaseUrl } from '../utils/backendUrl';
+import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
 import './EmployeeModal.css';
 
 /* =========================
@@ -613,7 +614,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
             <div className="employee-header">
               <img
                 src={currentPhotoUrl}
-                alt={`${formData.prenom} ${formData.nom}`}
+                alt={`${formatEmployeePrenom(formData.prenom)} ${formatEmployeeNom(formData.nom)}`}
                 className="employee-photo"
                 onError={(e) => {
                   e.currentTarget.src = getDefaultAvatar();
@@ -622,7 +623,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
 
               <div className="employee-basic-info">
                 <h3>
-                  {formData.prenom} {formData.nom}
+                  {formatEmployeePrenom(formData.prenom)} {formatEmployeeNom(formData.nom)}
                 </h3>
                 <p className="employee-matricule">
                   {t('employeeID')}: {formData.matricule}
@@ -724,8 +725,8 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                 {isFranceTenant && (
                   <div className="detail-section">
                     <h4>🚨 Contact d'urgence (France)</h4>
-                    <DetailRow label="Nom" value={emergencyContact.nom || t('notSpecified')} />
-                    <DetailRow label="Prénom" value={emergencyContact.prenom || t('notSpecified')} />
+                    <DetailRow label="Nom" value={emergencyContact.nom ? formatEmployeeNom(emergencyContact.nom) : t('notSpecified')} />
+                    <DetailRow label="Prénom" value={emergencyContact.prenom ? formatEmployeePrenom(emergencyContact.prenom) : t('notSpecified')} />
                     <DetailRow label="Relation" value={emergencyContact.relation || t('notSpecified')} />
                     <DetailRow label="Téléphone" value={emergencyContact.telephone || t('notSpecified')} />
                     <DetailRow label="Email" value={emergencyContact.email || t('notSpecified')} />
@@ -1048,7 +1049,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={confirmDeleteDossier}
-        employeeName={`${employee.prenom} ${employee.nom}`}
+        employeeName={`${formatEmployeePrenom(employee.prenom)} ${formatEmployeeNom(employee.nom)}`}
         employeeId={employee.matricule}
         deleting={deletingDossier}
         t={t}

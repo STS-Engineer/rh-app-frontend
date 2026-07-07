@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar';
 import { tenantV2API, getCurrentUser, isGlobalHrManager } from '../services/api';
 import { exportToPDF, exportToExcel, exportEmployeesToExcel } from '../services/exportService';
 import { getEmployeeSite } from '../utils/employeeProfile';
+import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
 import { useLanguage } from '../contexts/LanguageContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import './Statistics.css';
@@ -733,7 +734,7 @@ const Statistics = () => {
                               {emp.prenom.charAt(0)}{emp.nom.charAt(0)}
                             </div>
                             <div className="employee-name">
-                              <strong>{emp.prenom} {emp.nom}</strong>
+                              <strong>{formatEmployeePrenom(emp.prenom)} {formatEmployeeNom(emp.nom)}</strong>
                             </div>
                           </div>
                         </td>

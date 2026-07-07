@@ -4,7 +4,9 @@ import { employeesAPI, getCurrentUser, isGlobalHrManager } from '../services/api
 import {
   getEmployeeAvatarFallback,
   getEmployeeAvatarSrc,
-  isTunisiaEmployeeRecord
+  isTunisiaEmployeeRecord,
+  formatEmployeeNom,
+  formatEmployeePrenom
 } from '../utils/employeeAvatar';
 import * as d3 from 'd3';
 import {
@@ -78,9 +80,9 @@ const Organigramme = () => {
     const cleanPrenom = removeAbbreviations(prenom || '');
     const cleanNom = removeAbbreviations(nom || '');
     if (!cleanPrenom && !cleanNom) return t('orgNoName');
-    if (!cleanPrenom) return cleanNom;
-    if (!cleanNom) return cleanPrenom;
-    return `${cleanPrenom} ${cleanNom}`.trim();
+    if (!cleanPrenom) return formatEmployeeNom(cleanNom);
+    if (!cleanNom) return formatEmployeePrenom(cleanPrenom);
+    return `${formatEmployeePrenom(cleanPrenom)} ${formatEmployeeNom(cleanNom)}`.trim();
   };
 
   const cleanPosition = (poste) => {

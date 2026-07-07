@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
 import './ArchiveEmployeeModal.css';
 
 const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
@@ -185,14 +186,14 @@ const ArchiveEmployeeModal = ({ employee, isOpen, onClose }) => {
           <div className="employee-header">
             <img 
               src={getPhotoUrl()} 
-              alt={`${employee.prenom} ${employee.nom}`}
+              alt={`${formatEmployeePrenom(employee.prenom)} ${formatEmployeeNom(employee.nom)}`}
               className="employee-photo"
               onError={(e) => {
                 e.target.src = getDefaultAvatar();
               }}
             />
             <div className="employee-basic-info">
-              <h3>{employee.prenom} {employee.nom}</h3>
+              <h3>{formatEmployeePrenom(employee.prenom)} {formatEmployeeNom(employee.nom)}</h3>
               <div className="info-grid">
                 <div className="info-item">
                   <span className="info-label">{t('employee_ID')}</span>

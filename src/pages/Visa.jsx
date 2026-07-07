@@ -4,6 +4,7 @@ import "./Visa.css";
 import toast, { Toaster } from "react-hot-toast";
 import { useLanguage } from "../contexts/LanguageContext";
 import { getBackendBaseUrl } from "../utils/backendUrl";
+import { formatEmployeeNom, formatEmployeePrenom } from "../utils/employeeAvatar";
 
 const API = getBackendBaseUrl();
 
@@ -229,7 +230,7 @@ function EmployeeSearchSelect({
   useEffect(() => {
     const emp = employees.find((e) => String(e.id) === String(value));
     if (!value) setQuery("");
-    else if (emp) setQuery(`${emp.prenom ?? ""} ${emp.nom ?? ""}`.trim());
+    else if (emp) setQuery(`${formatEmployeePrenom(emp.prenom)} ${formatEmployeeNom(emp.nom)}`.trim());
   }, [value, employees]);
 
   const filtered = useMemo(() => {
@@ -258,7 +259,7 @@ function EmployeeSearchSelect({
 
   function selectEmp(emp) {
     onChange(String(emp.id));
-    setQuery(`${emp.prenom ?? ""} ${emp.nom ?? ""}`.trim());
+    setQuery(`${formatEmployeePrenom(emp.prenom)} ${formatEmployeeNom(emp.nom)}`.trim());
     setOpen(false);
     setActiveIndex(-1);
   }
@@ -330,7 +331,7 @@ function EmployeeSearchSelect({
               <div className="emp-empty">{t("visaNoEmployeeFound")}</div>
             ) : (
               filtered.map((emp, idx) => {
-                const name = `${emp.prenom ?? ""} ${emp.nom ?? ""}`.trim();
+                const name = `${formatEmployeePrenom(emp.prenom)} ${formatEmployeeNom(emp.nom)}`.trim();
                 const isActive = idx === activeIndex;
                 return (
                   <button
@@ -1252,7 +1253,7 @@ export default function Visa() {
     }
 
     const emp = employees.find((x) => String(x.id) === String(employeeId));
-    const employeeName = emp ? `${emp.prenom ?? ""} ${emp.nom ?? ""}`.trim() : t("visaEmployeeGeneric");
+    const employeeName = emp ? `${formatEmployeePrenom(emp.prenom)} ${formatEmployeeNom(emp.nom)}`.trim() : t("visaEmployeeGeneric");
 
     const loadingId = toast.loading(t("visaCreateFileLoading"));
     try {
@@ -1390,7 +1391,7 @@ export default function Visa() {
     const dossier = await fetchJson(`${API}/api/visa-dossiers/${selectedDossierId}`);
     const employeeName =
       dossier?.employee?.name ||
-      `${dossier?.employee?.prenom || ""} ${dossier?.employee?.nom || ""}`.trim() ||
+      `${formatEmployeePrenom(dossier?.employee?.prenom)} ${formatEmployeeNom(dossier?.employee?.nom)}`.trim() ||
       t("visaEmployeeGeneric");
     dossier.date_depart = dossier?.departureDate || dossier?.date_depart || "-";
     dossier.date_retour = dossier?.returnDate || dossier?.date_retour || "-";

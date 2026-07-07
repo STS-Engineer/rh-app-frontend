@@ -23,11 +23,26 @@ const hashString = (value = '') =>
     return next | 0;
   }, 0);
 
-export const getEmployeeDisplayName = (employee = {}) =>
-  `${employee.prenom || ''} ${employee.nom || ''}`.trim() ||
-  employee.name ||
-  employee.adresse_mail ||
-  'Employee';
+const toTitleCase = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .split(/(\s+|-)/)
+    .map((part) => (part && !/^[\s-]+$/.test(part) ? part.charAt(0).toUpperCase() + part.slice(1) : part))
+    .join('');
+
+export const formatEmployeeNom = (nom) => String(nom || '').trim().toUpperCase();
+export const formatEmployeePrenom = (prenom) => toTitleCase(String(prenom || '').trim());
+
+export const getEmployeeDisplayName = (employee = {}) => {
+  const prenom = formatEmployeePrenom(employee.prenom || '');
+  const nom = formatEmployeeNom(employee.nom || '');
+  return (
+    `${prenom} ${nom}`.trim() ||
+    employee.name ||
+    employee.adresse_mail ||
+    'Employee'
+  );
+};
 
 export const getEmployeeInitials = (employee = {}) => {
   const parts = getEmployeeDisplayName(employee)

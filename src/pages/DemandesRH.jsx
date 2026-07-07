@@ -5,6 +5,9 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getBackendBaseUrl } from '../utils/backendUrl';
 import { getCurrentUser, shouldHideHrGroupModules } from '../services/api';
+import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
+
+const formatFullName = (prenom, nom) => `${formatEmployeePrenom(prenom)} ${formatEmployeeNom(nom)}`.trim();
 
 // ─── Modal moved OUTSIDE DemandesRH so it never gets redefined on re-render
 const Modal = ({
@@ -78,7 +81,7 @@ const Modal = ({
             <div className="employee-details">
               <div className="employee-avatar-large">
                 {demande.employe_photo ? (
-                  <img src={demande.employe_photo} alt={`${demande.employe_prenom} ${demande.employe_nom}`} />
+                  <img src={demande.employe_photo} alt={formatFullName(demande.employe_prenom, demande.employe_nom)} />
                 ) : (
                   <div className="avatar-default-large">
                     {demande.employe_prenom?.[0] || ''}{demande.employe_nom?.[0] || ''}
@@ -86,7 +89,7 @@ const Modal = ({
                 )}
               </div>
               <div className="employee-info">
-                <h4>{demande.employe_prenom} {demande.employe_nom}</h4>
+                <h4>{formatFullName(demande.employe_prenom, demande.employe_nom)}</h4>
                 <p><strong>{t('position')}:</strong> {demande.employe_poste || t('na')}</p>
                 <p><strong>{t('employeeID')}:</strong> {demande.employe_matricule || t('na')}</p>
               </div>
@@ -440,7 +443,7 @@ const DemandesRH = () => {
 
   const getEmployeNameById = (id) => {
     const emp = employes.find(e => e.id === parseInt(id));
-    return emp ? `${emp.prenom} ${emp.nom}` : '';
+    return emp ? formatFullName(emp.prenom, emp.nom) : '';
   };
 
   const fetchDemandeById = useCallback(async (id) => {
@@ -825,7 +828,7 @@ const DemandesRH = () => {
 
   const rows = demandes.map(d => [
     d.employe_matricule || 'N/A',
-    `${d.employe_prenom} ${d.employe_nom}`,
+    formatFullName(d.employe_prenom, d.employe_nom),
     getTypeDemandeLabel(d.type_demande),
     d.type_conge === 'autre' ? d.type_conge_autre || 'Autre' : d.type_conge || 'N/A',
     getStatutLabel(d.statut),
@@ -916,7 +919,7 @@ const DemandesRH = () => {
               <option value="">{t('allEmployees')}</option>
               {employes.map(emp => (
                 <option key={emp.id} value={emp.id}>
-                  {emp.prenom} {emp.nom}
+                  {formatFullName(emp.prenom, emp.nom)}
                   {emp.poste ? ` - ${emp.poste}` : ''}
                   {emp.matricule ? ` (${emp.matricule})` : ''}
                 </option>
@@ -1098,7 +1101,7 @@ const DemandesRH = () => {
                         {demande.employe_photo ? (
                           <img
                             src={demande.employe_photo}
-                            alt={`${demande.employe_prenom} ${demande.employe_nom}`}
+                            alt={formatFullName(demande.employe_prenom, demande.employe_nom)}
                             onError={(e) => {
                               e.target.style.display = 'none';
                               e.target.parentElement.innerHTML =
@@ -1112,7 +1115,7 @@ const DemandesRH = () => {
                         )}
                       </div>
                       <div className="employe-details">
-                        <h4>{demande.employe_prenom} {demande.employe_nom}</h4>
+                        <h4>{formatFullName(demande.employe_prenom, demande.employe_nom)}</h4>
                         <p>{demande.employe_poste} • {t('employeeID')}: {demande.employe_matricule || t('na')}</p>
                       </div>
                     </div>

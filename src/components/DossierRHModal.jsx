@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './DossierRHModal.css';
 import { getBackendBaseUrl } from '../utils/backendUrl';
+import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
 
 const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
   const [files, setFiles] = useState([]);
@@ -414,7 +415,7 @@ const DossierRHModal = ({ employee, isOpen, onClose, onSuccess }) => {
         <div className="dossier-modal-body">
           <div className="employee-info">
             <h3>
-              {employee.prenom} {employee.nom.toUpperCase()}
+              {formatEmployeePrenom(employee.prenom)} {formatEmployeeNom(employee.nom)}
             </h3>
             <div className="employee-details">
               <span><strong>Matricule:</strong> {employee.matricule || 'N/A'}</span>

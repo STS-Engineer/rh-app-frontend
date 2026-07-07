@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import './ArchiveModal.css';
 import { getBackendBaseUrl } from '../utils/backendUrl';
+import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
 
 const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate }) => {
   const [pdfUrl, setPdfUrl] = useState('');
@@ -229,14 +230,14 @@ const ArchiveModal = ({ employee, isOpen, onClose, onArchive, departureDate }) =
           <div className="employee-info">
             <img 
               src={employee.photo || `https://ui-avatars.com/api/?name=${employee.prenom}+${employee.nom}&background=3b82f6&color=fff&size=150`}
-              alt={`${employee.prenom} ${employee.nom}`}
+              alt={`${formatEmployeePrenom(employee.prenom)} ${formatEmployeeNom(employee.nom)}`}
               className="employee-photo"
               onError={(e) => {
                 e.target.src = `https://ui-avatars.com/api/?name=${employee.prenom}+${employee.nom}&background=3b82f6&color=fff&size=150`;
               }}
             />
             <div className="employee-details">
-              <h3>{employee.prenom} {employee.nom}</h3>
+              <h3>{formatEmployeePrenom(employee.prenom)} {formatEmployeeNom(employee.nom)}</h3>
               <div className="employee-info-grid">
                 <div className="info-item">
                   <span className="info-label">Matricule:</span>

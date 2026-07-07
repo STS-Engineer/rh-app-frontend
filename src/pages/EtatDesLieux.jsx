@@ -16,6 +16,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { employeesAPI, demandesAPI } from '../services/api';
+import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
 import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import './EtatDesLieux.css';
@@ -621,7 +622,7 @@ const EtatDesLieux = () => {
                 <option value="all">{label('all_employees')}</option>
                 {employees.map(emp => (
                   <option key={emp.id} value={emp.id}>
-                    {emp.prenom} {emp.nom} ({emp.matricule})
+                    {formatEmployeePrenom(emp.prenom)} {formatEmployeeNom(emp.nom)} ({emp.matricule})
                   </option>
                 ))}
               </select>
@@ -701,7 +702,7 @@ const EtatDesLieux = () => {
                           <div className="employee-avatar">
                             {employee.prenom.charAt(0)}{employee.nom.charAt(0)}
                           </div>
-                          {employee.prenom} {employee.nom}
+                          {formatEmployeePrenom(employee.prenom)} {formatEmployeeNom(employee.nom)}
                         </div>
                         <div className="employee-details">
                           <span className="employee-role">{employee.poste}</span>
@@ -724,7 +725,7 @@ const EtatDesLieux = () => {
                             border: isToday ? '3px solid #667eea' : '1px solid #e5e7eb'
                           }}
                           onClick={() => handleCellClick(employee, date, status)}
-                          title={`${employee.prenom} ${employee.nom} - ${formatDate(date)}`}
+                          title={`${formatEmployeePrenom(employee.prenom)} ${formatEmployeeNom(employee.nom)} - ${formatDate(date)}`}
                         >
                           <div className="status-content">
                             <div className="status-icon">{status.icon}</div>
@@ -757,7 +758,7 @@ const EtatDesLieux = () => {
               <button className="close-btn" onClick={() => setShowDetailsPanel(false)}>×</button>
             </div>
             <div className="details-panel-content">
-              <p><strong>{t('employee')}:</strong> {selectedAbsence.employee.prenom} {selectedAbsence.employee.nom}</p>
+              <p><strong>{t('employee')}:</strong> {formatEmployeePrenom(selectedAbsence.employee.prenom)} {formatEmployeeNom(selectedAbsence.employee.nom)}</p>
               <p><strong>{t('date')}:</strong> {formatDate(selectedAbsence.date)}</p>
               <p><strong>{t('status')}:</strong> {label(selectedAbsence.status)}</p>
               {selectedAbsence.demande && (
