@@ -56,10 +56,12 @@
   border-color: rgba(4, 110, 175, 0.2);
 }
 
-.card-header {
+.team-card-header {
   display: flex;
   align-items: center;
   margin-bottom: 25px;
+  gap: 25px;
+  justify-content: flex-start;
 }
 
 .employee-photo {
@@ -131,13 +133,12 @@
     0 0 0 2px rgba(4, 110, 175, 0.3);
 }
 
-.employee-info {
+.team-employee-info {
   flex: 1;
   min-width: 0;
 }
 
-.employee-card .employee-info h3,
-.employee-card .employee-name {
+.team-employee-name {
   margin: 0 0 10px 0;
   color: var(--primary-blue-dark);
   font-size: 1.4rem;
@@ -155,7 +156,7 @@
   word-break: normal;
 }
 
-.employee-info h3::after {
+.team-employee-name::after {
   content: '';
   position: absolute;
   bottom: -3px;
@@ -167,7 +168,7 @@
   transition: width 0.3s ease;
 }
 
-.employee-card:hover .employee-info h3::after {
+.employee-card:hover .team-employee-name::after {
   width: 60px;
 }
 
@@ -555,7 +556,7 @@
     margin-right: 20px;
   }
   
-  .employee-info h3 {
+  .team-employee-name {
     font-size: 1.3rem;
   }
 }
@@ -565,7 +566,7 @@
     padding: 20px;
   }
   
-  .card-header {
+  .team-card-header {
     flex-direction: column;
     text-align: center;
     gap: 20px;
@@ -579,7 +580,7 @@
     height: 90px;
   }
   
-  .employee-info h3 {
+  .team-employee-name {
     font-size: 1.2rem;
   }
   
@@ -608,7 +609,7 @@
     padding: 18px;
   }
   
-  .employee-info h3 {
+  .team-employee-name {
     font-size: 1.1rem;
   }
   
@@ -657,7 +658,7 @@
     border-color: rgba(255, 255, 255, 0.1);
   }
   
-  .employee-info h3 {
+  .team-employee-name {
     color: #e2e8f0;
   }
   

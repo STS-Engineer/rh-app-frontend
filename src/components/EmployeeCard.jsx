@@ -20,7 +20,7 @@ const EmployeeCard = ({ employee, onClick }) => {
 
   return (
     <div className="employee-card" onClick={() => onClick(employee)}>
-      <div className="card-header">
+      <div className="team-card-header">
         <img 
           src={getEmployeeAvatarSrc(employee)}
           alt={employeeName}
@@ -30,19 +30,9 @@ const EmployeeCard = ({ employee, onClick }) => {
             event.currentTarget.src = avatarFallback;
           }}
         />
-        <div className="employee-info" style={{ flex: "1 1 auto", minWidth: 0 }}>
+        <div className="team-employee-info">
           <h3
-            className="employee-name"
-            style={{
-              display: "block",
-              width: "100%",
-              maxWidth: "100%",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              overflowWrap: "normal",
-              wordBreak: "normal"
-            }}
+            className="team-employee-name"
           >
             {employeeName}
           </h3>
