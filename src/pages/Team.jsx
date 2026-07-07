@@ -20,6 +20,10 @@ const Team = () => {
   const navigate = useNavigate(); // ✅ ADDED
   const canFilterByPlant = isGlobalHrManager(getCurrentUser());
   const siteLabel = (t("plantSite") || "Site").split("/").pop().trim() || "Site";
+  const currentUser = getCurrentUser();
+  const isTunisiaTenant =
+    (currentUser?.tenant_schema || currentUser?.country || "").toLowerCase().includes("public") ||
+    (currentUser?.country || "").toLowerCase().includes("tunisia");
 
   const [employees, setEmployees] = useState([]);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
@@ -40,6 +44,7 @@ const Team = () => {
     department: "",
     role: "",
     grade: "",
+    matricule: "",
     type_contrat: "",
     date_debut_from: "",
     date_debut_to: "",
@@ -194,6 +199,12 @@ const Team = () => {
       if (filters.department && getEmployeeDepartment(emp) !== filters.department) return false;
       if (filters.role && getEmployeeRole(emp) !== filters.role) return false;
       if (filters.grade && getEmployeeGrade(emp) !== filters.grade) return false;
+      if (
+        isTunisiaTenant &&
+        filters.matricule &&
+        !(emp.matricule || "").toLowerCase().includes(filters.matricule.trim().toLowerCase())
+      )
+        return false;
       if (filters.type_contrat && emp.type_contrat !== filters.type_contrat)
         return false;
 
@@ -234,8 +245,17 @@ const Team = () => {
       return true;
     });
 
+    if (isTunisiaTenant) {
+      result.sort((a, b) =>
+        String(a.matricule || "").localeCompare(String(b.matricule || ""), undefined, {
+          numeric: true,
+          sensitivity: "base",
+        })
+      );
+    }
+
     setFilteredEmployees(result);
-  }, [searchTerm, employees, filters, canFilterByPlant]);
+  }, [searchTerm, employees, filters, canFilterByPlant, isTunisiaTenant]);
 
   const updateFilter = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
@@ -248,6 +268,7 @@ const Team = () => {
       department: "",
       role: "",
       grade: "",
+      matricule: "",
       type_contrat: "",
       date_debut_from: "",
       date_debut_to: "",
@@ -327,6 +348,20 @@ const Team = () => {
               <span className="search-icon">🔍</span>
             </div>
           </div>
+
+          {/* Matricule (Tunisia only) */}
+          {isTunisiaTenant && (
+            <div className="toolbar-field">
+              <label className="toolbar-label">{t("teamFilterMatricule")}</label>
+              <input
+                type="text"
+                value={filters.matricule}
+                onChange={(e) => updateFilter("matricule", e.target.value)}
+                placeholder={t("teamFilterMatricule")}
+                className="toolbar-control"
+              />
+            </div>
+          )}
 
           {/* Site */}
           {canFilterByPlant && (
