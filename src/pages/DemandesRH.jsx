@@ -301,7 +301,8 @@ const DemandesRH = () => {
     employe_id: '',
     date_debut: '',
     date_fin: '',
-    nom_employe: ''
+    nom_employe: '',
+    site_dep: ''
   };
 
   const [filters, setFilters] = useState(defaultFilters);
@@ -335,10 +336,15 @@ const DemandesRH = () => {
     if (filters.employe_id) count++;
     if (filters.date_debut) count++;
     if (filters.date_fin) count++;
-    if (filters.nom_employe) count++; 
+    if (filters.nom_employe) count++;
+    if (filters.site_dep) count++;
     return count;
   };
   const activeFiltersCount = getActiveFiltersCount();
+
+  const siteOptions = Array.from(
+    new Set(allDemandes.map(d => d.employe_site_dep).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b));
 
   const getStatutLabel = (statut) => {
     const labels = { en_attente: t('pending'), approuve: t('approved'), refuse: t('refused'), annulee: t('cancelledRequest') };
@@ -508,6 +514,9 @@ const DemandesRH = () => {
         fetched = fetched.filter(d =>
           `${d.employe_prenom} ${d.employe_nom}`.toLowerCase().includes(search)
         );
+      }
+      if (filters.site_dep) {
+        fetched = fetched.filter(d => d.employe_site_dep === filters.site_dep);
       }
       setDemandes(fetched);
 
@@ -929,7 +938,19 @@ const DemandesRH = () => {
               onChange={(e) => handleFilterChange('nom_employe', e.target.value)}
             />
           </div>
-          
+
+          {siteOptions.length > 0 && (
+            <div className="filter-group">
+              <label>{t('plantSite')}</label>
+              <select value={filters.site_dep} onChange={(e) => handleFilterChange('site_dep', e.target.value)}>
+                <option value="">{t('allSites')}</option>
+                {siteOptions.map(site => (
+                  <option key={site} value={site}>{site}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="filter-group">
             <label>{t('fromDate')}</label>
             <input
@@ -966,6 +987,9 @@ const DemandesRH = () => {
                   <span className="tag">
                     {t('employee')}: {filters.nom_employe}
                   </span>
+                )}
+                {filters.site_dep && (
+                  <span className="tag">{t('plantSite')}: {filters.site_dep}</span>
                 )}
                 {filters.date_debut && (
                   <span className="tag">{t('fromDate')}: {formatDate(filters.date_debut)}</span>

@@ -22,10 +22,6 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
   const user = getCurrentUser();
 
   const isFranceTenant = (user?.plant || '').toLowerCase().includes('france');
-  const isTunisiaTenant =
-    (user?.tenant_schema || user?.country || '').toLowerCase().includes('public') ||
-    (user?.country || '').toLowerCase().includes('tunisia');
-
   const isGroupHr = GROUP_ROLES.has((user?.role || '').toLowerCase());
   const defaultTenantSchema = user?.tenant_schema || 'public';
 
@@ -54,6 +50,10 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
   };
 
   const [formData, setFormData] = useState(initialFormData);
+
+  const isTunisiaTenant =
+    (formData.tenant_schema || defaultTenantSchema || '').toLowerCase() === 'public' ||
+    (user?.country || '').toLowerCase().includes('tunisia');
 
   const [emergencyContact, setEmergencyContact] = useState({
     nom: '',

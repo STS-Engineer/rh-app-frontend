@@ -133,6 +133,7 @@
 
 .employee-info {
   flex: 1;
+  min-width: 0;
 }
 
 .employee-info h3 {
@@ -144,6 +145,11 @@
   letter-spacing: -0.3px;
   position: relative;
   display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
 }
 
 .employee-info h3::after {

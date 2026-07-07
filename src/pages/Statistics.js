@@ -95,6 +95,7 @@ const Statistics = () => {
       const response = await tenantV2API.getEmployees();
       const employeesData = response.data;
       setEmployees(employeesData);
+      computeStats(employeesData);
     } catch (error) {
       console.error(t('errorLoadingStats'), error);
     } finally {
