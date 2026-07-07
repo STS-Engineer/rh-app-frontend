@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
-import { tenantV2API, getCurrentUser } from '../services/api';
+import { tenantV2API, getCurrentUser, isGlobalHrManager } from '../services/api';
 import { exportToPDF, exportToExcel, exportEmployeesToExcel } from '../services/exportService';
+import { getEmployeeSite } from '../utils/employeeProfile';
 import { useLanguage } from '../contexts/LanguageContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import './Statistics.css';
@@ -28,9 +29,21 @@ const Statistics = () => {
   const [exporting, setExporting] = useState(false);
   const [selectedChart, setSelectedChart] = useState('department');
   const [timeRange, setTimeRange] = useState('monthly');
+  const [siteFilter, setSiteFilter] = useState('');
   const chartRef = useRef(null);
   const user = getCurrentUser();
   const isFranceTenant = (user?.plant || '').toLowerCase().includes('france');
+  const canFilterBySite = isGlobalHrManager(user);
+
+  const siteOptions = useMemo(
+    () => Array.from(new Set(employees.map((emp) => getEmployeeSite(emp)).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [employees]
+  );
+
+  const scopedEmployees = useMemo(
+    () => (canFilterBySite && siteFilter ? employees.filter((emp) => getEmployeeSite(emp) === siteFilter) : employees),
+    [employees, siteFilter, canFilterBySite]
+  );
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
   const AGE_GROUPS = ['18-25', '26-35', '36-45', '46-55', '56+'];
@@ -50,6 +63,12 @@ const Statistics = () => {
   useEffect(() => {
     loadStatistics();
   }, []);
+
+  useEffect(() => {
+    if (employees.length) {
+      computeStats(scopedEmployees);
+    }
+  }, [scopedEmployees]);
 
   const calculateExperience = (dateDebut) => {
     const startDate = new Date(dateDebut);
@@ -76,7 +95,14 @@ const Statistics = () => {
       const response = await tenantV2API.getEmployees();
       const employeesData = response.data;
       setEmployees(employeesData);
+    } catch (error) {
+      console.error(t('errorLoadingStats'), error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const computeStats = (employeesData) => {
       const currentMonth = new Date().getMonth();
       const currentYear = new Date().getFullYear();
       const last12Months = Array.from({ length: 12 }, (_, i) => {
@@ -239,12 +265,6 @@ const Statistics = () => {
           }))
         }
       });
-
-    } catch (error) {
-      console.error(t('errorLoadingStats'), error);
-    } finally {
-      setLoading(false);
-    }
   };
 
   const getPercentage = (value, total) => {
@@ -321,6 +341,18 @@ const Statistics = () => {
         <header className="statistics-header">
           <div className="header-top">
             <h1>📊 {t('statisticsDashboard')}</h1>
+            {canFilterBySite && siteOptions.length > 0 && (
+              <select
+                className="stats-site-filter"
+                value={siteFilter}
+                onChange={(event) => setSiteFilter(event.target.value)}
+              >
+                <option value="">{t('allSites')}</option>
+                {siteOptions.map((site) => (
+                  <option key={site} value={site}>{site}</option>
+                ))}
+              </select>
+            )}
             <div className="time-selector">
               <button 
                 className={timeRange === 'monthly' ? 'active' : ''}

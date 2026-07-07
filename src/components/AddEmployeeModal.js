@@ -257,7 +257,9 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 <input name="prenom" value={formData.prenom} onChange={handleInputChange} placeholder="Prenom" required />
                 <input name="cin" value={formData.cin} onChange={handleInputChange} placeholder="CIN" />
                 <input name="poste" value={formData.poste} onChange={handleInputChange} placeholder="Poste" />
-                <input name="adresse_mail" value={formData.adresse_mail} onChange={handleInputChange} placeholder="Email employé" />
+                {isTunisiaTenant && (
+                  <input name="adresse_mail" value={formData.adresse_mail} onChange={handleInputChange} placeholder="Email employé" />
+                )}
                 <input name="mail_responsable1" value={formData.mail_responsable1} onChange={handleInputChange} placeholder="Email responsable 1" />
                 <input name="mail_responsable2" value={formData.mail_responsable2} onChange={handleInputChange} placeholder="Email responsable 2" />
 

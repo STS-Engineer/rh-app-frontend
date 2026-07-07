@@ -92,6 +92,7 @@ const getEmployeeDepartment = (emp) => {
     emp.departement,
     emp.department,
     emp.site,
+    emp.site_dep,
     emp.service,
     emp.departement_nom,
     emp.nom_departement,

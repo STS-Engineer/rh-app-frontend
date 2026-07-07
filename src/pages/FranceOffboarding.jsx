@@ -21,6 +21,18 @@ const licences = [
   { name: 'Salesforce', category: 'Sales' }
 ];
 
+const equipmentOptions = [
+  { name: 'Laptop', category: 'Portable computer' },
+  { name: 'Desktop PC', category: 'Fixed workstation' },
+  { name: 'Second monitor', category: 'Display' },
+  { name: 'Mouse', category: 'Peripherals' },
+  { name: 'Ergonomic mouse pad', category: 'Ergonomics' },
+  { name: 'Drawing table', category: 'Design' },
+  { name: 'Office chair', category: 'Ergonomics' },
+  { name: 'Footrest', category: 'Ergonomics' },
+  { name: 'Specialized equipment', category: 'Custom request' }
+];
+
 const localLabels = {
   ko: {
     Engineering: '엔지니어링',
@@ -36,6 +48,21 @@ const localLabels = {
     Identity: '계정',
     Security: '보안',
     Sales: '영업',
+    Laptop: '노트북',
+    'Desktop PC': '데스크톱 PC',
+    'Second monitor': '보조 모니터',
+    Mouse: '마우스',
+    'Ergonomic mouse pad': '인체공학 마우스패드',
+    'Drawing table': '드로잉 태블릿',
+    'Office chair': '사무용 의자',
+    Footrest: '발받침',
+    'Specialized equipment': '특수 장비',
+    'Portable computer': '휴대용 컴퓨터',
+    'Fixed workstation': '고정형 워크스테이션',
+    Display: '디스플레이',
+    Peripherals: '주변기기',
+    Ergonomics: '인체공학',
+    'Custom request': '맞춤 요청',
     Resignation: '사직',
     'End of contract': '계약 종료',
     Retirement: '퇴직',
@@ -80,6 +107,21 @@ const localLabels = {
     Identity: 'Identität',
     Security: 'Sicherheit',
     Sales: 'Vertrieb',
+    Laptop: 'Laptop',
+    'Desktop PC': 'Desktop-PC',
+    'Second monitor': 'Zweiter Monitor',
+    Mouse: 'Maus',
+    'Ergonomic mouse pad': 'Ergonomisches Mauspad',
+    'Drawing table': 'Grafiktablett',
+    'Office chair': 'Bürostuhl',
+    Footrest: 'Fußstütze',
+    'Specialized equipment': 'Spezialausrüstung',
+    'Portable computer': 'Tragbarer Computer',
+    'Fixed workstation': 'Fester Arbeitsplatz',
+    Display: 'Anzeige',
+    Peripherals: 'Peripheriegeräte',
+    Ergonomics: 'Ergonomie',
+    'Custom request': 'Sonderanfrage',
     Resignation: 'Kündigung',
     'End of contract': 'Vertragsende',
     Retirement: 'Ruhestand',
@@ -124,6 +166,21 @@ const localLabels = {
     Identity: 'Identidad',
     Security: 'Seguridad',
     Sales: 'Ventas',
+    Laptop: 'Portátil',
+    'Desktop PC': 'PC de escritorio',
+    'Second monitor': 'Segundo monitor',
+    Mouse: 'Ratón',
+    'Ergonomic mouse pad': 'Alfombrilla ergonómica',
+    'Drawing table': 'Tableta gráfica',
+    'Office chair': 'Silla de oficina',
+    Footrest: 'Reposapiés',
+    'Specialized equipment': 'Equipo especializado',
+    'Portable computer': 'Ordenador portátil',
+    'Fixed workstation': 'Puesto fijo',
+    Display: 'Pantalla',
+    Peripherals: 'Periféricos',
+    Ergonomics: 'Ergonomía',
+    'Custom request': 'Solicitud personalizada',
     Resignation: 'Renuncia',
     'End of contract': 'Fin de contrato',
     Retirement: 'Jubilación',
@@ -168,6 +225,21 @@ const localLabels = {
     Identity: '身份',
     Security: '安全',
     Sales: '销售',
+    Laptop: '笔记本电脑',
+    'Desktop PC': '台式电脑',
+    'Second monitor': '第二显示器',
+    Mouse: '鼠标',
+    'Ergonomic mouse pad': '人体工学鼠标垫',
+    'Drawing table': '绘图板',
+    'Office chair': '办公椅',
+    Footrest: '脚踏',
+    'Specialized equipment': '专用设备',
+    'Portable computer': '便携式电脑',
+    'Fixed workstation': '固定工位',
+    Display: '显示器',
+    Peripherals: '外设',
+    Ergonomics: '人体工学',
+    'Custom request': '定制请求',
     Resignation: '辞职',
     'End of contract': '合同结束',
     Retirement: '退休',
@@ -212,6 +284,21 @@ const localLabels = {
     Identity: 'அடையாளம்',
     Security: 'பாதுகாப்பு',
     Sales: 'விற்பனை',
+    Laptop: 'மடிக்கணினி',
+    'Desktop PC': 'மேசை கணினி',
+    'Second monitor': 'இரண்டாவது திரை',
+    Mouse: 'மவுஸ்',
+    'Ergonomic mouse pad': 'எர்கோனாமிக் மவுஸ் பேட்',
+    'Drawing table': 'வரைதல் மேசை',
+    'Office chair': 'அலுவலக நாற்காலி',
+    Footrest: 'கால் ஆதாரம்',
+    'Specialized equipment': 'சிறப்பு உபகரணம்',
+    'Portable computer': 'கைக்கணினி',
+    'Fixed workstation': 'நிலையான பணியிடம்',
+    Display: 'திரை',
+    Peripherals: 'சுற்றுப்பொருட்கள்',
+    Ergonomics: 'எர்கோனாமிக்ஸ்',
+    'Custom request': 'சிறப்பு கோரிக்கை',
     Resignation: 'ராஜினாமா',
     'End of contract': 'ஒப்பந்த முடிவு',
     Retirement: 'ஓய்வு',
@@ -255,6 +342,7 @@ const pageText = {
     surveyEmail: '설문 이메일',
     reason: '사유',
     licencesToCancel: '해지할 라이선스',
+    equipmentToReturn: '반납할 장비',
     extraAccessToRevoke: '회수할 추가 접근 권한',
     satisfactionSurvey: '만족도 설문 (HR 수정 가능)',
     addQuestion: '질문 추가',
@@ -276,6 +364,7 @@ const pageText = {
     surveyEmail: 'Umfrage-E-Mail',
     reason: 'Grund',
     licencesToCancel: 'Zu kündigende Lizenzen',
+    equipmentToReturn: 'Zurückzugebende Ausrüstung',
     extraAccessToRevoke: 'Zusätzliche Zugriffe widerrufen',
     satisfactionSurvey: 'Zufriedenheitsumfrage (von HR bearbeitbar)',
     addQuestion: 'Frage hinzufügen',
@@ -297,6 +386,7 @@ const pageText = {
     surveyEmail: 'Correo de la encuesta',
     reason: 'Motivo',
     licencesToCancel: 'Licencias por cancelar',
+    equipmentToReturn: 'Equipo por devolver',
     extraAccessToRevoke: 'Accesos adicionales por revocar',
     satisfactionSurvey: 'Encuesta de satisfacción (editable por RR. HH.)',
     addQuestion: 'Añadir pregunta',
@@ -318,6 +408,7 @@ const pageText = {
     surveyEmail: '调查邮箱',
     reason: '原因',
     licencesToCancel: '需取消的许可证',
+    equipmentToReturn: '需归还的设备',
     extraAccessToRevoke: '需撤销的额外访问权限',
     satisfactionSurvey: '满意度调查（HR 可编辑）',
     addQuestion: '添加问题',
@@ -330,6 +421,7 @@ const pageText = {
 };
 
 const allLicenceNames = licences.map((licence) => licence.name);
+const allEquipmentNames = equipmentOptions.map((item) => item.name);
 
 const initialForm = {
   fullName: '',
@@ -366,6 +458,7 @@ const FranceOffboarding = () => {
   const [selectedEmployeeKey, setSelectedEmployeeKey] = useState('');
   const [form, setForm] = useState(initialForm);
   const [selectedLicences, setSelectedLicences] = useState(allLicenceNames);
+  const [selectedEquipment, setSelectedEquipment] = useState(allEquipmentNames);
   const [questions, setQuestions] = useState(initialQuestions);
   const [newQuestion, setNewQuestion] = useState({ text: '', type: 'Open text' });
   const [previewTab, setPreviewTab] = useState('it');
@@ -457,6 +550,15 @@ const FranceOffboarding = () => {
     );
   };
 
+  const toggleEquipment = (itemName) => {
+    setSuccess(false);
+    setSelectedEquipment((current) =>
+      current.includes(itemName)
+        ? current.filter((name) => name !== itemName)
+        : [...current, itemName]
+    );
+  };
+
   const updateQuestion = (questionId, text) => {
     setSuccess(false);
     setQuestions((current) =>
@@ -490,6 +592,7 @@ const FranceOffboarding = () => {
     setSelectedEmployeeKey('');
     setEmployeeSearch('');
     setSelectedLicences(allLicenceNames);
+    setSelectedEquipment(allEquipmentNames);
     setQuestions(initialQuestions);
     setNewQuestion({ text: '', type: 'Open text' });
     setPreviewTab('it');
@@ -500,6 +603,9 @@ const FranceOffboarding = () => {
     const name = form.fullName || '[employee name]';
     const licenceList = selectedLicences.length
       ? selectedLicences.map((licenceName) => `- ${lt(licenceName)}`).join('\n')
+      : `- ${t('none')}`;
+    const equipmentList = selectedEquipment.length
+      ? selectedEquipment.map((itemName) => `- ${lt(itemName)}`).join('\n')
       : `- ${t('none')}`;
 
     return `To: ${IT_TEST_EMAIL}
@@ -518,11 +624,14 @@ ${tt('reason')}: ${lt(form.reason)}
 ${tt('licencesToCancel')}:
 ${licenceList}
 
+${tt('equipmentToReturn')}:
+${equipmentList}
+
 ${tt('extraAccessToRevoke')}:
 ${form.revokeNotes || lt('No extra access listed.')}
 
 ${t('sendToIT')}.`;
-  }, [form, selectedLicences]);
+  }, [form, selectedLicences, selectedEquipment]);
 
   const surveyPreview = useMemo(() => {
     const name = form.fullName || '[employee name]';
@@ -712,6 +821,31 @@ ${lt('Thank you.')}`;
                   onChange={(event) => updateField('revokeNotes', event.target.value)}
                   placeholder={tt('extraAccessToRevoke')}
                 />
+              </div>
+            </section>
+
+            <section className="lifecycle-card">
+              <h2>{tt('equipmentToReturn')}</h2>
+              <div className="tool-grid">
+                {equipmentOptions.map((item) => {
+                  const checked = selectedEquipment.includes(item.name);
+                  return (
+                    <label
+                      className={`tool-card danger${checked ? ' selected' : ''}`}
+                      key={item.name}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleEquipment(item.name)}
+                      />
+                      <span>
+                        <span className="tool-name">{lt(item.name)}</span>
+                        <span className="tool-category">{lt(item.category)}</span>
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             </section>
 

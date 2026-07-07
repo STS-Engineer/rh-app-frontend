@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
-import { employeesAPI, getArchivedEmployees } from '../services/api';
+import { employeesAPI, getArchivedEmployees, getCurrentUser, isGlobalHrManager } from '../services/api';
 import { exportEmployeesToExcel } from '../services/exportService';
+import { getEmployeeSite } from '../utils/employeeProfile';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Dashboard.css';
 import NotificationIcon from '../components/NotificationIcon';
@@ -10,18 +11,10 @@ import NotificationIcon from '../components/NotificationIcon';
 const Dashboard = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const [stats, setStats] = useState({
-    totalEmployees: 0,
-    newThisMonth: 0,
-    contractsToRenew: 0,
-    totalSalary: 0,
-    cdiCount: 0,
-    cddCount: 0,
-    stageCount: 0,
-    freelanceCount: 0,
-    archivesCount: 0,
-    civpcount: 0
-  });
+  const canFilterBySite = isGlobalHrManager(getCurrentUser());
+  const [employees, setEmployees] = useState([]);
+  const [archivesCount, setArchivesCount] = useState(0);
+  const [siteFilter, setSiteFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 
@@ -33,51 +26,10 @@ const Dashboard = () => {
     try {
       setLoading(true);
       const response = await employeesAPI.getAll();
-      const employees = response.data;
-      
+      setEmployees(response.data || []);
+
       const archivesResponse = await getArchivedEmployees();
-      const archivesCount = archivesResponse.data.length;
-      
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      
-      const newThisMonth = employees.filter(emp => {
-        const empDate = new Date(emp.date_debut);
-        return empDate.getMonth() === currentMonth && empDate.getFullYear() === currentYear;
-      }).length;
-
-      const contractsToRenew = employees.filter(emp => {
-        if (emp.type_contrat === 'CDD') {
-          const endDate = new Date(emp.date_debut);
-          endDate.setMonth(endDate.getMonth() + 6);
-          const today = new Date();
-          const diffTime = endDate - today;
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          return diffDays <= 30 && diffDays > 0;
-        }
-        return false;
-      }).length;
-
-      const totalSalary = employees.reduce((sum, emp) => sum + parseFloat(emp.salaire_brute || 0), 0);
-      const cdiCount = employees.filter(emp => emp.type_contrat === 'CDI').length;
-      const civpCount = employees.filter(emp => emp.type_contrat === 'CIVP').length;
-      const cddCount = employees.filter(emp => emp.type_contrat === 'CDD').length;
-      const stageCount = employees.filter(emp => emp.type_contrat === 'Stage').length;
-      const freelanceCount = employees.filter(emp => emp.type_contrat === 'Freelance').length;
-
-      setStats({
-        totalEmployees: employees.length,
-        newThisMonth: newThisMonth,
-        contractsToRenew: contractsToRenew,
-        totalSalary: totalSalary,
-        cdiCount: cdiCount,
-        cddCount: cddCount,
-        stageCount: stageCount,
-        freelanceCount: freelanceCount,
-        archivesCount: archivesCount,
-        civpCount: civpCount,
-      });
-
+      setArchivesCount(archivesResponse.data.length);
     } catch (error) {
       console.error(t('errorLoadingStats'), error);
       alert(t('errorLoadingDashboard'));
@@ -85,6 +37,58 @@ const Dashboard = () => {
       setLoading(false);
     }
   };
+
+  const siteOptions = useMemo(
+    () => Array.from(new Set(employees.map((emp) => getEmployeeSite(emp)).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
+    [employees]
+  );
+
+  const scopedEmployees = useMemo(
+    () => (canFilterBySite && siteFilter ? employees.filter((emp) => getEmployeeSite(emp) === siteFilter) : employees),
+    [employees, siteFilter, canFilterBySite]
+  );
+
+  const stats = useMemo(() => {
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+
+    const newThisMonth = scopedEmployees.filter(emp => {
+      const empDate = new Date(emp.date_debut);
+      return empDate.getMonth() === currentMonth && empDate.getFullYear() === currentYear;
+    }).length;
+
+    const contractsToRenew = scopedEmployees.filter(emp => {
+      if (emp.type_contrat === 'CDD') {
+        const endDate = new Date(emp.date_debut);
+        endDate.setMonth(endDate.getMonth() + 6);
+        const today = new Date();
+        const diffTime = endDate - today;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays <= 30 && diffDays > 0;
+      }
+      return false;
+    }).length;
+
+    const totalSalary = scopedEmployees.reduce((sum, emp) => sum + parseFloat(emp.salaire_brute || 0), 0);
+    const cdiCount = scopedEmployees.filter(emp => emp.type_contrat === 'CDI').length;
+    const civpCount = scopedEmployees.filter(emp => emp.type_contrat === 'CIVP').length;
+    const cddCount = scopedEmployees.filter(emp => emp.type_contrat === 'CDD').length;
+    const stageCount = scopedEmployees.filter(emp => emp.type_contrat === 'Stage').length;
+    const freelanceCount = scopedEmployees.filter(emp => emp.type_contrat === 'Freelance').length;
+
+    return {
+      totalEmployees: scopedEmployees.length,
+      newThisMonth,
+      contractsToRenew,
+      totalSalary,
+      cdiCount,
+      cddCount,
+      stageCount,
+      freelanceCount,
+      archivesCount,
+      civpCount,
+    };
+  }, [scopedEmployees, archivesCount]);
 
   const handleExportExcel = async () => {
     setExporting(true);
@@ -153,6 +157,22 @@ const Dashboard = () => {
             {t('lastUpdate')}: {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}
           </div>
         </header>
+
+        {canFilterBySite && siteOptions.length > 0 && (
+          <div className="dashboard-site-filter">
+            <label htmlFor="dashboard-site-filter">{t('plantSite')}</label>
+            <select
+              id="dashboard-site-filter"
+              value={siteFilter}
+              onChange={(event) => setSiteFilter(event.target.value)}
+            >
+              <option value="">{t('allSites')}</option>
+              {siteOptions.map((site) => (
+                <option key={site} value={site}>{site}</option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="dashboard-stats">
           {/* ✅ Total Employees → /team (no filter) */}

@@ -1,10 +1,13 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import { tenantV2API } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import './FranceModules.css';
 
 const departments = ['Engineering', 'Design', 'Product', 'HR', 'Finance'];
 const IT_TEST_EMAIL = 'rami.mejri@avocarbon.com';
+const TRAINING_CONTACT_EMAIL = 'amira.aydi@avocarbon.com';
 
 const softwareTools = [
   { name: 'Microsoft 365', category: 'Productivity' },
@@ -329,6 +332,7 @@ const allTrainingNames = trainingOptions.map((item) => item.name);
 
 const FranceOnboarding = () => {
   const { t, language } = useLanguage();
+  const location = useLocation();
   const lt = (value) => localLabels[language]?.[value] || value;
   const tt = (key) => pageText[language]?.[key] || t(key);
   const [form, setForm] = useState(initialForm);
@@ -336,6 +340,27 @@ const FranceOnboarding = () => {
   const [selectedEquipment, setSelectedEquipment] = useState(allEquipmentNames);
   const [selectedTraining, setSelectedTraining] = useState(allTrainingNames);
   const [success, setSuccess] = useState(false);
+  const [openSections, setOpenSections] = useState({ software: false, equipment: false, training: false });
+  const [previewTab, setPreviewTab] = useState('it');
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
+
+  const toggleSection = (key) => {
+    setOpenSections((current) => ({ ...current, [key]: !current[key] }));
+  };
+
+  useEffect(() => {
+    const newEmployee = location.state?.newEmployee;
+    if (!newEmployee) return;
+
+    setForm((current) => ({
+      ...current,
+      fullName: `${newEmployee.prenom || ''} ${newEmployee.nom || ''}`.trim() || current.fullName,
+      jobTitle: newEmployee.poste || current.jobTitle,
+      startDate: newEmployee.date_debut || current.startDate,
+      workEmail: newEmployee.adresse_mail || current.workEmail
+    }));
+  }, [location.state]);
 
   const updateField = (field, value) => {
     setSuccess(false);
@@ -355,6 +380,7 @@ const FranceOnboarding = () => {
     setSelectedEquipment(allEquipmentNames);
     setSelectedTraining(allTrainingNames);
     setSuccess(false);
+    setSendError('');
   };
 
   const emailPreview = useMemo(() => {
@@ -364,9 +390,6 @@ const FranceOnboarding = () => {
       : `- ${t('none')}`;
     const equipmentList = selectedEquipment.length
       ? selectedEquipment.map((itemName) => `- ${lt(itemName)}`).join('\n')
-      : `- ${t('none')}`;
-    const trainingList = selectedTraining.length
-      ? selectedTraining.map((itemName) => `- ${lt(itemName)}`).join('\n')
       : `- ${t('none')}`;
 
     return `To: ${IT_TEST_EMAIL}
@@ -389,14 +412,50 @@ ${softwareList}
 ${tt('equipmentRequests')}:
 ${equipmentList}
 
-${tt('trainingRequests')}:
-${trainingList}
-
 ${t('notes')}:
 ${form.notes || `${t('none')} ${t('notes').toLowerCase()}.`}
 
 ${lt('Thank you.')}`;
-  }, [form, selectedSoftware, selectedEquipment, selectedTraining, language]);
+  }, [form, selectedSoftware, selectedEquipment, language]);
+
+  const trainingPreview = useMemo(() => {
+    const name = form.fullName || '[new hire name]';
+    const trainingList = selectedTraining.length
+      ? selectedTraining.map((itemName) => `- ${lt(itemName)}`).join('\n')
+      : `- ${t('none')}`;
+
+    return `To: ${TRAINING_CONTACT_EMAIL}
+Subject: ${tt('trainingRequests')} — ${name}
+
+${tt('notesToIT')},
+
+${t('fullName')}: ${name}
+${t('position')}: ${form.jobTitle || '[job title]'}
+${t('department')}: ${lt(form.department)}
+${t('startDate')}: ${form.startDate || '[start date]'}
+
+${tt('trainingRequests')}:
+${trainingList}
+
+${lt('Thank you.')}`;
+  }, [form, selectedTraining, language]);
+
+  const handleSend = async () => {
+    setSending(true);
+    setSendError('');
+    try {
+      await tenantV2API.sendOnboardingRequestEmails({
+        employeeName: form.fullName,
+        itEmailBody: emailPreview,
+        trainingEmailBody: selectedTraining.length ? trainingPreview : null
+      });
+      setSuccess(true);
+    } catch (error) {
+      setSendError(error?.response?.data?.error || error.message || 'Unable to send onboarding emails.');
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
     <div className="fr-module-layout">
@@ -415,9 +474,11 @@ ${lt('Thank you.')}`;
           <div className="lifecycle-stack">
             {success && (
               <div className="life-alert">
-                {tt('setupRequestPrepared')} {IT_TEST_EMAIL}.
+                {tt('setupRequestPrepared')} {IT_TEST_EMAIL}
+                {selectedTraining.length ? ` / ${tt('trainingRequests')} ${TRAINING_CONTACT_EMAIL}` : ''}.
               </div>
             )}
+            {sendError && <div className="life-alert">{sendError}</div>}
 
             <section className="lifecycle-card">
               <h2>{tt('newEmployeeDetails')}</h2>
@@ -486,69 +547,84 @@ ${lt('Thank you.')}`;
             </section>
 
             <section className="lifecycle-card">
-              <h2>{tt('softwareLicences')}</h2>
-              <div className="tool-grid">
-                {softwareTools.map((tool) => {
-                  const checked = selectedSoftware.includes(tool.name);
-                  return (
-                    <label className={`tool-card${checked ? ' selected' : ''}`} key={tool.name}>
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleSelection(setSelectedSoftware, tool.name)}
-                      />
-                      <span>
-                        <span className="tool-name">{lt(tool.name)}</span>
-                        <span className="tool-category">{lt(tool.category)}</span>
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
+              <button type="button" className="collapsible-header" onClick={() => toggleSection('software')}>
+                <h2>{tt('softwareLicences')} ({selectedSoftware.length})</h2>
+                <span className="accordion-caret">{openSections.software ? '−' : '+'}</span>
+              </button>
+              {openSections.software && (
+                <div className="tool-grid collapsible-content">
+                  {softwareTools.map((tool) => {
+                    const checked = selectedSoftware.includes(tool.name);
+                    return (
+                      <label className={`tool-card${checked ? ' selected' : ''}`} key={tool.name}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleSelection(setSelectedSoftware, tool.name)}
+                        />
+                        <span>
+                          <span className="tool-name">{lt(tool.name)}</span>
+                          <span className="tool-category">{lt(tool.category)}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
             </section>
 
             <section className="lifecycle-card">
-              <h2>{tt('equipmentRequests')}</h2>
-              <div className="tool-grid">
-                {equipmentOptions.map((item) => {
-                  const checked = selectedEquipment.includes(item.name);
-                  return (
-                    <label className={`tool-card${checked ? ' selected' : ''}`} key={item.name}>
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleSelection(setSelectedEquipment, item.name)}
-                      />
-                      <span>
-                        <span className="tool-name">{lt(item.name)}</span>
-                        <span className="tool-category">{lt(item.category)}</span>
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
+              <button type="button" className="collapsible-header" onClick={() => toggleSection('equipment')}>
+                <h2>{tt('equipmentRequests')} ({selectedEquipment.length})</h2>
+                <span className="accordion-caret">{openSections.equipment ? '−' : '+'}</span>
+              </button>
+              {openSections.equipment && (
+                <div className="tool-grid collapsible-content">
+                  {equipmentOptions.map((item) => {
+                    const checked = selectedEquipment.includes(item.name);
+                    return (
+                      <label className={`tool-card${checked ? ' selected' : ''}`} key={item.name}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleSelection(setSelectedEquipment, item.name)}
+                        />
+                        <span>
+                          <span className="tool-name">{lt(item.name)}</span>
+                          <span className="tool-category">{lt(item.category)}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
             </section>
 
             <section className="lifecycle-card">
-              <h2>{tt('trainingRequests')}</h2>
-              <div className="tool-grid">
-                {trainingOptions.map((item) => {
-                  const checked = selectedTraining.includes(item.name);
-                  return (
-                    <label className={`tool-card${checked ? ' selected' : ''}`} key={item.name}>
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleSelection(setSelectedTraining, item.name)}
-                      />
-                      <span>
-                        <span className="tool-name">{lt(item.name)}</span>
-                        <span className="tool-category">{lt(item.category)}</span>
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
+              <button type="button" className="collapsible-header" onClick={() => toggleSection('training')}>
+                <h2>{tt('trainingRequests')} ({selectedTraining.length})</h2>
+                <span className="accordion-caret">{openSections.training ? '−' : '+'}</span>
+              </button>
+              {openSections.training && (
+                <div className="tool-grid collapsible-content">
+                  {trainingOptions.map((item) => {
+                    const checked = selectedTraining.includes(item.name);
+                    return (
+                      <label className={`tool-card${checked ? ' selected' : ''}`} key={item.name}>
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => toggleSelection(setSelectedTraining, item.name)}
+                        />
+                        <span>
+                          <span className="tool-name">{lt(item.name)}</span>
+                          <span className="tool-category">{lt(item.category)}</span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
             </section>
 
             <section className="lifecycle-card">
@@ -565,16 +641,35 @@ ${lt('Thank you.')}`;
 
             <section className="lifecycle-card">
               <h2>{tt('emailPreviewIT')}</h2>
-              <pre className="email-preview">{emailPreview}</pre>
+              <div className="preview-tabs">
+                <button
+                  type="button"
+                  className={`preview-tab${previewTab === 'it' ? ' active' : ''}`}
+                  onClick={() => setPreviewTab('it')}
+                >
+                  {tt('emailPreviewIT')}
+                </button>
+                {selectedTraining.length > 0 && (
+                  <button
+                    type="button"
+                    className={`preview-tab${previewTab === 'training' ? ' active' : ''}`}
+                    onClick={() => setPreviewTab('training')}
+                  >
+                    {tt('trainingRequests')}
+                  </button>
+                )}
+              </div>
+              <pre className="email-preview">{previewTab === 'training' ? trainingPreview : emailPreview}</pre>
               <p className="lifecycle-card-note">
-                {tt('localPreviewNote')} {IT_TEST_EMAIL}.
+                {tt('localPreviewNote')} {IT_TEST_EMAIL}
+                {selectedTraining.length ? ` / ${TRAINING_CONTACT_EMAIL}` : ''}.
               </p>
               <div className="lifecycle-actions">
-                <button className="life-btn ghost" type="button" onClick={resetForm}>
+                <button className="life-btn ghost" type="button" onClick={resetForm} disabled={sending}>
                   {t('reset')}
                 </button>
-                <button className="life-btn" type="button" onClick={() => setSuccess(true)}>
-                  {tt('sendToIT')}
+                <button className="life-btn" type="button" onClick={handleSend} disabled={sending}>
+                  {sending ? t('saving') : tt('sendToIT')}
                 </button>
               </div>
             </section>

@@ -74,7 +74,18 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 16px;
   margin-bottom: 20px;
+}
+
+.stats-site-filter {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(4, 110, 175, 0.2);
+  background: var(--card-background);
+  color: var(--neutral-grey-dark);
+  font-size: 0.95rem;
+  align-self: center;
 }
 
 .statistics-header h1 {

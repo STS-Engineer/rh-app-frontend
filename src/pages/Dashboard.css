@@ -104,6 +104,27 @@
   border: 1px solid rgba(4, 110, 175, 0.1);
 }
 
+.dashboard-site-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.dashboard-site-filter label {
+  font-weight: 600;
+  color: var(--primary-blue-dark);
+}
+
+.dashboard-site-filter select {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(4, 110, 175, 0.2);
+  background: var(--card-background);
+  color: var(--neutral-grey-dark);
+  font-size: 0.95rem;
+}
+
 /* Stats Cards */
 .dashboard-stats {
   display: grid;

@@ -103,6 +103,26 @@
   font-size: 1.05rem;
 }
 
+.collapsible-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.collapsible-header h2 {
+  margin: 0;
+}
+
+.collapsible-content {
+  margin-top: 14px;
+}
+
 .lifecycle-card-note {
   margin: 10px 0 0;
   color: var(--life-muted);

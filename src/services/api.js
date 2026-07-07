@@ -288,7 +288,8 @@ export const tenantV2API = {
     api.post(`/v2/france/offboarding/${employeeId}`, { ...data, tenant_schema: tenantSchema || data?.tenant_schema }),
   addFranceOffboardingTask: (employeeId, data, tenantSchema) =>
     api.post(`/v2/france/offboarding/${employeeId}/tasks`, { ...data, tenant_schema: tenantSchema || data?.tenant_schema }),
-  updateFranceOffboardingTask: (taskId, data) => api.patch(`/v2/france/offboarding/tasks/${taskId}`, data)
+  updateFranceOffboardingTask: (taskId, data) => api.patch(`/v2/france/offboarding/tasks/${taskId}`, data),
+  sendOnboardingRequestEmails: (data) => api.post('/v2/france/onboarding/send-emails', data)
 };
 
 // Export par défaut

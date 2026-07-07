@@ -131,6 +131,7 @@ const Team = () => {
     setEmployees((prev) => [...prev, newEmployee]);
     setFilteredEmployees((prev) => [...prev, newEmployee]);
     setIsAddModalOpen(false);
+    navigate('/onboarding', { state: { newEmployee } });
   };
 
   const handleCloseModal = () => {

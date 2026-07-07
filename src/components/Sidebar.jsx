@@ -54,18 +54,6 @@ const Sidebar = () => {
 
   const menuItems = [
     { path: '/dashboard', label: t('dashboard'), icon: '📊' },
-    { path: '/team', label: t('team'), icon: '👥' },
-    { path: '/organigramme', label: t('orgTitle'), icon: '🏢' },
-    { path: '/demandes-rh', label: t('demands'), icon: '??' },
-    ...(!hideHrGroupModules ? [{ path: '/fiche-de-paie', label: t('payslip'), icon: '??' }] : []),
-    { path: '/archives', label: t('archives'), icon: '📁' },
-    { path: '/statistics', label: t('statistics'), icon: '📈' },
-    { path: '/etat-des-lieux', label: t('edlPresenceTracker'), icon: '📅' },
-    ...(isTunisiaTenant && !hideHrGroupModules
-      ? [
-          { path: '/visa', label: t('visa'), icon: '✈️' }
-        ]
-      : []),
     ...(showSharedTenantModules
       ? [
           { path: '/onboarding', label: t('onboarding') || 'Onboarding', icon: '💻' },
@@ -73,6 +61,18 @@ const Sidebar = () => {
           { path: '/offboarding', label: t('offboarding') || 'Offboarding', icon: '🚪' }
         ]
       : []),
+    { path: '/team', label: t('team'), icon: '👥' },
+    { path: '/organigramme', label: t('orgTitle'), icon: '🏢' },
+    { path: '/demandes-rh', label: t('demands'), icon: '📋' },
+    ...(!hideHrGroupModules ? [{ path: '/fiche-de-paie', label: t('payslip'), icon: '💰' }] : []),
+    { path: '/statistics', label: t('statistics'), icon: '📈' },
+    { path: '/etat-des-lieux', label: t('edlPresenceTracker'), icon: '📅' },
+    ...(isTunisiaTenant && !hideHrGroupModules
+      ? [
+          { path: '/visa', label: t('visa'), icon: '✈️' }
+        ]
+      : []),
+    { path: '/archives', label: t('archives'), icon: '📁' },
     { path: '/settings', label: `${t('settings')} / ${t('language')}`, icon: '⚙️' },
     ...(isTunisiaTenant && !hideHrGroupModules
       ? [
