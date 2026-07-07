@@ -136,7 +136,8 @@
   min-width: 0;
 }
 
-.employee-info h3 {
+.employee-info h3,
+.employee-name {
   margin: 0 0 10px 0;
   color: var(--primary-blue-dark);
   font-size: 1.4rem;
@@ -144,11 +145,14 @@
   line-height: 1.2;
   letter-spacing: -0.3px;
   position: relative;
-  display: inline-block;
+  display: block;
+  width: 100%;
   max-width: 100%;
-  white-space: normal;
-  overflow-wrap: break-word;
-  word-break: break-word;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .employee-info h3::after {
