@@ -6,6 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getBackendBaseUrl } from '../utils/backendUrl';
 import { getCurrentUser, shouldHideHrGroupModules } from '../services/api';
 import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
+import { isSiteValue } from '../utils/employeeProfile';
 
 const formatFullName = (prenom, nom) => `${formatEmployeePrenom(prenom)} ${formatEmployeeNom(nom)}`.trim();
 
@@ -346,7 +347,7 @@ const DemandesRH = () => {
   const activeFiltersCount = getActiveFiltersCount();
 
   const siteOptions = Array.from(
-    new Set(allDemandes.map(d => d.employe_site_dep).filter(Boolean))
+    new Set(allDemandes.map(d => d.employe_site_dep).filter(Boolean).filter(isSiteValue))
   ).sort((a, b) => a.localeCompare(b));
 
   const getStatutLabel = (statut) => {

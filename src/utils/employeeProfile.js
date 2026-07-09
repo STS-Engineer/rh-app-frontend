@@ -26,6 +26,8 @@ const looksLikeSite = (value = '') => {
   );
 };
 
+export const isSiteValue = (value = '') => looksLikeSite(value);
+
 export const getEmployeeSite = (employee = {}) => {
   const explicitSite = firstNonEmpty(
     employee.site,
