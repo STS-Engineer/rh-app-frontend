@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { employeesAPI, deleteDossierRH, tenantV2API, getCurrentUser } from '../services/api';
+import { employeesAPI, deleteDossierRH, tenantV2API, getCurrentUser, isGlobalHrManager } from '../services/api';
 import { photoService } from '../services/photoService';
 import ArchiveModal from './ArchiveModal';
 import DossierRHModal from './DossierRHModal';
@@ -163,6 +163,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
   const [photoPreview, setPhotoPreview] = useState('');
   const [emergencyContact, setEmergencyContact] = useState({ nom: '', prenom: '', relation: '', telephone: '', email: '' });
   const user = getCurrentUser();
+  const isGroupHrUser = isGlobalHrManager(user);
   const isFranceTenant = (user?.plant || '').toLowerCase().includes('france');
   
   // CHANGE 8: Tunisia check
@@ -733,6 +734,20 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                   </div>
                 )}
 
+                {isGroupHrUser && (
+                  <div className="detail-section">
+                    <h4>🖥️ Équipement</h4>
+                    <DetailRow
+                      label="Équipement attribué"
+                      value={
+                        formData.equipement
+                          ? <span style={{ whiteSpace: 'pre-wrap' }}>{formData.equipement}</span>
+                          : t('notSpecified')
+                      }
+                    />
+                  </div>
+                )}
+
                 <div className="detail-section">
                   <h4>📎 {t('documents')}</h4>
 
@@ -957,6 +972,25 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                       <FormInput label="Relation" name="relation" value={emergencyContact.relation} onChange={(e) => setEmergencyContact((p) => ({ ...p, relation: e.target.value }))} />
                       <FormInput label="Téléphone" name="telephone" value={emergencyContact.telephone} onChange={(e) => setEmergencyContact((p) => ({ ...p, telephone: e.target.value }))} />
                       <FormInput label="Email" name="email" type="email" value={emergencyContact.email} onChange={(e) => setEmergencyContact((p) => ({ ...p, email: e.target.value }))} />
+                    </div>
+                  </div>
+                )}
+
+                {isGroupHrUser && (
+                  <div className="form-section">
+                    <h4>🖥️ Équipement</h4>
+                    <div className="form-grid">
+                      <div className="form-input-group">
+                        <label>Équipement attribué:</label>
+                        <textarea
+                          name="equipement"
+                          value={formData.equipement ?? ''}
+                          onChange={handleInputChange}
+                          className="form-input"
+                          rows={3}
+                          placeholder="Ex: Laptop Dell, badge #123, téléphone..."
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
