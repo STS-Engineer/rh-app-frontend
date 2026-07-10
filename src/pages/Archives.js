@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import EmployeeCard from '../components/EmployeeCard';
 import ArchiveEmployeeModal from '../components/ArchiveEmployeeModal';
 import { getArchivedEmployees, getCurrentUser, isGlobalHrManager } from '../services/api';
+import { getBackendBaseUrl } from '../utils/backendUrl';
 import { isSiteValue, getEmployeeSite } from '../utils/employeeProfile';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Archives.css';
@@ -24,28 +25,23 @@ const Archives = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [siteFilter, setSiteFilter] = useState('');
   const [loading, setLoading] = useState(true);
+  // Complete plant list across ALL accessible schemas (group HR only), loaded from
+  // /api/employees so every plant shows even when it has zero archived employees —
+  // matching the demandes page behavior.
+  const [plantOptions, setPlantOptions] = useState([]);
+
+  const API_BASE_URL = getBackendBaseUrl();
 
   // Only group HR managers (multi-site access) get the plant filter. For single-site
   // Tunisia users, site_dep holds department names, not plants, so the filter stays hidden.
   const isGroupHrUser = isGlobalHrManager(getCurrentUser());
 
-  // Complete list of real plants across all archived employees (group HR only).
-  // The archives endpoint already aggregates every accessible schema, so every plant
-  // shows in the filter. isSiteValue keeps Tunisia's department names out of the list.
-  const plantOptions = isGroupHrUser
-    ? Array.from(
-        new Set(
-          archivedEmployees
-            .map(emp => getEmployeeSite(emp))
-            .filter(Boolean)
-            .filter(isSiteValue)
-        )
-      ).sort((a, b) => a.localeCompare(b))
-    : [];
-
   useEffect(() => {
     loadArchivedEmployees();
-  }, []);
+    if (isGroupHrUser) {
+      loadPlantOptions();
+    }
+  }, []); // eslint-disable-line
 
   useEffect(() => {
     let filtered = archivedEmployees;
@@ -73,6 +69,35 @@ const Archives = () => {
 
     setFilteredEmployees(filtered);
   }, [searchTerm, siteFilter, archivedEmployees]);
+
+  // Build the complete plant list for group HR from /api/employees, which aggregates
+  // employees across every accessible country schema. Real plants only (getEmployeeSite
+  // + isSiteValue), so every plant appears even with zero archived employees, and
+  // Tunisia department names are excluded.
+  const loadPlantOptions = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const response = await fetch(`${API_BASE_URL}/api/employees`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        cache: 'no-cache'
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (!Array.isArray(data)) return;
+      const plants = Array.from(
+        new Set(
+          data
+            .map(emp => getEmployeeSite(emp))
+            .filter(Boolean)
+            .filter(isSiteValue)
+        )
+      ).sort((a, b) => a.localeCompare(b));
+      setPlantOptions(plants);
+    } catch (e) {
+      // Non-fatal: if this fails, the plant dropdown simply won't populate.
+    }
+  };
 
   const loadArchivedEmployees = async () => {
     try {
