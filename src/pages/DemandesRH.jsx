@@ -4,7 +4,7 @@ import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getBackendBaseUrl } from '../utils/backendUrl';
-import { getCurrentUser, shouldHideHrGroupModules } from '../services/api';
+import { getCurrentUser, shouldHideHrGroupModules, isGlobalHrManager } from '../services/api';
 import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
 import { isSiteValue } from '../utils/employeeProfile';
 
@@ -294,6 +294,9 @@ const DemandesRH = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isReadOnlyHrGroup = shouldHideHrGroupModules(getCurrentUser());
+  // Only group HR managers (multi-site access) get the plant filter. For single-site
+  // Tunisia users, site_dep holds department names, not plants, so the filter stays hidden.
+  const isGroupHrUser = isGlobalHrManager(getCurrentUser());
 
   const [demandes, setDemandes] = useState([]);
   const [allDemandes, setAllDemandes] = useState([]);
@@ -346,9 +349,14 @@ const DemandesRH = () => {
   };
   const activeFiltersCount = getActiveFiltersCount();
 
-  const siteOptions = Array.from(
-    new Set(allDemandes.map(d => d.employe_site_dep).filter(Boolean).filter(isSiteValue))
-  ).sort((a, b) => a.localeCompare(b));
+  // Plant options are built only for group HR users, from the real "Site-" prefixed
+  // values (isSiteValue). This correctly excludes Tunisia department names and keeps
+  // every actual plant across schemas (Site-Anhui, Site-Germany, Site-France-*, ...).
+  const siteOptions = isGroupHrUser
+    ? Array.from(
+        new Set(allDemandes.map(d => d.employe_site_dep).filter(Boolean).filter(isSiteValue))
+      ).sort((a, b) => a.localeCompare(b))
+    : [];
 
   const getStatutLabel = (statut) => {
     const labels = { en_attente: t('pending'), approuve: t('approved'), refuse: t('refused'), annulee: t('cancelledRequest') };
@@ -943,7 +951,7 @@ const DemandesRH = () => {
             />
           </div>
 
-          {siteOptions.length > 0 && (
+          {isGroupHrUser && siteOptions.length > 0 && (
             <div className="filter-group">
               <label>{t('plantSite')}</label>
               <select value={filters.site_dep} onChange={(e) => handleFilterChange('site_dep', e.target.value)}>
