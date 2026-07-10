@@ -3,9 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import EmployeeCard from '../components/EmployeeCard';
 import ArchiveEmployeeModal from '../components/ArchiveEmployeeModal';
-import { getArchivedEmployees } from '../services/api';
+import { getArchivedEmployees, getCurrentUser, isGlobalHrManager } from '../services/api';
+import { isSiteValue, getEmployeeSite } from '../utils/employeeProfile';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Archives.css';
+
+// Sentinel value for the "Tunisia" plant option. Tunisia employees use department
+// names (not a Site- value), so they can't be selected by exact match like real
+// plants. Selecting this option instead matches every employee whose site is a
+// department (i.e. NOT a Site- plant), which is exactly the Tunisian set.
+const TUNISIA_SITE_VALUE = '__TUNISIA__';
 
 const Archives = () => {
   const navigate = useNavigate();
@@ -15,25 +22,57 @@ const Archives = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [siteFilter, setSiteFilter] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // Only group HR managers (multi-site access) get the plant filter. For single-site
+  // Tunisia users, site_dep holds department names, not plants, so the filter stays hidden.
+  const isGroupHrUser = isGlobalHrManager(getCurrentUser());
+
+  // Complete list of real plants across all archived employees (group HR only).
+  // The archives endpoint already aggregates every accessible schema, so every plant
+  // shows in the filter. isSiteValue keeps Tunisia's department names out of the list.
+  const plantOptions = isGroupHrUser
+    ? Array.from(
+        new Set(
+          archivedEmployees
+            .map(emp => getEmployeeSite(emp))
+            .filter(Boolean)
+            .filter(isSiteValue)
+        )
+      ).sort((a, b) => a.localeCompare(b))
+    : [];
 
   useEffect(() => {
     loadArchivedEmployees();
   }, []);
 
   useEffect(() => {
+    let filtered = archivedEmployees;
+
     if (searchTerm) {
-      const filtered = archivedEmployees.filter(emp =>
+      filtered = filtered.filter(emp =>
         emp.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.prenom.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.poste.toLowerCase().includes(searchTerm.toLowerCase()) ||
         emp.matricule.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredEmployees(filtered);
-    } else {
-      setFilteredEmployees(archivedEmployees);
     }
-  }, [searchTerm, archivedEmployees]);
+
+    if (siteFilter) {
+      if (siteFilter === TUNISIA_SITE_VALUE) {
+        // Tunisia = any employee whose site is a department, not a Site- plant.
+        filtered = filtered.filter(emp => {
+          const site = getEmployeeSite(emp);
+          return !site || !isSiteValue(site);
+        });
+      } else {
+        filtered = filtered.filter(emp => getEmployeeSite(emp) === siteFilter);
+      }
+    }
+
+    setFilteredEmployees(filtered);
+  }, [searchTerm, siteFilter, archivedEmployees]);
 
   const loadArchivedEmployees = async () => {
     try {
@@ -157,7 +196,21 @@ const Archives = () => {
             />
             <span className="search-icon">🔍</span>
           </div>
-         
+
+          {isGroupHrUser && (
+            <select
+              className="search-input"
+              value={siteFilter}
+              onChange={(e) => setSiteFilter(e.target.value)}
+            >
+              <option value="">{t('allSites')}</option>
+              <option value={TUNISIA_SITE_VALUE}>Tunisie</option>
+              {plantOptions.map(site => (
+                <option key={site} value={site}>{site}</option>
+              ))}
+            </select>
+          )}
+
           <div className="action-buttons">
             <button className="refresh-btn" onClick={loadArchivedEmployees}>
               🔄 {t('refresh')}
