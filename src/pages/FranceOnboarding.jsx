@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { tenantV2API } from '../services/api';
@@ -330,6 +330,57 @@ const allSoftwareNames = softwareTools.map((tool) => tool.name);
 const allEquipmentNames = equipmentOptions.map((item) => item.name);
 const allTrainingNames = trainingOptions.map((item) => item.name);
 
+const MultiSelectDropdown = ({ label, options, selected, onToggle, lt }) => {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [open]);
+
+  return (
+    <div className="dropdown-select" ref={wrapperRef}>
+      <button
+        type="button"
+        className={`dropdown-trigger${open ? ' open' : ''}`}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span>{label} ({selected.length})</span>
+        <span className="dropdown-caret">{open ? '▴' : '▾'}</span>
+      </button>
+      {open && (
+        <div className="dropdown-panel">
+          {options.map((item) => {
+            const checked = selected.includes(item.name);
+            return (
+              <div
+                key={item.name}
+                className={`dropdown-item${checked ? ' selected' : ''}`}
+                onClick={() => onToggle(item.name)}
+              >
+                <span>
+                  <span className="tool-name">{lt(item.name)}</span>
+                  <span className="tool-category">{lt(item.category)}</span>
+                </span>
+                {checked && <span className="dropdown-check">✓</span>}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const FranceOnboarding = () => {
   const { t, language } = useLanguage();
   const location = useLocation();
@@ -340,14 +391,9 @@ const FranceOnboarding = () => {
   const [selectedEquipment, setSelectedEquipment] = useState(allEquipmentNames);
   const [selectedTraining, setSelectedTraining] = useState(allTrainingNames);
   const [success, setSuccess] = useState(false);
-  const [openSections, setOpenSections] = useState({ software: false, equipment: false, training: false });
   const [previewTab, setPreviewTab] = useState('it');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState('');
-
-  const toggleSection = (key) => {
-    setOpenSections((current) => ({ ...current, [key]: !current[key] }));
-  };
 
   useEffect(() => {
     const newEmployee = location.state?.newEmployee;
@@ -547,84 +593,36 @@ ${lt('Thank you.')}`;
             </section>
 
             <section className="lifecycle-card">
-              <button type="button" className="collapsible-header" onClick={() => toggleSection('software')}>
-                <h2>{tt('softwareLicences')} ({selectedSoftware.length})</h2>
-                <span className="accordion-caret">{openSections.software ? '−' : '+'}</span>
-              </button>
-              {openSections.software && (
-                <div className="tool-grid tool-list collapsible-content">
-                  {softwareTools.map((tool) => {
-                    const checked = selectedSoftware.includes(tool.name);
-                    return (
-                      <label className={`tool-card${checked ? ' selected' : ''}`} key={tool.name}>
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleSelection(setSelectedSoftware, tool.name)}
-                        />
-                        <span>
-                          <span className="tool-name">{lt(tool.name)}</span>
-                          <span className="tool-category">{lt(tool.category)}</span>
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
+              <h2>{tt('softwareLicences')}</h2>
+              <MultiSelectDropdown
+                label={tt('softwareLicences')}
+                options={softwareTools}
+                selected={selectedSoftware}
+                onToggle={(name) => toggleSelection(setSelectedSoftware, name)}
+                lt={lt}
+              />
             </section>
 
             <section className="lifecycle-card">
-              <button type="button" className="collapsible-header" onClick={() => toggleSection('equipment')}>
-                <h2>{tt('equipmentRequests')} ({selectedEquipment.length})</h2>
-                <span className="accordion-caret">{openSections.equipment ? '−' : '+'}</span>
-              </button>
-              {openSections.equipment && (
-                <div className="tool-grid tool-list collapsible-content">
-                  {equipmentOptions.map((item) => {
-                    const checked = selectedEquipment.includes(item.name);
-                    return (
-                      <label className={`tool-card${checked ? ' selected' : ''}`} key={item.name}>
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleSelection(setSelectedEquipment, item.name)}
-                        />
-                        <span>
-                          <span className="tool-name">{lt(item.name)}</span>
-                          <span className="tool-category">{lt(item.category)}</span>
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
+              <h2>{tt('equipmentRequests')}</h2>
+              <MultiSelectDropdown
+                label={tt('equipmentRequests')}
+                options={equipmentOptions}
+                selected={selectedEquipment}
+                onToggle={(name) => toggleSelection(setSelectedEquipment, name)}
+                lt={lt}
+              />
             </section>
 
             <section className="lifecycle-card">
-              <button type="button" className="collapsible-header" onClick={() => toggleSection('training')}>
-                <h2>{tt('trainingRequests')} ({selectedTraining.length})</h2>
-                <span className="accordion-caret">{openSections.training ? '−' : '+'}</span>
-              </button>
-              {openSections.training && (
-                <div className="tool-grid tool-list collapsible-content">
-                  {trainingOptions.map((item) => {
-                    const checked = selectedTraining.includes(item.name);
-                    return (
-                      <label className={`tool-card${checked ? ' selected' : ''}`} key={item.name}>
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleSelection(setSelectedTraining, item.name)}
-                        />
-                        <span>
-                          <span className="tool-name">{lt(item.name)}</span>
-                          <span className="tool-category">{lt(item.category)}</span>
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
+              <h2>{tt('trainingRequests')}</h2>
+              <MultiSelectDropdown
+                label={tt('trainingRequests')}
+                options={trainingOptions}
+                selected={selectedTraining}
+                onToggle={(name) => toggleSelection(setSelectedTraining, name)}
+                lt={lt}
+              />
             </section>
 
             <section className="lifecycle-card">
