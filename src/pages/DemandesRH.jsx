@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getBackendBaseUrl } from '../utils/backendUrl';
 import { getCurrentUser, shouldHideHrGroupModules, isGlobalHrManager } from '../services/api';
 import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
-import { isSiteValue } from '../utils/employeeProfile';
+import { isSiteValue, getEmployeeSite } from '../utils/employeeProfile';
 
 const formatFullName = (prenom, nom) => `${formatEmployeePrenom(prenom)} ${formatEmployeeNom(nom)}`.trim();
 
@@ -298,6 +298,12 @@ const DemandesRH = () => {
   // Tunisia users, site_dep holds department names, not plants, so the filter stays hidden.
   const isGroupHrUser = isGlobalHrManager(getCurrentUser());
 
+  // Sentinel value for the "Tunisia" plant option. Tunisia demandes use department
+  // names (not a Site- value), so they can't be selected by exact match like real
+  // plants. Selecting this option instead matches every demande whose site_dep is a
+  // department (i.e. NOT a Site- plant), which is exactly the Tunisian set.
+  const TUNISIA_SITE_VALUE = '__TUNISIA__';
+
   const [demandes, setDemandes] = useState([]);
   const [allDemandes, setAllDemandes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -315,6 +321,10 @@ const DemandesRH = () => {
   const [filters, setFilters] = useState(defaultFilters);
   const [employes, setEmployes] = useState([]);
   const [loadingEmployes, setLoadingEmployes] = useState(false);
+  // Complete list of real plants across ALL accessible schemas (group HR only).
+  // Sourced from /api/employees (which aggregates every country), so every plant
+  // shows in the filter even when it currently has zero demandes.
+  const [plantOptions, setPlantOptions] = useState([]);
   const [filtersApplied, setFiltersApplied] = useState(false);
   const [lastResponse, setLastResponse] = useState(null);
   const [selectedDemande, setSelectedDemande] = useState(null);
@@ -349,14 +359,11 @@ const DemandesRH = () => {
   };
   const activeFiltersCount = getActiveFiltersCount();
 
-  // Plant options are built only for group HR users, from the real "Site-" prefixed
-  // values (isSiteValue). This correctly excludes Tunisia department names and keeps
-  // every actual plant across schemas (Site-Anhui, Site-Germany, Site-France-*, ...).
-  const siteOptions = isGroupHrUser
-    ? Array.from(
-        new Set(allDemandes.map(d => d.employe_site_dep).filter(Boolean).filter(isSiteValue))
-      ).sort((a, b) => a.localeCompare(b))
-    : [];
+  // Plant options are shown only to group HR users. They come from the full
+  // cross-schema plant list (plantOptions, loaded from /api/employees) rather than
+  // from the demandes data — so every real plant appears even when it has zero
+  // demandes. isSiteValue keeps Tunisia's department names out of the plant list.
+  const siteOptions = isGroupHrUser ? plantOptions : [];
 
   const getStatutLabel = (statut) => {
     const labels = { en_attente: t('pending'), approuve: t('approved'), refuse: t('refused'), annulee: t('cancelledRequest') };
@@ -495,6 +502,35 @@ const DemandesRH = () => {
     }
   }, [API_BASE_URL]);
 
+  // Build the complete plant list for group HR users from /api/employees, which
+  // aggregates employees across every accessible country schema. We keep only real
+  // plants (getEmployeeSite + isSiteValue), so Tunisia department names are excluded
+  // and every plant shows even if it has no demandes yet.
+  const fetchPlants = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const response = await fetch(`${API_BASE_URL}/api/employees`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        cache: 'no-cache'
+      });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (!Array.isArray(data)) return;
+      const plants = Array.from(
+        new Set(
+          data
+            .map(emp => getEmployeeSite(emp))
+            .filter(Boolean)
+            .filter(isSiteValue)
+        )
+      ).sort((a, b) => a.localeCompare(b));
+      setPlantOptions(plants);
+    } catch (e) {
+      // Non-fatal: if this fails, the plant filter simply won't populate.
+    }
+  }, [API_BASE_URL]);
+
   const fetchDemandes = useCallback(async (force = false) => {
     try {
       setLoading(true);
@@ -528,7 +564,12 @@ const DemandesRH = () => {
         );
       }
       if (filters.site_dep) {
-        fetched = fetched.filter(d => d.employe_site_dep === filters.site_dep);
+        if (filters.site_dep === TUNISIA_SITE_VALUE) {
+          // Tunisia = any demande whose site_dep is a department, not a Site- plant.
+          fetched = fetched.filter(d => d.employe_site_dep && !isSiteValue(d.employe_site_dep));
+        } else {
+          fetched = fetched.filter(d => d.employe_site_dep === filters.site_dep);
+        }
       }
       setDemandes(fetched);
 
@@ -723,6 +764,9 @@ const DemandesRH = () => {
     }
     fetchDemandes(true);
     fetchEmployes();
+    if (isGroupHrUser) {
+      fetchPlants();
+    }
   }, []); // eslint-disable-line
 
   useEffect(() => {
@@ -951,11 +995,12 @@ const DemandesRH = () => {
             />
           </div>
 
-          {isGroupHrUser && siteOptions.length > 0 && (
+          {isGroupHrUser && (
             <div className="filter-group">
               <label>{t('plantSite')}</label>
               <select value={filters.site_dep} onChange={(e) => handleFilterChange('site_dep', e.target.value)}>
                 <option value="">{t('allSites')}</option>
+                <option value={TUNISIA_SITE_VALUE}>Tunisie</option>
                 {siteOptions.map(site => (
                   <option key={site} value={site}>{site}</option>
                 ))}
@@ -1001,7 +1046,7 @@ const DemandesRH = () => {
                   </span>
                 )}
                 {filters.site_dep && (
-                  <span className="tag">{t('plantSite')}: {filters.site_dep}</span>
+                  <span className="tag">{t('plantSite')}: {filters.site_dep === TUNISIA_SITE_VALUE ? 'Tunisie' : filters.site_dep}</span>
                 )}
                 {filters.date_debut && (
                   <span className="tag">{t('fromDate')}: {formatDate(filters.date_debut)}</span>
