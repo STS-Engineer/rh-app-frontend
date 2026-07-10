@@ -11,6 +11,8 @@ const monthLabels = Object.keys(monthIndex);
 const emptyRoleForm = { role: '', from: '', previousTo: '' };
 const emptyReviewForm = { date: '', title: '', details: '', rating: '3' };
 const emptyTalentForm = { date: '', title: '', details: '', rating: '3' };
+const emptyPreviousJobForm = { employerName: '', title: '', start: '', end: '', details: '' };
+const emptySalaryForm = { year: '', amount: '' };
 
 const localLabels = {
   ko: {
@@ -307,6 +309,8 @@ const FranceCareerDevelopment = () => {
   const [roleForm, setRoleForm] = useState(emptyRoleForm);
   const [reviewForm, setReviewForm] = useState(emptyReviewForm);
   const [talentForm, setTalentForm] = useState(emptyTalentForm);
+  const [previousJobForm, setPreviousJobForm] = useState(emptyPreviousJobForm);
+  const [salaryForm, setSalaryForm] = useState(emptySalaryForm);
   const [loading, setLoading] = useState(true);
   const [eventsLoadingKey, setEventsLoadingKey] = useState('');
   const [savingKey, setSavingKey] = useState('');
@@ -378,6 +382,8 @@ const FranceCareerDevelopment = () => {
     setRoleForm(emptyRoleForm);
     setReviewForm(emptyReviewForm);
     setTalentForm(emptyTalentForm);
+    setPreviousJobForm(emptyPreviousJobForm);
+    setSalaryForm(emptySalaryForm);
     if (nextKey) {
       setActiveTabByEmployee((current) => ({ ...current, [key]: current[key] || 'career' }));
       loadEvents(employee);
@@ -463,6 +469,24 @@ const FranceCareerDevelopment = () => {
                 const annualReviews = events.filter((event) => ['annual_review', 'review', 'performance_review'].includes(event.event_type));
                 const salaryEvents = events.filter((event) => ['salary_change', 'salary_review', 'compensation_change'].includes(event.event_type) || event.salary_new);
                 const talentNotes = events.filter((event) => ['talent_review', 'talent_note'].includes(event.event_type));
+                const previousJobs = events
+                  .filter((event) => event.event_type === 'previous_job')
+                  .sort((a, b) => new Date(b.event_date || 0) - new Date(a.event_date || 0));
+
+                const salaryByYearMap = new Map();
+                salaryEvents.forEach((event) => {
+                  if (!event.event_date) return;
+                  const year = new Date(event.event_date).getFullYear();
+                  const amount = event.salary_new ?? event.salary_old;
+                  if (!year || amount == null) return;
+                  const existing = salaryByYearMap.get(year);
+                  if (!existing || new Date(event.event_date) >= new Date(existing.event_date)) {
+                    salaryByYearMap.set(year, event);
+                  }
+                });
+                const salaryByYear = Array.from(salaryByYearMap.entries())
+                  .map(([year, event]) => ({ year, amount: event.salary_new ?? event.salary_old }))
+                  .sort((a, b) => a.year - b.year);
 
                 return (
                   <article className="lifecycle-card compact" key={key}>
@@ -487,7 +511,7 @@ const FranceCareerDevelopment = () => {
                     {isOpen && (
                       <div className="employee-panel">
                         <div className="career-tabs">
-                          {['career', 'reviews', 'salary', 'talent'].map((item) => (
+                          {['career', 'previousJobs', 'reviews', 'salary', 'talent'].map((item) => (
                             <button
                               key={item}
                               type="button"
@@ -495,6 +519,7 @@ const FranceCareerDevelopment = () => {
                               onClick={() => setActiveTabByEmployee((current) => ({ ...current, [key]: item }))}
                             >
                               {item === 'career' && tt('careerTabCareer')}
+                              {item === 'previousJobs' && tt('careerTabPreviousJobs')}
                               {item === 'reviews' && tt('careerTabReviews')}
                               {item === 'salary' && tt('careerTabSalary')}
                               {item === 'talent' && tt('careerTabTalent')}
@@ -576,6 +601,71 @@ const FranceCareerDevelopment = () => {
                           </>
                         )}
 
+                        {tab === 'previousJobs' && (
+                          <div className="career-section">
+                            <div className="inline-form">
+                              <div className="lifecycle-grid three">
+                                <div className="lifecycle-field">
+                                  <label>{tt('employerName')}</label>
+                                  <input className="lifecycle-input" value={previousJobForm.employerName} onChange={(event) => setPreviousJobForm((current) => ({ ...current, employerName: event.target.value }))} placeholder="Acme Corp" />
+                                </div>
+                                <div className="lifecycle-field">
+                                  <label>{t('position')}</label>
+                                  <input className="lifecycle-input" value={previousJobForm.title} onChange={(event) => setPreviousJobForm((current) => ({ ...current, title: event.target.value }))} placeholder={lt('Operations Manager')} />
+                                </div>
+                                <div className="lifecycle-field">
+                                  <label>{t('startDate')}</label>
+                                  <input className="lifecycle-input" type="date" value={previousJobForm.start} onChange={(event) => setPreviousJobForm((current) => ({ ...current, start: event.target.value }))} />
+                                </div>
+                                <div className="lifecycle-field">
+                                  <label>{t('contractEndDate')}</label>
+                                  <input className="lifecycle-input" type="date" value={previousJobForm.end} onChange={(event) => setPreviousJobForm((current) => ({ ...current, end: event.target.value }))} />
+                                </div>
+                              </div>
+                              <div className="lifecycle-field">
+                                <label>{t('details')}</label>
+                                <textarea className="lifecycle-textarea" value={previousJobForm.details} onChange={(event) => setPreviousJobForm((current) => ({ ...current, details: event.target.value }))} />
+                              </div>
+                              <div className="lifecycle-actions">
+                                <button className="life-btn ghost" type="button" onClick={() => setPreviousJobForm(emptyPreviousJobForm)}>{t('reset')}</button>
+                                <button
+                                  className="life-btn"
+                                  type="button"
+                                  disabled={!previousJobForm.employerName.trim() || !previousJobForm.title.trim() || !previousJobForm.start || savingKey === key}
+                                  onClick={() =>
+                                    addCareerEvent(employee, {
+                                      event_type: 'previous_job',
+                                      event_date: previousJobForm.start,
+                                      end_date: previousJobForm.end || null,
+                                      title: previousJobForm.title.trim(),
+                                      employer_name: previousJobForm.employerName.trim(),
+                                      details: previousJobForm.details.trim() || null
+                                    }).then(() => setPreviousJobForm(emptyPreviousJobForm))
+                                  }
+                                >
+                                  {savingKey === key ? t('saving') : tt('savePreviousJob')}
+                                </button>
+                              </div>
+                            </div>
+                            <div className="career-list compact-list">
+                              {previousJobs.map((event) => (
+                                <div className="career-note" key={event.id}>
+                                  <div>
+                                    <strong>{event.employer_name} — {event.title}</strong>
+                                    <div className="lifecycle-card-note">
+                                      {formatMonthYear(event.event_date)} → {event.end_date ? formatMonthYear(event.end_date) : t('present')}
+                                    </div>
+                                  </div>
+                                  {event.details && <p>{event.details}</p>}
+                                </div>
+                              ))}
+                              {previousJobs.length === 0 && (
+                                <p className="lifecycle-card-note">{lt('No details provided.')}</p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
                         {tab === 'reviews' && (
                           <div className="career-section">
                             <div className="mini-stats">
@@ -640,21 +730,62 @@ const FranceCareerDevelopment = () => {
                           <div className="career-section">
                             <div className="mini-stats">
                               <div className="mini-stat"><span>{t('currentSalary')}</span><strong>{formatCurrency(employee.salaire_brute)}</strong></div>
-                              <div className="mini-stat"><span>{t('salaryEvents')}</span><strong>{salaryEvents.length}</strong></div>
-                                  <div className="mini-stat"><span>{t('department')}</span><strong>{getEmployeeDepartment(employee)}</strong></div>
+                              <div className="mini-stat"><span>{tt('salaryYearsRecorded')}</span><strong>{salaryByYear.length}</strong></div>
+                              <div className="mini-stat"><span>{t('department')}</span><strong>{getEmployeeDepartment(employee)}</strong></div>
+                            </div>
+                            <div className="inline-form">
+                              <div className="lifecycle-grid three">
+                                <div className="lifecycle-field">
+                                  <label>{tt('salaryYear')}</label>
+                                  <input
+                                    className="lifecycle-input"
+                                    type="number"
+                                    min="1990"
+                                    max="2100"
+                                    placeholder="2026"
+                                    value={salaryForm.year}
+                                    onChange={(event) => setSalaryForm((current) => ({ ...current, year: event.target.value }))}
+                                  />
+                                </div>
+                                <div className="lifecycle-field">
+                                  <label>{tt('salaryAmount')}</label>
+                                  <input
+                                    className="lifecycle-input"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={salaryForm.amount}
+                                    onChange={(event) => setSalaryForm((current) => ({ ...current, amount: event.target.value }))}
+                                  />
+                                </div>
+                              </div>
+                              <div className="lifecycle-actions">
+                                <button className="life-btn ghost" type="button" onClick={() => setSalaryForm(emptySalaryForm)}>{t('reset')}</button>
+                                <button
+                                  className="life-btn"
+                                  type="button"
+                                  disabled={!salaryForm.year || !salaryForm.amount || savingKey === key}
+                                  onClick={() =>
+                                    addCareerEvent(employee, {
+                                      event_type: 'salary_change',
+                                      event_date: `${salaryForm.year}-01-01`,
+                                      salary_new: Number(salaryForm.amount),
+                                      title: `${tt('careerTabSalary')} ${salaryForm.year}`
+                                    }).then(() => setSalaryForm(emptySalaryForm))
+                                  }
+                                >
+                                  {savingKey === key ? t('saving') : tt('saveSalaryChange')}
+                                </button>
+                              </div>
                             </div>
                             <div className="career-list compact-list">
-                              {salaryEvents.map((event) => (
-                                <div className="career-note" key={event.id}>
-                                  <div>
-                                    <strong>{event.title || lt('Salary change')}</strong>
-                                    <div className="lifecycle-card-note">{formatMonthYear(event.event_date)}</div>
-                                  </div>
-                                  <p>{formatCurrency(event.salary_old)} → {formatCurrency(event.salary_new)}</p>
-                                  {event.details && <p>{event.details}</p>}
+                              {salaryByYear.map((entry) => (
+                                <div className="career-note" key={entry.year}>
+                                  <strong>{entry.year}</strong>
+                                  <p>{formatCurrency(entry.amount)}</p>
                                 </div>
                               ))}
-                              {salaryEvents.length === 0 && (
+                              {salaryByYear.length === 0 && (
                                 <p className="lifecycle-card-note">{lt('No details provided.')}</p>
                               )}
                             </div>
