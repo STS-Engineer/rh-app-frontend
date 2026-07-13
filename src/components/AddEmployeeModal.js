@@ -257,13 +257,13 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
 
             <div className="fields-column">
               <div className="form-group">
-                <input name="matricule" value={formData.matricule} onChange={handleInputChange} placeholder="Matricule" required />
-                <input name="nom" value={formData.nom} onChange={handleInputChange} placeholder="Nom" required />
-                <input name="prenom" value={formData.prenom} onChange={handleInputChange} placeholder="Prenom" required />
-                <input name="cin" value={formData.cin} onChange={handleInputChange} placeholder="CIN" />
-                <input name="poste" value={formData.poste} onChange={handleInputChange} placeholder="Poste" />
+                <input className="form-input" name="matricule" value={formData.matricule} onChange={handleInputChange} placeholder="Matricule" required />
+                <input className="form-input" name="nom" value={formData.nom} onChange={handleInputChange} placeholder="Nom" required />
+                <input className="form-input" name="prenom" value={formData.prenom} onChange={handleInputChange} placeholder="Prenom" required />
+                <input className="form-input" name="cin" value={formData.cin} onChange={handleInputChange} placeholder="CIN" />
+                <input className="form-input" name="poste" value={formData.poste} onChange={handleInputChange} placeholder="Poste" />
                 {!isTunisiaTenant && (
-                  <select name="grade" value={formData.grade} onChange={handleInputChange}>
+                  <select className="form-select" name="grade" value={formData.grade} onChange={handleInputChange}>
                     <option value="">Grade</option>
                     {GRADE_OPTIONS.map((grade) => (
                       <option key={grade} value={grade}>{grade}</option>
@@ -271,11 +271,12 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                   </select>
                 )}
                 {isTunisiaTenant && (
-                  <input name="adresse_mail" value={formData.adresse_mail} onChange={handleInputChange} placeholder="Email employé" />
+                  <input className="form-input" name="adresse_mail" value={formData.adresse_mail} onChange={handleInputChange} placeholder="Email employé" />
                 )}
                 {!isTunisiaTenant && (
                   <>
                     <input
+                      className="form-input"
                       name="date_debut"
                       type="date"
                       value={formData.date_debut}
@@ -284,6 +285,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                       required
                     />
                     <input
+                      className="form-input"
                       name="salaire_brute"
                       type="number"
                       step="0.01"
@@ -294,11 +296,12 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                     />
                   </>
                 )}
-                <input name="mail_responsable1" value={formData.mail_responsable1} onChange={handleInputChange} placeholder="Email responsable 1" />
-                <input name="mail_responsable2" value={formData.mail_responsable2} onChange={handleInputChange} placeholder="Email responsable 2" />
+                <input className="form-input" name="mail_responsable1" value={formData.mail_responsable1} onChange={handleInputChange} placeholder="Email responsable 1" />
+                <input className="form-input" name="mail_responsable2" value={formData.mail_responsable2} onChange={handleInputChange} placeholder="Email responsable 2" />
 
                 {isTunisiaTenant && (
                   <input
+                    className="form-input"
                     name="mail_responsable_fonctionnel"
                     value={formData.mail_responsable_fonctionnel}
                     onChange={handleInputChange}
@@ -308,6 +311,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
 
                 {isGroupHr && (
                   <select
+                    className="form-select"
                     name="tenant_schema"
                     value={formData.tenant_schema}
                     onChange={handleInputChange}
@@ -327,11 +331,11 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 <div className="form-section">
                   <h3>Contact d'urgence (France)</h3>
                   <div className="form-group">
-                    <input value={emergencyContact.nom} onChange={(e) => setEmergencyContact((p) => ({ ...p, nom: e.target.value }))} placeholder="Nom" />
-                    <input value={emergencyContact.prenom} onChange={(e) => setEmergencyContact((p) => ({ ...p, prenom: e.target.value }))} placeholder="Prenom" />
-                    <input value={emergencyContact.relation} onChange={(e) => setEmergencyContact((p) => ({ ...p, relation: e.target.value }))} placeholder="Relation" />
-                    <input value={emergencyContact.telephone} onChange={(e) => setEmergencyContact((p) => ({ ...p, telephone: e.target.value }))} placeholder="Telephone" />
-                    <input type="email" value={emergencyContact.email} onChange={(e) => setEmergencyContact((p) => ({ ...p, email: e.target.value }))} placeholder="Email" />
+                    <input className="form-input" value={emergencyContact.nom} onChange={(e) => setEmergencyContact((p) => ({ ...p, nom: e.target.value }))} placeholder="Nom" />
+                    <input className="form-input" value={emergencyContact.prenom} onChange={(e) => setEmergencyContact((p) => ({ ...p, prenom: e.target.value }))} placeholder="Prenom" />
+                    <input className="form-input" value={emergencyContact.relation} onChange={(e) => setEmergencyContact((p) => ({ ...p, relation: e.target.value }))} placeholder="Relation" />
+                    <input className="form-input" value={emergencyContact.telephone} onChange={(e) => setEmergencyContact((p) => ({ ...p, telephone: e.target.value }))} placeholder="Telephone" />
+                    <input className="form-input" type="email" value={emergencyContact.email} onChange={(e) => setEmergencyContact((p) => ({ ...p, email: e.target.value }))} placeholder="Email" />
                   </div>
                 </div>
               )}
