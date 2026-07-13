@@ -6,6 +6,8 @@ import './AddEmployeeModal.css';
 
 const GROUP_ROLES = new Set(['group_hr', 'hr_group', 'hr_manager_group', 'global_hr', 'super_admin']);
 
+const GRADE_OPTIONS = ['Junior', 'Confirmed', 'Senior', 'Lead', 'Manager'];
+
 const COUNTRY_SCHEMA_OPTIONS = [
   { label: 'Tunisia', value: 'public' },
   { label: 'France', value: 'schema_fr' },
@@ -167,7 +169,8 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
         mail_responsable2: formData.mail_responsable2 || null,
         mail_responsable_fonctionnel: isTunisiaTenant
           ? formData.mail_responsable_fonctionnel || null
-          : null
+          : null,
+        grade: isTunisiaTenant ? null : (formData.grade || null)
       };
 
       employeeData = cleanEmployeeData(employeeData);
@@ -206,6 +209,8 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
       date_expiration_passport: '',
       date_naissance: '',
       poste: '',
+      role: '',
+      grade: '',
       site_dep: t('headquarters'),
       type_contrat: 'CDI',
       date_debut: '',
@@ -257,8 +262,37 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 <input name="prenom" value={formData.prenom} onChange={handleInputChange} placeholder="Prenom" required />
                 <input name="cin" value={formData.cin} onChange={handleInputChange} placeholder="CIN" />
                 <input name="poste" value={formData.poste} onChange={handleInputChange} placeholder="Poste" />
+                {!isTunisiaTenant && (
+                  <select name="grade" value={formData.grade} onChange={handleInputChange}>
+                    <option value="">Grade</option>
+                    {GRADE_OPTIONS.map((grade) => (
+                      <option key={grade} value={grade}>{grade}</option>
+                    ))}
+                  </select>
+                )}
                 {isTunisiaTenant && (
                   <input name="adresse_mail" value={formData.adresse_mail} onChange={handleInputChange} placeholder="Email employé" />
+                )}
+                {!isTunisiaTenant && (
+                  <>
+                    <input
+                      name="date_debut"
+                      type="date"
+                      value={formData.date_debut}
+                      onChange={handleInputChange}
+                      placeholder="Date de début"
+                      required
+                    />
+                    <input
+                      name="salaire_brute"
+                      type="number"
+                      step="0.01"
+                      value={formData.salaire_brute}
+                      onChange={handleInputChange}
+                      placeholder="Salaire brut"
+                      required
+                    />
+                  </>
                 )}
                 <input name="mail_responsable1" value={formData.mail_responsable1} onChange={handleInputChange} placeholder="Email responsable 1" />
                 <input name="mail_responsable2" value={formData.mail_responsable2} onChange={handleInputChange} placeholder="Email responsable 2" />
