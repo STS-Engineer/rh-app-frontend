@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Sidebar from '../components/Sidebar';
+import MultiSelectDropdown from '../components/MultiSelectDropdown';
 import { employeesAPI, getCurrentUser, isGlobalHrManager } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
 import './FranceModules.css';
@@ -792,27 +793,14 @@ ${lt('Thank you.')}`;
 
             <section className="lifecycle-card">
               <h2>{tt('licencesToCancel')}</h2>
-              <div className="tool-grid">
-                {licences.map((licence) => {
-                  const checked = selectedLicences.includes(licence.name);
-                  return (
-                    <label
-                      className={`tool-card danger${checked ? ' selected' : ''}`}
-                      key={licence.name}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleLicence(licence.name)}
-                      />
-                      <span>
-                        <span className="tool-name">{lt(licence.name)}</span>
-                        <span className="tool-category">{lt(licence.category)}</span>
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
+              <MultiSelectDropdown
+                label={tt('licencesToCancel')}
+                options={licences}
+                selected={selectedLicences}
+                onToggle={toggleLicence}
+                lt={lt}
+                danger
+              />
               <div className="lifecycle-field" style={{ marginTop: 14 }}>
                 <label>{tt('extraAccessToRevoke')}</label>
                 <textarea
@@ -826,27 +814,14 @@ ${lt('Thank you.')}`;
 
             <section className="lifecycle-card">
               <h2>{tt('equipmentToReturn')}</h2>
-              <div className="tool-grid">
-                {equipmentOptions.map((item) => {
-                  const checked = selectedEquipment.includes(item.name);
-                  return (
-                    <label
-                      className={`tool-card danger${checked ? ' selected' : ''}`}
-                      key={item.name}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() => toggleEquipment(item.name)}
-                      />
-                      <span>
-                        <span className="tool-name">{lt(item.name)}</span>
-                        <span className="tool-category">{lt(item.category)}</span>
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
+              <MultiSelectDropdown
+                label={tt('equipmentToReturn')}
+                options={equipmentOptions}
+                selected={selectedEquipment}
+                onToggle={toggleEquipment}
+                lt={lt}
+                danger
+              />
             </section>
 
             <section className="lifecycle-card">

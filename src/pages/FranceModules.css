@@ -350,9 +350,17 @@
   background: var(--life-primary-soft);
 }
 
+.dropdown-item.danger.selected {
+  background: var(--life-danger-soft);
+}
+
 .dropdown-check {
   color: var(--life-primary);
   font-weight: 800;
+}
+
+.dropdown-item.danger .dropdown-check {
+  color: var(--life-danger);
 }
 
 .email-preview {
