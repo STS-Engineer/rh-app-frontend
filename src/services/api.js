@@ -32,6 +32,18 @@ const GLOBAL_HR_ROLES = new Set([
 export const isGlobalHrManager = (user = getCurrentUser()) =>
   GLOBAL_HR_ROLES.has(String(user?.role || '').trim().toLowerCase());
 
+const LOCAL_HR_ROLES = new Set([
+  'local_hr',
+  'hr_local',
+  'plant_hr'
+]);
+
+// A plant's own HR administrator -- distinct from a plain hierarchy-approver
+// account (Team Leader, Supervisor, Manager, Plant Manager), who should only
+// ever see Dashboard + Demandes RH, not onboarding/offboarding/career pages.
+export const isLocalHrManager = (user = getCurrentUser()) =>
+  LOCAL_HR_ROLES.has(String(user?.role || '').trim().toLowerCase());
+
 const HIDDEN_HR_MODULE_ROLES = new Set([
   'group_hr',
   'hr_group',

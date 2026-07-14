@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Sidebar.css';
 import logo from './logo-avocarbon-1.png';
-import { getCurrentUser, isGlobalHrManager, shouldHideHrGroupModules } from '../services/api';
+import { getCurrentUser, isGlobalHrManager, isLocalHrManager, shouldHideHrGroupModules } from '../services/api';
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -26,7 +26,11 @@ const Sidebar = () => {
     tenantText.includes('same service') ||
     tenantText.includes('same-service');
   const hideHrGroupModules = shouldHideHrGroupModules(user);
-  const showSharedTenantModules = Boolean(user) && (!isTunisiaTenant || isGlobalHrManager(user));
+  // Onboarding/Career Development/Offboarding are HR-administration pages --
+  // only a global HR manager or a plant's own local HR account should see
+  // them, never a plain hierarchy-approver account (Team Leader, Supervisor,
+  // Manager, Plant Manager) created just to approve/reject requests.
+  const showSharedTenantModules = Boolean(user) && (isGlobalHrManager(user) || isLocalHrManager(user));
 
   useEffect(() => {
     const savedState = localStorage.getItem('sidebarOpen');
