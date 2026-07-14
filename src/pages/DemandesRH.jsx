@@ -598,7 +598,8 @@ const DemandesRH = () => {
         `${API_BASE_URL}/api/demandes/${demandeToAct.id}/approuver-app`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ schema: demandeToAct._source_schema })
         }
       );
       if (!response.ok) {
@@ -628,7 +629,7 @@ const DemandesRH = () => {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ commentaire: rejectComment })
+          body: JSON.stringify({ commentaire: rejectComment, schema: demandeToAct._source_schema })
         }
       );
       if (!response.ok) {
@@ -712,7 +713,7 @@ const DemandesRH = () => {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ commentaire: comment })
+          body: JSON.stringify({ commentaire: comment, schema: demande._source_schema })
         }
       );
       if (!response.ok) {
