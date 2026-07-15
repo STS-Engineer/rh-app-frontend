@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { getBackendBaseUrl } from '../utils/backendUrl';
 import { getCurrentUser, shouldHideHrGroupModules, isGlobalHrManager } from '../services/api';
 import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
-import { isSiteValue, getEmployeeSite } from '../utils/employeeProfile';
+import { getEmployeeSite } from '../utils/employeeProfile';
 
 const formatFullName = (prenom, nom) => `${formatEmployeePrenom(prenom)} ${formatEmployeeNom(nom)}`.trim();
 
@@ -362,7 +362,7 @@ const DemandesRH = () => {
   // Plant options are shown only to group HR users. They come from the full
   // cross-schema plant list (plantOptions, loaded from /api/employees) rather than
   // from the demandes data — so every real plant appears even when it has zero
-  // demandes. isSiteValue keeps Tunisia's department names out of the plant list.
+  // demandes. getEmployeeSite keeps Tunisia's department names out of the plant list.
   const siteOptions = isGroupHrUser ? plantOptions : [];
 
   const getStatutLabel = (statut) => {
@@ -503,9 +503,9 @@ const DemandesRH = () => {
   }, [API_BASE_URL]);
 
   // Build the complete plant list for group HR users from /api/employees, which
-  // aggregates employees across every accessible country schema. We keep only real
-  // plants (getEmployeeSite + isSiteValue), so Tunisia department names are excluded
-  // and every plant shows even if it has no demandes yet.
+  // aggregates employees across every accessible country schema. getEmployeeSite
+  // already excludes Tunisia department names, so every plant shows even if it has
+  // no demandes yet.
   const fetchPlants = useCallback(async () => {
     try {
       const token = localStorage.getItem('token');
@@ -522,7 +522,6 @@ const DemandesRH = () => {
           data
             .map(emp => getEmployeeSite(emp))
             .filter(Boolean)
-            .filter(isSiteValue)
         )
       ).sort((a, b) => a.localeCompare(b));
       setPlantOptions(plants);
@@ -565,8 +564,10 @@ const DemandesRH = () => {
       }
       if (filters.site_dep) {
         if (filters.site_dep === TUNISIA_SITE_VALUE) {
-          // Tunisia = any demande whose site_dep is a department, not a Site- plant.
-          fetched = fetched.filter(d => d.employe_site_dep && !isSiteValue(d.employe_site_dep));
+          // Tunisia = any demande sourced from the Tunisia (public) schema, rather
+          // than guessing from the site_dep text -- plant names like "Tianjin" have
+          // no fixed prefix, so they can't be told apart from departments by pattern.
+          fetched = fetched.filter(d => d._source_schema === 'public');
         } else {
           fetched = fetched.filter(d => d.employe_site_dep === filters.site_dep);
         }

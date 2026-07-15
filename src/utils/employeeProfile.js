@@ -28,6 +28,13 @@ const looksLikeSite = (value = '') => {
 
 export const isSiteValue = (value = '') => looksLikeSite(value);
 
+// Outside Tunisia (schema 'public'), site_dep always holds a real plant name --
+// e.g. "Tianjin", "Kunshan" -- with no "Site-" prefix, so the prefix heuristic
+// below only applies to the Tunisia/public schema, where site_dep holds
+// department names and a handful of legitimate "Site ..." plant values.
+const isKnownNonTunisiaSchema = (employee = {}) =>
+  Boolean(employee.tenant_schema) && employee.tenant_schema !== 'public';
+
 export const getEmployeeSite = (employee = {}) => {
   const explicitSite = firstNonEmpty(
     employee.site,
@@ -40,6 +47,8 @@ export const getEmployeeSite = (employee = {}) => {
   if (explicitSite) return explicitSite;
 
   const sharedValue = firstNonEmpty(employee.site_dep);
+  if (!sharedValue) return '';
+  if (isKnownNonTunisiaSchema(employee)) return sharedValue;
   return looksLikeSite(sharedValue) ? sharedValue : '';
 };
 
@@ -53,6 +62,8 @@ export const getEmployeeDepartment = (employee = {}) => {
   if (explicitDepartment) return explicitDepartment;
 
   const sharedValue = firstNonEmpty(employee.site_dep);
+  if (!sharedValue) return '';
+  if (isKnownNonTunisiaSchema(employee)) return '';
   return looksLikeSite(sharedValue) ? '' : sharedValue;
 };
 

@@ -5,7 +5,7 @@ import EmployeeCard from '../components/EmployeeCard';
 import ArchiveEmployeeModal from '../components/ArchiveEmployeeModal';
 import { getArchivedEmployees, getCurrentUser, isGlobalHrManager } from '../services/api';
 import { getBackendBaseUrl } from '../utils/backendUrl';
-import { isSiteValue, getEmployeeSite } from '../utils/employeeProfile';
+import { getEmployeeSite } from '../utils/employeeProfile';
 import { useLanguage } from '../contexts/LanguageContext';
 import './Archives.css';
 
@@ -57,11 +57,10 @@ const Archives = () => {
 
     if (siteFilter) {
       if (siteFilter === TUNISIA_SITE_VALUE) {
-        // Tunisia = any employee whose site is a department, not a Site- plant.
-        filtered = filtered.filter(emp => {
-          const site = getEmployeeSite(emp);
-          return !site || !isSiteValue(site);
-        });
+        // Tunisia = any employee whose site is a department, not a real plant.
+        // getEmployeeSite already resolves this per-schema, so a plant name like
+        // "Tianjin" is never mistaken for a Tunisia department here.
+        filtered = filtered.filter(emp => !getEmployeeSite(emp));
       } else {
         filtered = filtered.filter(emp => getEmployeeSite(emp) === siteFilter);
       }
@@ -71,9 +70,9 @@ const Archives = () => {
   }, [searchTerm, siteFilter, archivedEmployees]);
 
   // Build the complete plant list for group HR from /api/employees, which aggregates
-  // employees across every accessible country schema. Real plants only (getEmployeeSite
-  // + isSiteValue), so every plant appears even with zero archived employees, and
-  // Tunisia department names are excluded.
+  // employees across every accessible country schema. getEmployeeSite already
+  // excludes Tunisia department names, so every real plant appears even with zero
+  // archived employees.
   const loadPlantOptions = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -90,7 +89,6 @@ const Archives = () => {
           data
             .map(emp => getEmployeeSite(emp))
             .filter(Boolean)
-            .filter(isSiteValue)
         )
       ).sort((a, b) => a.localeCompare(b));
       setPlantOptions(plants);
