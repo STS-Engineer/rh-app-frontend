@@ -41,8 +41,11 @@ const EmployeeCard = ({ employee, onClick }) => {
       </div>
       <div className="card-body">
         {employeeRole && <p className="employee-role">{employeeRole}</p>}
-        {employeeGrade && <p className="employee-grade">{employeeGrade}</p>}
-        {employeeDepartment && <p className="employee-site">{employeeDepartment}</p>}
+        {employeeGrade ? (
+          <p className="employee-grade">{employeeGrade}</p>
+        ) : (
+          employeeDepartment && <p className="employee-site">{employeeDepartment}</p>
+        )}
       </div>
     </div>
   );
