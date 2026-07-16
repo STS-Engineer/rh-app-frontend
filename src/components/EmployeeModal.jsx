@@ -167,7 +167,10 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
   // These describe the tenant of the EMPLOYEE being viewed, not the logged-in
   // user -- a group_hr account is usually Tunisia-based itself, but still
   // needs to see France/other-country fields when viewing those employees.
-  const isFranceTenant = (employee?.tenant_schema || '').toLowerCase() === 'schema_fr';
+  // Emergency contacts exist for every non-Tunisia country (not just
+  // France), so this only excludes Tunisia, which has no emergency_contacts
+  // table and no way to save this data.
+  const hasEmergencyContactSupport = (employee?.tenant_schema || '').toLowerCase() !== 'public';
   const isTunisiaTenant = (employee?.tenant_schema || '').toLowerCase() === 'public';
 
   /* ✅ Sync formData */
@@ -183,7 +186,10 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
 
   useEffect(() => {
     const loadEmergencyContact = async () => {
-      if (!isFranceTenant || !employee?.id || !isOpen) return;
+      // Reset first so a previously-viewed employee's data never lingers
+      // on screen while switching to one with no support/data of its own.
+      setEmergencyContact({ nom: '', prenom: '', relation: '', telephone: '', email: '' });
+      if (!hasEmergencyContactSupport || !employee?.id || !isOpen) return;
       try {
         const response = await tenantV2API.getFranceEmergencyContact(employee.id, employee.tenant_schema);
         if (response.data) setEmergencyContact(response.data);
@@ -192,7 +198,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
       }
     };
     loadEmergencyContact();
-  }, [isFranceTenant, employee?.id, isOpen]);
+  }, [hasEmergencyContactSupport, employee?.id, isOpen]);
 
   const handleInputChange = useCallback((e) => {
     const { name, value } = e.target;
@@ -399,7 +405,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
       }
 
       const response = await employeesAPI.update(employee.id, updatedData);
-      if (isFranceTenant && emergencyContact.telephone) {
+      if (hasEmergencyContactSupport && emergencyContact.telephone) {
         await tenantV2API.saveFranceEmergencyContact(employee.id, emergencyContact, employee.tenant_schema);
       }
       
@@ -440,7 +446,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
     } finally {
       setSaving(false);
     }
-  }, [saving, formData, isValidEmail, t, selectedFile, employee?.id, onUpdate, refreshParent, isFranceTenant, emergencyContact, isTunisiaTenant]);
+  }, [saving, formData, isValidEmail, t, selectedFile, employee?.id, onUpdate, refreshParent, hasEmergencyContactSupport, emergencyContact, isTunisiaTenant]);
 
   const handleDeleteDossier = useCallback(async () => {
     if (!employee?.id) return;
@@ -723,16 +729,14 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                   )}
                 </div>
 
-                {isFranceTenant && (
-                  <div className="detail-section">
-                    <h4>🚨 Contact d'urgence (France)</h4>
-                    <DetailRow label="Nom" value={emergencyContact.nom ? formatEmployeeNom(emergencyContact.nom) : t('notSpecified')} />
-                    <DetailRow label="Prénom" value={emergencyContact.prenom ? formatEmployeePrenom(emergencyContact.prenom) : t('notSpecified')} />
-                    <DetailRow label="Relation" value={emergencyContact.relation || t('notSpecified')} />
-                    <DetailRow label="Téléphone" value={emergencyContact.telephone || t('notSpecified')} />
-                    <DetailRow label="Email" value={emergencyContact.email || t('notSpecified')} />
-                  </div>
-                )}
+                <div className="detail-section">
+                  <h4>🚨 Contact d'urgence</h4>
+                  <DetailRow label="Nom" value={emergencyContact.nom ? formatEmployeeNom(emergencyContact.nom) : t('notSpecified')} />
+                  <DetailRow label="Prénom" value={emergencyContact.prenom ? formatEmployeePrenom(emergencyContact.prenom) : t('notSpecified')} />
+                  <DetailRow label="Relation" value={emergencyContact.relation || t('notSpecified')} />
+                  <DetailRow label="Téléphone" value={emergencyContact.telephone || t('notSpecified')} />
+                  <DetailRow label="Email" value={emergencyContact.email || t('notSpecified')} />
+                </div>
 
                 {isGroupHrUser && (
                   <div className="detail-section">
@@ -963,9 +967,9 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                   </div>
                 </div>
 
-                {isFranceTenant && (
+                {hasEmergencyContactSupport && (
                   <div className="form-section">
-                    <h4>🚨 Contact d'urgence (France)</h4>
+                    <h4>🚨 Contact d'urgence</h4>
                     <div className="form-grid">
                       <FormInput label="Nom" name="nom" value={emergencyContact.nom} onChange={(e) => setEmergencyContact((p) => ({ ...p, nom: e.target.value }))} />
                       <FormInput label="Prénom" name="prenom" value={emergencyContact.prenom} onChange={(e) => setEmergencyContact((p) => ({ ...p, prenom: e.target.value }))} />
