@@ -7,7 +7,7 @@ const AVATAR_THEMES = [
   { start: '#be123c', end: '#f43f5e', glow: '#ffffff24', glowSoft: '#ffffff14' }
 ];
 
-const TUNISIA_HINTS = ['tunisia', 'schema_tn', 'public', 'sts', 'sceet', 'same service', 'same-service'];
+const TUNISIA_HINTS = ['tunisia', 'public', 'sts'];
 
 const escapeXml = (value = '') =>
   String(value)

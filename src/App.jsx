@@ -36,10 +36,7 @@ const isTunisiaTenantUser = (user) => {
   return (
     tenantText.includes('tunisia') ||
     tenantText.includes('public') ||
-    tenantText.includes('sts') ||
-    tenantText.includes('sceet') ||
-    tenantText.includes('same service') ||
-    tenantText.includes('same-service')
+    tenantText.includes('sts')
   );
 };
 

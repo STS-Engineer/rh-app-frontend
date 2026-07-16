@@ -21,10 +21,7 @@ const Sidebar = () => {
   const isTunisiaTenant =
     tenantText.includes('tunisia') ||
     tenantText.includes('public') ||
-    tenantText.includes('sts') ||
-    tenantText.includes('sceet') ||
-    tenantText.includes('same service') ||
-    tenantText.includes('same-service');
+    tenantText.includes('sts');
   const hideHrGroupModules = shouldHideHrGroupModules(user);
   // Onboarding/Career Development/Offboarding are HR-administration pages --
   // only a global HR manager or a plant's own local HR account should see
