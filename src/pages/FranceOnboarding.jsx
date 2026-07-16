@@ -338,9 +338,9 @@ const FranceOnboarding = () => {
   const lt = (value) => localLabels[language]?.[value] || value;
   const tt = (key) => pageText[language]?.[key] || t(key);
   const [form, setForm] = useState(initialForm);
-  const [selectedSoftware, setSelectedSoftware] = useState(allSoftwareNames);
-  const [selectedEquipment, setSelectedEquipment] = useState(allEquipmentNames);
-  const [selectedTraining, setSelectedTraining] = useState(allTrainingNames);
+  const [selectedSoftware, setSelectedSoftware] = useState([]);
+  const [selectedEquipment, setSelectedEquipment] = useState([]);
+  const [selectedTraining, setSelectedTraining] = useState([]);
   const [success, setSuccess] = useState(false);
   const [previewTab, setPreviewTab] = useState('it');
   const [sending, setSending] = useState(false);
@@ -373,9 +373,9 @@ const FranceOnboarding = () => {
 
   const resetForm = () => {
     setForm(initialForm);
-    setSelectedSoftware(allSoftwareNames);
-    setSelectedEquipment(allEquipmentNames);
-    setSelectedTraining(allTrainingNames);
+    setSelectedSoftware([]);
+    setSelectedEquipment([]);
+    setSelectedTraining([]);
     setSuccess(false);
     setSendError('');
   };

@@ -275,8 +275,12 @@ export const utilsAPI = {
 
 export const tenantV2API = {
   getEmployees: () => api.get('/v2/employees'),
-  getFranceEmergencyContact: (employeeId) => api.get(`/v2/france/emergency-contacts/${employeeId}`),
-  saveFranceEmergencyContact: (employeeId, data) => api.put(`/v2/france/emergency-contacts/${employeeId}`, data),
+  getFranceEmergencyContact: (employeeId, tenantSchema) =>
+    api.get(`/v2/france/emergency-contacts/${employeeId}`, {
+      params: tenantSchema ? { tenant_schema: tenantSchema } : {}
+    }),
+  saveFranceEmergencyContact: (employeeId, data, tenantSchema) =>
+    api.put(`/v2/france/emergency-contacts/${employeeId}`, { ...data, tenant_schema: tenantSchema || data?.tenant_schema }),
   getFranceOnboarding: (employeeId, tenantSchema) =>
     api.get(`/v2/france/onboarding/${employeeId}`, {
       params: tenantSchema ? { tenant_schema: tenantSchema } : {}

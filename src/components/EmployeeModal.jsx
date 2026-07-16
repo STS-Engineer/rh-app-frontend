@@ -164,11 +164,11 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
   const [emergencyContact, setEmergencyContact] = useState({ nom: '', prenom: '', relation: '', telephone: '', email: '' });
   const user = getCurrentUser();
   const isGroupHrUser = isGlobalHrManager(user);
-  const isFranceTenant = (user?.plant || '').toLowerCase().includes('france');
-  
-  // CHANGE 8: Tunisia check
-  const isTunisiaTenant = (user?.tenant_schema || '').toLowerCase() === 'public' ||
-    (user?.country || '').toLowerCase().includes('tunisia');
+  // These describe the tenant of the EMPLOYEE being viewed, not the logged-in
+  // user -- a group_hr account is usually Tunisia-based itself, but still
+  // needs to see France/other-country fields when viewing those employees.
+  const isFranceTenant = (employee?.tenant_schema || '').toLowerCase() === 'schema_fr';
+  const isTunisiaTenant = (employee?.tenant_schema || '').toLowerCase() === 'public';
 
   /* ✅ Sync formData */
   useEffect(() => {
@@ -185,7 +185,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
     const loadEmergencyContact = async () => {
       if (!isFranceTenant || !employee?.id || !isOpen) return;
       try {
-        const response = await tenantV2API.getFranceEmergencyContact(employee.id);
+        const response = await tenantV2API.getFranceEmergencyContact(employee.id, employee.tenant_schema);
         if (response.data) setEmergencyContact(response.data);
       } catch (e) {
         console.error('Emergency contact load failed', e);
@@ -400,7 +400,7 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
 
       const response = await employeesAPI.update(employee.id, updatedData);
       if (isFranceTenant && emergencyContact.telephone) {
-        await tenantV2API.saveFranceEmergencyContact(employee.id, emergencyContact);
+        await tenantV2API.saveFranceEmergencyContact(employee.id, emergencyContact, employee.tenant_schema);
       }
       
       const updatedEmployee = response.data || response;

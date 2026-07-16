@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import MultiSelectDropdown from '../components/MultiSelectDropdown';
 import { employeesAPI, getCurrentUser, isGlobalHrManager } from '../services/api';
+import { getEmployeeSite } from '../utils/employeeProfile';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSiteFilter } from '../contexts/SiteFilterContext';
 import './FranceModules.css';
@@ -459,8 +460,8 @@ const FranceOffboarding = () => {
   const { siteFilter: plantFilter, setSiteFilter: setPlantFilter } = useSiteFilter();
   const [selectedEmployeeKey, setSelectedEmployeeKey] = useState('');
   const [form, setForm] = useState(initialForm);
-  const [selectedLicences, setSelectedLicences] = useState(allLicenceNames);
-  const [selectedEquipment, setSelectedEquipment] = useState(allEquipmentNames);
+  const [selectedLicences, setSelectedLicences] = useState([]);
+  const [selectedEquipment, setSelectedEquipment] = useState([]);
   const [questions, setQuestions] = useState(initialQuestions);
   const [newQuestion, setNewQuestion] = useState({ text: '', type: 'Open text' });
   const [previewTab, setPreviewTab] = useState('it');
@@ -471,7 +472,10 @@ const FranceOffboarding = () => {
     const loadEmployees = async () => {
       try {
         const response = await employeesAPI.getAll();
-        setEmployees(response.data || []);
+        // Offboarding doesn't apply to Tunisia (no offboarding_records table
+        // there, and the backend rejects it) -- keep those employees out of
+        // this page entirely.
+        setEmployees((response.data || []).filter((employee) => employee.tenant_schema !== 'public'));
       } catch (error) {
         setLookupError(error?.response?.data?.error || error.message || t('errorLoadingEmployees') || 'Unable to load employees.');
       }
@@ -483,7 +487,7 @@ const FranceOffboarding = () => {
   const filteredEmployees = useMemo(() => {
     const query = employeeSearch.trim().toLowerCase();
     const scopedEmployees = canFilterByPlant && plantFilter
-      ? employees.filter((employee) => getEmployeeDepartment(employee) === plantFilter)
+      ? employees.filter((employee) => getEmployeeSite(employee) === plantFilter)
       : employees;
 
     if (!query) return scopedEmployees.slice(0, 30);
@@ -507,7 +511,7 @@ const FranceOffboarding = () => {
 
   const plantOptions = useMemo(
     () =>
-      Array.from(new Set(employees.map((employee) => getEmployeeDepartment(employee)).filter(Boolean))).sort((a, b) =>
+      Array.from(new Set(employees.map((employee) => getEmployeeSite(employee)).filter(Boolean))).sort((a, b) =>
         String(a).localeCompare(String(b))
       ),
     [employees]
@@ -593,8 +597,8 @@ const FranceOffboarding = () => {
     setForm(initialForm);
     setSelectedEmployeeKey('');
     setEmployeeSearch('');
-    setSelectedLicences(allLicenceNames);
-    setSelectedEquipment(allEquipmentNames);
+    setSelectedLicences([]);
+    setSelectedEquipment([]);
     setQuestions(initialQuestions);
     setNewQuestion({ text: '', type: 'Open text' });
     setPreviewTab('it');

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Sidebar from '../components/Sidebar';
 import { employeesAPI, getCurrentUser, isGlobalHrManager, tenantV2API } from '../services/api';
 import { getEmployeeAvatarFallback, getEmployeeAvatarSrc, getEmployeeDisplayName } from '../utils/employeeAvatar';
+import { getEmployeeSite } from '../utils/employeeProfile';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useSiteFilter } from '../contexts/SiteFilterContext';
 import './FranceModules.css';
@@ -322,7 +323,10 @@ const FranceCareerDevelopment = () => {
       try {
         setLoading(true);
         const response = await employeesAPI.getAll();
-        const rows = response.data || [];
+        // Career development doesn't apply to Tunisia (no career_events table
+        // there, and the backend rejects it) -- keep those employees off this
+        // page entirely instead of letting them get auto-selected and error.
+        const rows = (response.data || []).filter((employee) => employee.tenant_schema !== 'public');
         setEmployees(rows);
         if (rows.length) {
           const firstKey = getEmployeeKey(rows[0]);
@@ -355,7 +359,7 @@ const FranceCareerDevelopment = () => {
 
   const filteredEmployees = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const scoped = canFilterByPlant && plantFilter ? employees.filter((employee) => getEmployeeDepartment(employee) === plantFilter) : employees;
+    const scoped = canFilterByPlant && plantFilter ? employees.filter((employee) => getEmployeeSite(employee) === plantFilter) : employees;
     if (!query) return scoped;
     return scoped.filter((employee) => {
       const haystack = [
@@ -371,7 +375,7 @@ const FranceCareerDevelopment = () => {
   }, [employees, search, plantFilter, canFilterByPlant]);
 
   const plantOptions = useMemo(
-    () => Array.from(new Set(employees.map((employee) => getEmployeeDepartment(employee)).filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b))),
+    () => Array.from(new Set(employees.map((employee) => getEmployeeSite(employee)).filter(Boolean))).sort((a, b) => String(a).localeCompare(String(b))),
     [employees]
   );
 
