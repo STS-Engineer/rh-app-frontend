@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSiteFilter } from '../contexts/SiteFilterContext';
 import { employeesAPI, getCurrentUser, isGlobalHrManager } from '../services/api';
 import {
   getEmployeeAvatarFallback,
@@ -31,7 +32,7 @@ const Organigramme = () => {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [plantFilter, setPlantFilter] = useState('');
+  const { siteFilter: plantFilter, setSiteFilter: setPlantFilter } = useSiteFilter();
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const [zoomLevel, setZoomLevel] = useState(1);
   const [selectedNode, setSelectedNode] = useState(null);

@@ -15,6 +15,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSiteFilter } from '../contexts/SiteFilterContext';
 import { employeesAPI, demandesAPI } from '../services/api';
 import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
 import { getEmployeeSite, getEmployeeDepartment } from '../utils/employeeProfile';
@@ -181,7 +182,7 @@ const EtatDesLieux = () => {
   const [filterType, setFilterType] = useState('week');
   const [selectedEmployee, setSelectedEmployee] = useState('all');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
-  const [selectedSite, setSelectedSite] = useState('all');
+  const { siteFilter: selectedSite, setSiteFilter: setSelectedSite } = useSiteFilter();
   const [nameSearch, setNameSearch] = useState('');   // ← NEW: name search state
   const [viewMode, setViewMode] = useState('week');
   const [showDetailsPanel, setShowDetailsPanel] = useState(false);
@@ -309,7 +310,7 @@ const EtatDesLieux = () => {
       filtered = filtered.filter(emp => getEmployeeDepartment(emp) === selectedDepartment);
     }
 
-    if (selectedSite !== 'all') {
+    if (selectedSite !== '') {
       filtered = filtered.filter(emp => getEmployeeSite(emp) === selectedSite);
     }
 
@@ -594,7 +595,7 @@ const EtatDesLieux = () => {
                 onChange={(e) => setSelectedSite(e.target.value)}
                 className="department-select"
               >
-                <option value="all">{t('allSites')}</option>
+                <option value="">{t('allSites')}</option>
                 {getSites().slice(1).map(site => (
                   <option key={site} value={site}>{site}</option>
                 ))}

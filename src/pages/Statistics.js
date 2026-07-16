@@ -5,6 +5,7 @@ import { exportToPDF, exportToExcel, exportEmployeesToExcel } from '../services/
 import { getEmployeeSite } from '../utils/employeeProfile';
 import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSiteFilter } from '../contexts/SiteFilterContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 import './Statistics.css';
 
@@ -30,7 +31,7 @@ const Statistics = () => {
   const [exporting, setExporting] = useState(false);
   const [selectedChart, setSelectedChart] = useState('department');
   const [timeRange, setTimeRange] = useState('monthly');
-  const [siteFilter, setSiteFilter] = useState('');
+  const { siteFilter, setSiteFilter } = useSiteFilter();
   const chartRef = useRef(null);
   const user = getCurrentUser();
   const isFranceTenant = (user?.plant || '').toLowerCase().includes('france');

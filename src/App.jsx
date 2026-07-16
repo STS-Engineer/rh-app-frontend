@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { SiteFilterProvider } from './contexts/SiteFilterContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Team from './pages/Team';
@@ -60,6 +61,7 @@ const HiddenForHrGroupRoute = ({ children }) => {
 function App() {
   return (
     <LanguageProvider>
+      <SiteFilterProvider>
       <Router>
         <div className="App">
           <div className="zoom-80">
@@ -192,6 +194,7 @@ function App() {
           </div>
         </div>
       </Router>
+      </SiteFilterProvider>
     </LanguageProvider>
   );
 }

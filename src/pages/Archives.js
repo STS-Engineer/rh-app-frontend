@@ -7,6 +7,7 @@ import { getArchivedEmployees, getCurrentUser, isGlobalHrManager } from '../serv
 import { getBackendBaseUrl } from '../utils/backendUrl';
 import { getEmployeeSite } from '../utils/employeeProfile';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSiteFilter } from '../contexts/SiteFilterContext';
 import './Archives.css';
 
 // Sentinel value for the "Tunisia" plant option. Tunisia employees use department
@@ -23,7 +24,7 @@ const Archives = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [siteFilter, setSiteFilter] = useState('');
+  const { siteFilter, setSiteFilter } = useSiteFilter();
   const [loading, setLoading] = useState(true);
   // Complete plant list across ALL accessible schemas (group HR only), loaded from
   // /api/employees so every plant shows even when it has zero archived employees —

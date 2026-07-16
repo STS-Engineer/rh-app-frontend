@@ -5,6 +5,7 @@ import { employeesAPI, getArchivedEmployees, getCurrentUser, isGlobalHrManager }
 import { exportEmployeesToExcel } from '../services/exportService';
 import { getEmployeeSite } from '../utils/employeeProfile';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSiteFilter } from '../contexts/SiteFilterContext';
 import './Dashboard.css';
 import NotificationIcon from '../components/NotificationIcon';
 
@@ -12,9 +13,9 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const canFilterBySite = isGlobalHrManager(getCurrentUser());
+  const { siteFilter, setSiteFilter } = useSiteFilter();
   const [employees, setEmployees] = useState([]);
   const [archivesCount, setArchivesCount] = useState(0);
-  const [siteFilter, setSiteFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
 

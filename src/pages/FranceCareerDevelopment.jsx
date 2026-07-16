@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar';
 import { employeesAPI, getCurrentUser, isGlobalHrManager, tenantV2API } from '../services/api';
 import { getEmployeeAvatarFallback, getEmployeeAvatarSrc, getEmployeeDisplayName } from '../utils/employeeAvatar';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSiteFilter } from '../contexts/SiteFilterContext';
 import './FranceModules.css';
 
 const monthIndex = { Jan: 0, Feb: 1, Mar: 2, Apr: 3, May: 4, Jun: 5, Jul: 6, Aug: 7, Sep: 8, Oct: 9, Nov: 10, Dec: 11 };
@@ -302,7 +303,7 @@ const FranceCareerDevelopment = () => {
   const [employees, setEmployees] = useState([]);
   const [eventsByEmployee, setEventsByEmployee] = useState({});
   const [search, setSearch] = useState('');
-  const [plantFilter, setPlantFilter] = useState('');
+  const { siteFilter: plantFilter, setSiteFilter: setPlantFilter } = useSiteFilter();
   const [openEmployeeKey, setOpenEmployeeKey] = useState('');
   const [activeTabByEmployee, setActiveTabByEmployee] = useState({});
   const [addingForKey, setAddingForKey] = useState('');

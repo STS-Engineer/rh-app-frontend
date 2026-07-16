@@ -3,6 +3,7 @@ import Sidebar from '../components/Sidebar';
 import MultiSelectDropdown from '../components/MultiSelectDropdown';
 import { employeesAPI, getCurrentUser, isGlobalHrManager } from '../services/api';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSiteFilter } from '../contexts/SiteFilterContext';
 import './FranceModules.css';
 
 const IT_TEST_EMAIL = 'rami.mejri@avocarbon.com';
@@ -455,7 +456,7 @@ const FranceOffboarding = () => {
   const canFilterByPlant = isGlobalHrManager(getCurrentUser());
   const [employees, setEmployees] = useState([]);
   const [employeeSearch, setEmployeeSearch] = useState('');
-  const [plantFilter, setPlantFilter] = useState('');
+  const { siteFilter: plantFilter, setSiteFilter: setPlantFilter } = useSiteFilter();
   const [selectedEmployeeKey, setSelectedEmployeeKey] = useState('');
   const [form, setForm] = useState(initialForm);
   const [selectedLicences, setSelectedLicences] = useState(allLicenceNames);

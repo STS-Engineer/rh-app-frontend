@@ -12,6 +12,7 @@ import {
   getEmployeeRole
 } from "../utils/employeeProfile";
 import { useLanguage } from "../contexts/LanguageContext";
+import { useSiteFilter } from "../contexts/SiteFilterContext";
 import "./Team.css";
 
 const Team = () => {
@@ -19,6 +20,7 @@ const Team = () => {
   const location = useLocation(); // ✅ ADDED
   const navigate = useNavigate(); // ✅ ADDED
   const canFilterByPlant = isGlobalHrManager(getCurrentUser());
+  const { siteFilter, setSiteFilter } = useSiteFilter();
   const siteLabel = (t("plantSite") || "Site").split("/").pop().trim() || "Site";
   const currentUser = getCurrentUser();
   const isTunisiaTenant =
@@ -40,7 +42,6 @@ const Team = () => {
 
   // ✅ Filtres
   const [filters, setFilters] = useState({
-    site: "",
     department: "",
     role: "",
     grade: "",
@@ -195,7 +196,7 @@ const Team = () => {
       if (!matchesSearch) return false;
 
       // Filtres texte
-      if (canFilterByPlant && filters.site && getEmployeeSite(emp) !== filters.site) return false;
+      if (canFilterByPlant && siteFilter && getEmployeeSite(emp) !== siteFilter) return false;
       if (filters.department && getEmployeeDepartment(emp) !== filters.department) return false;
       if (filters.role && getEmployeeRole(emp) !== filters.role) return false;
       if (filters.grade && getEmployeeGrade(emp) !== filters.grade) return false;
@@ -255,7 +256,7 @@ const Team = () => {
     }
 
     setFilteredEmployees(result);
-  }, [searchTerm, employees, filters, canFilterByPlant, isTunisiaTenant]);
+  }, [searchTerm, employees, filters, siteFilter, canFilterByPlant, isTunisiaTenant]);
 
   const updateFilter = (name, value) => {
     setFilters((prev) => ({ ...prev, [name]: value }));
@@ -263,8 +264,8 @@ const Team = () => {
 
   const clearFilters = () => {
     setDashboardFilter(null); // ✅ ADDED: also clear the banner
+    setSiteFilter("");
     setFilters({
-      site: "",
       department: "",
       role: "",
       grade: "",
@@ -368,8 +369,8 @@ const Team = () => {
             <div className="toolbar-field">
               <label className="toolbar-label">{siteLabel}</label>
               <select
-                value={filters.site}
-                onChange={(e) => updateFilter("site", e.target.value)}
+                value={siteFilter}
+                onChange={(e) => setSiteFilter(e.target.value)}
                 className="toolbar-control"
               >
                 <option value="">{t("teamFilterAll")}</option>

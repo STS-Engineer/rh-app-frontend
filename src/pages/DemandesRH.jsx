@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './DemandesRH.css';
 import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSiteFilter } from '../contexts/SiteFilterContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getBackendBaseUrl } from '../utils/backendUrl';
 import { getCurrentUser, shouldHideHrGroupModules, isGlobalHrManager } from '../services/api';
@@ -297,6 +298,7 @@ const DemandesRH = () => {
   // Only group HR managers (multi-site access) get the plant filter. For single-site
   // Tunisia users, site_dep holds department names, not plants, so the filter stays hidden.
   const isGroupHrUser = isGlobalHrManager(getCurrentUser());
+  const { siteFilter, setSiteFilter } = useSiteFilter();
 
   // Sentinel value for the "Tunisia" plant option. Tunisia demandes use department
   // names (not a Site- value), so they can't be selected by exact match like real
@@ -314,8 +316,7 @@ const DemandesRH = () => {
     employe_id: '',
     date_debut: '',
     date_fin: '',
-    nom_employe: '',
-    site_dep: ''
+    nom_employe: ''
   };
 
   const [filters, setFilters] = useState(defaultFilters);
@@ -354,7 +355,7 @@ const DemandesRH = () => {
     if (filters.date_debut) count++;
     if (filters.date_fin) count++;
     if (filters.nom_employe) count++;
-    if (filters.site_dep) count++;
+    if (siteFilter) count++;
     return count;
   };
   const activeFiltersCount = getActiveFiltersCount();
@@ -562,14 +563,14 @@ const DemandesRH = () => {
           `${d.employe_prenom} ${d.employe_nom}`.toLowerCase().includes(search)
         );
       }
-      if (filters.site_dep) {
-        if (filters.site_dep === TUNISIA_SITE_VALUE) {
+      if (siteFilter) {
+        if (siteFilter === TUNISIA_SITE_VALUE) {
           // Tunisia = any demande sourced from the Tunisia (public) schema, rather
           // than guessing from the site_dep text -- plant names like "Tianjin" have
           // no fixed prefix, so they can't be told apart from departments by pattern.
           fetched = fetched.filter(d => d._source_schema === 'public');
         } else {
-          fetched = fetched.filter(d => d.employe_site_dep === filters.site_dep);
+          fetched = fetched.filter(d => d.employe_site_dep === siteFilter);
         }
       }
       setDemandes(fetched);
@@ -588,7 +589,7 @@ const DemandesRH = () => {
     } finally {
       setLoading(false);
     }
-  }, [filters, API_BASE_URL, t]);
+  }, [filters, siteFilter, API_BASE_URL, t]);
 
   const approveSelected = async (demandeToAct = selectedDemande) => {
     if (!demandeToAct) return;
@@ -800,7 +801,7 @@ const DemandesRH = () => {
     setFiltersApplied(hasActiveFilters);
     const timer = setTimeout(() => fetchDemandes(true), 300);
     return () => clearTimeout(timer);
-  }, [filters]); // eslint-disable-line
+  }, [filters, siteFilter]); // eslint-disable-line
 
   useEffect(() => {
     if (!showModal) return;
@@ -820,6 +821,7 @@ const DemandesRH = () => {
 
   const clearFilters = () => {
     setFilters(defaultFilters);
+    setSiteFilter('');
     setFiltersApplied(false);
     setTimeout(() => fetchDemandes(true), 100);
   };
@@ -1000,7 +1002,7 @@ const DemandesRH = () => {
           {isGroupHrUser && (
             <div className="filter-group">
               <label>{t('plantSite')}</label>
-              <select value={filters.site_dep} onChange={(e) => handleFilterChange('site_dep', e.target.value)}>
+              <select value={siteFilter} onChange={(e) => setSiteFilter(e.target.value)}>
                 <option value="">{t('allSites')}</option>
                 <option value={TUNISIA_SITE_VALUE}>Tunisie</option>
                 {siteOptions.map(site => (
@@ -1047,8 +1049,8 @@ const DemandesRH = () => {
                     {t('employee')}: {filters.nom_employe}
                   </span>
                 )}
-                {filters.site_dep && (
-                  <span className="tag">{t('plantSite')}: {filters.site_dep === TUNISIA_SITE_VALUE ? 'Tunisie' : filters.site_dep}</span>
+                {siteFilter && (
+                  <span className="tag">{t('plantSite')}: {siteFilter === TUNISIA_SITE_VALUE ? 'Tunisie' : siteFilter}</span>
                 )}
                 {filters.date_debut && (
                   <span className="tag">{t('fromDate')}: {formatDate(filters.date_debut)}</span>
