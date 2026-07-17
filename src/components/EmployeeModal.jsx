@@ -6,6 +6,7 @@ import DossierRHModal from './DossierRHModal';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getBackendBaseUrl } from '../utils/backendUrl';
 import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar';
+import { getEmployeeSite } from '../utils/employeeProfile';
 import './EmployeeModal.css';
 
 /* =========================
@@ -637,7 +638,9 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                 </p>
                 <p className="employee-poste">{formData.role || formData.poste}</p>
                 {formData.grade && <p className="employee-grade">{formData.grade}</p>}
-                <p className="employee-departement">{formData.site_dep}</p>
+                <p className="employee-departement">
+                  {isGroupHrUser ? (getEmployeeSite(formData) || formData.site_dep) : formData.site_dep}
+                </p>
                 <p className="employee-contrat">{formData.type_contrat}</p>
                 <p className="employee-email">📧 {formData.adresse_mail || t('emailNotSpecified')}</p>
 
