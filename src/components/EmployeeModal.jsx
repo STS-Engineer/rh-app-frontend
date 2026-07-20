@@ -9,6 +9,8 @@ import { formatEmployeeNom, formatEmployeePrenom } from '../utils/employeeAvatar
 import { getEmployeeSite } from '../utils/employeeProfile';
 import './EmployeeModal.css';
 
+const GRADE_OPTIONS_GROUP_HR = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7'];
+
 /* =========================
    ✅ Composants externes
    ========================= */
@@ -866,7 +868,18 @@ const EmployeeModal = ({ employee, isOpen, onClose, onUpdate, onArchive, refresh
                   <div className="form-grid">
                     <FormInput label={t('position')} name="poste" value={formData.poste} onChange={handleInputChange} />
                     <FormInput label="Rôle" name="role" value={formData.role} onChange={handleInputChange} required />
-                    <FormInput label="Grade" name="grade" value={formData.grade} onChange={handleInputChange} />
+                    {isGroupHrUser ? (
+                      <FormSelect
+                        t={t}
+                        label="Grade"
+                        name="grade"
+                        value={formData.grade}
+                        onChange={handleInputChange}
+                        options={GRADE_OPTIONS_GROUP_HR}
+                      />
+                    ) : (
+                      <FormInput label="Grade" name="grade" value={formData.grade} onChange={handleInputChange} />
+                    )}
 
                     <FormSelect
                       t={t}

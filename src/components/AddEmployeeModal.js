@@ -7,6 +7,7 @@ import './AddEmployeeModal.css';
 const GROUP_ROLES = new Set(['group_hr', 'hr_group', 'hr_manager_group', 'global_hr', 'super_admin']);
 
 const GRADE_OPTIONS = ['Junior', 'Confirmed', 'Senior', 'Lead', 'Manager'];
+const GRADE_OPTIONS_GROUP_HR = ['G1', 'G2', 'G3', 'G4', 'G5', 'G6', 'G7'];
 
 const COUNTRY_SCHEMA_OPTIONS = [
   { label: 'Tunisia', value: 'public' },
@@ -265,7 +266,7 @@ const AddEmployeeModal = ({ isOpen, onClose, onAdd }) => {
                 {!isTunisiaTenant && (
                   <select className="form-select" name="grade" value={formData.grade} onChange={handleInputChange}>
                     <option value="">Grade</option>
-                    {GRADE_OPTIONS.map((grade) => (
+                    {(isGroupHr ? GRADE_OPTIONS_GROUP_HR : GRADE_OPTIONS).map((grade) => (
                       <option key={grade} value={grade}>{grade}</option>
                     ))}
                   </select>
