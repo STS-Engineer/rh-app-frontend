@@ -36,6 +36,7 @@ const Statistics = () => {
   const user = getCurrentUser();
   const isFranceTenant = (user?.plant || '').toLowerCase().includes('france');
   const canFilterBySite = isGlobalHrManager(user);
+  const showGenderStats = isFranceTenant || canFilterBySite;
 
   const siteOptions = useMemo(
     () => Array.from(new Set(employees.map((emp) => getEmployeeSite(emp)).filter(Boolean))).sort((a, b) => a.localeCompare(b)),
@@ -137,21 +138,24 @@ const Statistics = () => {
       const recentHiresList = [];
       const salaryDistribution = Array(10).fill(0);
       let maxSalary = 0;
+      const genderSalarySum = { Homme: 0, Femme: 0 };
 
       employeesData.forEach(emp => {
         // Department stats
         byDepartment[emp.site_dep] = (byDepartment[emp.site_dep] || 0) + 1;
-        
+
         // Contract stats
         byContract[emp.type_contrat] = (byContract[emp.type_contrat] || 0) + 1;
         const g = (emp.sexe || emp.gender || '').toLowerCase();
-        if (g === 'homme' || g === 'male' || g === 'm') byGender.Homme++;
-        else if (g === 'femme' || g === 'female' || g === 'f') byGender.Femme++;
+        let genderKey = null;
+        if (g === 'homme' || g === 'male' || g === 'm') { byGender.Homme++; genderKey = 'Homme'; }
+        else if (g === 'femme' || g === 'female' || g === 'f') { byGender.Femme++; genderKey = 'Femme'; }
         else byGender.Non_renseigne++;
-        
+
         // Salary stats
         const salary = parseFloat(emp.salaire_brute || 0);
         totalSalary += salary;
+        if (genderKey) genderSalarySum[genderKey] += salary;
         
         // Experience stats
         const experience = calculateExperience(emp.date_debut);
@@ -200,6 +204,10 @@ const Statistics = () => {
       });
 
       const averageSalary = employeesData.length > 0 ? totalSalary / employeesData.length : 0;
+
+      const avgSalaryHomme = byGender.Homme > 0 ? genderSalarySum.Homme / byGender.Homme : 0;
+      const avgSalaryFemme = byGender.Femme > 0 ? genderSalarySum.Femme / byGender.Femme : 0;
+      const genderPayGapPercent = avgSalaryHomme > 0 ? ((avgSalaryHomme - avgSalaryFemme) / avgSalaryHomme) * 100 : 0;
 
       const salaries = employeesData.map(emp => parseFloat(emp.salaire_brute || 0)).sort((a, b) => a - b);
       const salaryStats = {
@@ -254,6 +262,11 @@ const Statistics = () => {
         monthlyHires: last12Months,
         salaryDistribution,
         byGender,
+        genderPayGap: {
+          avgHomme: avgSalaryHomme,
+          avgFemme: avgSalaryFemme,
+          gapPercent: genderPayGapPercent
+        },
         chartData: {
           departmentData,
           contractData,
@@ -262,6 +275,10 @@ const Statistics = () => {
           salaryDistributionData,
           monthlyHiresData: last12Months,
           genderData: Object.entries(byGender).map(([name, value]) => ({ name, value })),
+          genderPayGapData: [
+            { name: t('statsGenderPayGapMen'), value: avgSalaryHomme },
+            { name: t('statsGenderPayGapWomen'), value: avgSalaryFemme }
+          ],
           evolutionData: last12Months.map((m, i) => ({
             ...m,
             cumulative: last12Months.slice(0, i + 1).reduce((acc, x) => acc + x.hires, 0)
@@ -462,7 +479,7 @@ const Statistics = () => {
         </div>
 
         <div className="professional-charts">
-          {isFranceTenant && (
+          {showGenderStats && (
             <div className="charts-row">
               <div className="chart-container medium">
                 <h3>{t('statsGenderSplit')}</h3>
@@ -494,6 +511,45 @@ const Statistics = () => {
                       <Line type="monotone" dataKey="cumulative" name={t('statsCumulativeSeries')} stroke="#16a34a" />
                     </LineChart>
                   </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          )}
+          {showGenderStats && (
+            <div className="charts-row">
+              <div className="chart-container medium">
+                <h3>💶 {t('statsGenderPayGap')}</h3>
+                <div className="chart-wrapper">
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={stats.chartData?.genderPayGapData || []}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip formatter={(value) => [`${formatNumber(value)} DT`, t('statsSalaryAverage')]} />
+                      <Bar dataKey="value" name={t('statsSalaryAverage')} radius={[4, 4, 0, 0]}>
+                        {(stats.chartData?.genderPayGapData || []).map((entry, index) => (
+                          <Cell key={`gp-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div className="stats-card">
+                <h3>⚖️ {t('statsGenderPayGapSummary')}</h3>
+                <div className="salary-grid">
+                  <div className="salary-stat">
+                    <span className="salary-label">{t('statsGenderPayGapMen')}</span>
+                    <span className="salary-value">{formatFixed(stats.genderPayGap?.avgHomme)} DT</span>
+                  </div>
+                  <div className="salary-stat">
+                    <span className="salary-label">{t('statsGenderPayGapWomen')}</span>
+                    <span className="salary-value">{formatFixed(stats.genderPayGap?.avgFemme)} DT</span>
+                  </div>
+                  <div className="salary-stat">
+                    <span className="salary-label">{t('statsGenderPayGapPercent')}</span>
+                    <span className="salary-value">{formatFixed(stats.genderPayGap?.gapPercent, 1)}%</span>
+                  </div>
                 </div>
               </div>
             </div>
