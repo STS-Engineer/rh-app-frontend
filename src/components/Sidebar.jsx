@@ -22,6 +22,10 @@ const Sidebar = () => {
     tenantText.includes('tunisia') ||
     tenantText.includes('public') ||
     tenantText.includes('sts');
+  // Payroll (CNSS/IRPP/CSS) applies to both Tunisia tenants -- STS
+  // (public) and SAME (sceet_same/schema_tn) -- kept separate from
+  // isTunisiaTenant so Visa/Pointeuse gating below is unaffected.
+  const isPaieTenant = isTunisiaTenant || tenantText.includes('sceet') || tenantText.includes('same');
   const hideHrGroupModules = shouldHideHrGroupModules(user);
   // Onboarding/Career Development/Offboarding are HR-administration pages --
   // only a global HR manager or a plant's own local HR account should see
@@ -66,6 +70,9 @@ const Sidebar = () => {
     { path: '/organigramme', label: t('orgTitle'), icon: '🏢' },
     { path: '/demandes-rh', label: t('demands'), icon: '📋' },
     ...(!hideHrGroupModules ? [{ path: '/fiche-de-paie', label: t('payslip'), icon: '💰' }] : []),
+    ...(isPaieTenant && !hideHrGroupModules
+      ? [{ path: '/paie-calcul', label: 'Paie', icon: '💵' }]
+      : []),
     { path: '/statistics', label: t('statistics'), icon: '📈' },
     { path: '/etat-des-lieux', label: t('edlPresenceTracker'), icon: '📅' },
     ...(isTunisiaTenant && !hideHrGroupModules

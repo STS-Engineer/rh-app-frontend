@@ -229,6 +229,27 @@ export const fichePaieAPI = {
 };
 
 // =========================
+// API Paie (calcul CNSS/IRPP/CSS) -- Tunisia tenants only (public / schema_tn)
+// =========================
+
+export const paieAPI = {
+  importAttendance: (file, periodeDebut, periodeFin, moisPaie) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (periodeDebut) formData.append('periode_debut', periodeDebut);
+    if (periodeFin) formData.append('periode_fin', periodeFin);
+    if (moisPaie) formData.append('mois_paie', moisPaie);
+    return api.post('/paie/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  getEmployes: () => api.get('/paie/employes'),
+  updateEmploye: (matricule, data) => api.put(`/paie/employes/${encodeURIComponent(matricule)}`, data),
+  getParametres: () => api.get('/paie/parametres'),
+  calculer: (data) => api.post('/paie/calculer', data)
+};
+
+// =========================
 // API Archives
 // =========================
 

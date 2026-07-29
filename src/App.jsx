@@ -9,6 +9,7 @@ import Archives from './pages/Archives';
 import Statistics from './pages/Statistics';
 import DemandesRH from './pages/DemandesRH'; 
 import FicheDePaie from './pages/FicheDePaie';
+import Paie from './pages/Paie';
 import EtatDesLieux from './pages/EtatDesLieux'; 
 import Settings from './pages/Settings';
 import Visa from './pages/Visa';
@@ -43,6 +44,31 @@ const isTunisiaTenantUser = (user) => {
 const TunisiaOnlyRoute = ({ children }) => {
   const user = getCurrentUser();
   return isTunisiaTenantUser(user) ? children : <Navigate to="/dashboard" replace />;
+};
+
+// Payroll (CNSS/IRPP/CSS) is Tunisia-specific. Deliberately a standalone
+// check rather than widening isTunisiaTenantUser() above, which other
+// already-shipped routes (Visa, Pointeuse) also depend on -- this way SAME
+// (sceet_same/schema_tn) users gain access to Paie without changing
+// gating behavior for those other modules.
+const isPaieTenantUser = (user) => {
+  const tenantText = [
+    user?.country,
+    user?.plant,
+    user?.tenant_schema,
+    user?.tenant_id
+  ].filter(Boolean).join(' ').toLowerCase();
+
+  return (
+    isTunisiaTenantUser(user) ||
+    tenantText.includes('sceet') ||
+    tenantText.includes('same')
+  );
+};
+
+const PaieOnlyRoute = ({ children }) => {
+  const user = getCurrentUser();
+  return isPaieTenantUser(user) ? children : <Navigate to="/dashboard" replace />;
 };
 
 const NonTunisiaOnlyRoute = ({ children }) => {
@@ -85,8 +111,20 @@ function App() {
                   </PrivateRoute>
                 } 
               />
-              <Route 
-                path="/team" 
+              <Route
+                path="/paie-calcul"
+                element={
+                  <PrivateRoute>
+                    <HiddenForHrGroupRoute>
+                      <PaieOnlyRoute>
+                        <Paie />
+                      </PaieOnlyRoute>
+                    </HiddenForHrGroupRoute>
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/team"
                 element={
                   <PrivateRoute>
                     <Team />
